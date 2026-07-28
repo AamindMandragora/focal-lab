@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.4,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 563.0641,
+    "mean_generation_seconds_per_example": 56.30641,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 581.7574,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 240,
+    "eval_end_index": 250
+  },
+  "answers": [
+    {
+      "question": "Show the names of conductors and the orchestras they have conducted.",
+      "generated_answer": "SELECT c.name AS conductor_name, o.orchestra FROM conductor c JOIN orchestra o ON c.conductor_id = o.conductor_id",
+      "generation_seconds": 88.876115
+    },
+    {
+      "question": "What are the names of conductors as well as the corresonding orchestras that they have conducted?",
+      "generated_answer": "SELECT c.name, o.orchestra FROM conductor c JOIN orchestra o ON c.conductor_id = o.conductor_id",
+      "generation_seconds": 103.563214
+    },
+    {
+      "question": "Show the names of conductors that have conducted more than one orchestras.",
+      "generated_answer": "SELECT DISTINCT concat.c FROM (SELECT conduct.conductor_id, count(distinct per.orchestra_id) AS num_orchestras FROM conductor conduct JOIN performance per ON conduct.conductor_id = per.orchestra_id WHERE conduct.conductor_id IS NOT NULL GROUP BY conduct.conductor_id HAVING num_orchestras > 1) AS concat",
+      "generation_seconds": 53.387168
+    },
+    {
+      "question": "Show the name of the conductor that has conducted the most number of orchestras.",
+      "generated_answer": "Select name from conductor Group by conductor_id Having Count(distinct orchestra.orchestra_id) = ( Select max(count(distinct o.orchestra_id)) From conductor C2 Join Orchestra O2 on C2.conductor_id = o2.conductor_id Group by C2.conductor_id)",
+      "generation_seconds": 7.073867
+    },
+    {
+      "question": "Please show the name of the conductor that has conducted orchestras founded after 2008.",
+      "generated_answer": "SELECT name FROM conductor WHERE conductor_id IN (SELECT conductor_id FROM orchestra WHERE year_of_founded > 2008)",
+      "generation_seconds": 20.873069
+    },
+    {
+      "question": "How many orchestras does each record company manage?",
+      "generated_answer": "SELECT count(1) FROM orchestra",
+      "generation_seconds": 86.347629
+    },
+    {
+      "question": "Please show the record formats of orchestras in ascending order of count.",
+      "generated_answer": "Select major_record_format from orchestra group by major_record_format order by count(*) asc",
+      "generation_seconds": 64.394765
+    },
+    {
+      "question": "What is the record company used by the greatest number of orchestras?",
+      "generated_answer": "select record_company from orchestra group by record_company order by count(*) desc limit 1",
+      "generation_seconds": 11.571293
+    },
+    {
+      "question": "What are the orchestras that do not have any performances?",
+      "generated_answer": "SELECT * FROM orchestra WHERE orchestra_id NOT IN (SELECT DISTINCT orchestra_id FROM performance)",
+      "generation_seconds": 30.057328
+    },
+    {
+      "question": "What are the record companies that are used by both orchestras founded before 2003 and those founded after 2003?",
+      "generated_answer": "SELECT DISTINCT record_company FROM orchestra WHERE year_of_founded < 2003 OR year_of_founded > 2003",
+      "generation_seconds": 96.919654
+    }
+  ]
+}

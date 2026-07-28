@@ -1,0 +1,616 @@
+{
+  "accuracy": 0.13,
+  "syntax_rate": 0.35,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 100.5344,
+    "mean_generation_seconds_per_example": 1.005344,
+    "examples_with_generation_timing": 100,
+    "total_output_tokens": 7905,
+    "mean_output_tokens_per_example": 79.05,
+    "examples_with_token_counts": 100,
+    "run_wall_time_seconds": 163.5527
+  },
+  "answers": [
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.182743
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1CCC(CC2CCC(CC2)N=C=O)CC1\n O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nO=C=NCCCCCCN=C=O\nO=C=NCCCCCCCCCCCCN=C\n<think>\nThe user wants a valid isocyanate molecule in SMILES format.\nI need to select one SMILES string from the examples or generate a new valid one based on the constraint of being an isocyanate.\nThe prompt asks: \"For each molecule requested below, give brief step-by-step reasoning about the constraints, then write the SMILES string.\"\nWait, looking at the input, it lists \"Molecule: ...\" multiple times. It looks like a few examples followed by the request to provide *one* new, valid isocyanates molecule.\nHowever, the instruction says \"For each molecule requested below... write the SMILES string.\" but the output instruction says \"Your response must be a single SMILES molecule and nothing else.\"\nThere seems to be a conflict between \"For each molecule requested below\" (implying multiple outputs or processing of the list) and \"Your response must be a single SMILES molecule and nothing else.\"\nLet's look at the examples provided. They are just examples of isocyanates.\nThe prompt seems to be asking me to generate *one* new isocyanate molecule.\nLet's re-read carefully: \"For each molecule requested below, give brief step-by-step reasoning about the constraints, then write the SMILES string.\"\nThen: \"Molecule: [List of molecules]\"\nThen: \"Your response must be a single SMILES molecule and nothing else.\"\nUsually, in these types of prompts, if it asks for \"one new\" molecule, I should just provide that.\n",
+      "num_tokens": 400,
+      "generation_seconds": 4.226132
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3-Diazole-5-carboxylic acid mono(2-ethylhexyl) ester",
+      "num_tokens": 22,
+      "generation_seconds": 0.238051
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=A(=O)=C2)CC3=CC=C(C=C3N=C=O)=C1\nMolecule: O=C=NCCCCCCCCN=C=O\nO=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=",
+      "num_tokens": 107,
+      "generation_seconds": 1.334613
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.076362
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.080344
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)CC3=BC3\nM molecule: O=C=NCCCCCCCCCCCCN=C=Dec\nM molecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O\nM\n<think>",
+      "num_tokens": 87,
+      "generation_seconds": 1.107278
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "",
+      "num_tokens": 1,
+      "generation_seconds": 0.067225
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCCCCCN=C=O\n O=C=NCCCCCN=C=O\nMolecule: O=C=NCCCCCN=C=O\nM duplicates",
+      "num_tokens": 33,
+      "generation_seconds": 0.443433
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCCCCCN=C=\n<think>\nThe user wants a SMILES string for an isocyanate molecule based on a set of examples.\nThe user input contains a list of example isocyanate molecules in SMILES format.\nThe prompt asks me to provide *one new, valid isocyanates molecule* in SMILES format.\nI need to follow the reasoning constraint: \"For each molecule requested below, give brief step-by-step reasoning about the constraints, then write the SMILES string.\"\nWait, looking at the prompt structure:\n\"You are an expert in chemistry. You are given several examples of isocyanates molecules in SMILES format. Your task is to provide one new, valid isocyanates molecule in SMILES format.\"\nThen it lists examples.\nThen it says \"Your response must be a single SMILES molecule and nothing else.\"\nHowever, the first sentence says \"For each molecule requested below, give brief step-by-step reasoning about the constraints, then write the SMILES string.\"\nThis seems contradictory. Usually, when the prompt asks for \"one new... molecule\", it implies I should generate a *different* molecule or follow a specific pattern.\nLet's look at the examples. They are all isocyanates (contain N=C=O).\nSome have aromatic rings, some have aliphatic chains (polyether, long alkyl chains).\nThe last example in the list is ` O=C=NCCCCCN=C=`. This looks corrupted or incomplete. `N=C=` is not stable alone, usually `N=C=O`. The provided list ends with `O=C=NCCCCCN=C=`.\nActually, looking closely at the last example in the prompt text: ` O=C=NCCCCCN=C= `. It seems the user pasted a list of examples and then expects me to generate a response based on the instruction \"For each molecule requested below...\". But the instruction also",
+      "num_tokens": 400,
+      "generation_seconds": 4.89819
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCCCC",
+      "num_tokens": 5,
+      "generation_seconds": 0.116504
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " C(C(C)(C)C(t)(t)C)N=C=O",
+      "num_tokens": 18,
+      "generation_seconds": 0.288423
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>\nThe user wants a SMILES string representing an isocyanates molecule.\nThe prompt provides several examples of isocyanate molecules in SMILES format.\nThe input examples show various structures containing the isocyanate functional group (-N=C=O), often attached to aromatic or aliphatic rings, or long chains.\nHowever, looking closely at the prompt structure, it seems to be asking me to generate a molecule based on the pattern provided in the few examples, or just generate *one* valid isocyanate molecule.\nThe prompt says: \"You are an expert in chemistry. You are given several examples of isocyanates molecules in SMILES format. Your task is to provide one new, valid isocyanates molecule in SMILES format.\"\nIt then lists \"Molecule: [SMILES]\" many times.\nWait, the prompt format \"Molecule: ... Molecule: ... \" looks like a list of examples I should learn from, but the instruction says \"For each molecule requested below...\".\nActually, looking at the very end of the prompt, there is a list of SMILES strings under the word \"Molecule\".\nThe instruction says: \"For each molecule requested below, give brief step-by-step reasoning about the constraints, then write the SMILES string.\"\nThis is contradictory. The instruction says \"For each molecule requested below\", but then gives a list of molecules labeled \"Molecule: ...\".\nThen the instruction says \"Your task is to provide one new, valid isocyanates molecule in SMILES format.\"\nWait, is the user asking me to complete the last one? Or generate a new one based on the pattern?\nLet's re-read carefully.\n\"For each molecule requested below, give brief step-by-step reasoning about the constraints, then write the SMILES string.\"\nThen \"You are an expert in chemistry. You are given several examples of isocyanates molecules",
+      "num_tokens": 400,
+      "generation_seconds": 5.066777
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " \\",
+      "num_tokens": 2,
+      "generation_seconds": 0.09251
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCCCC\nO=C=NCCCC",
+      "num_tokens": 10,
+      "generation_seconds": 0.19407
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1-C=1C(=C(O=C=N)C(O)C2=CC=C(C=C2)N=C=O)C3=CC=C(C=C3)N=C=O\n1-C=1C(=C(O=C=N)C(O)C2=CC=C(",
+      "num_tokens": 65,
+      "generation_seconds": 0.879833
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.098492
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " C1=CC=C(C=C1N=C=O)CC2=CC=C(C=C2)CC3=BC3\n<think>\nThe user wants a single SMILES string representing an isocyanate molecule.\nThe prompt provides several examples of isocyanate molecules in SMILES format.\nThe core task is to generate *one* new, valid isocyanates molecule based on the context, but the specific instruction says \"For each molecule requested below... write the SMILES string.\" However, the specific examples provided look like training data or a list of molecules to choose from, or perhaps the prompt is actually asking me to complete the pattern or generate a similar one based on the examples?\nLet's re-read carefully: \"You are an expert in chemistry. You are given several examples of isocyanates molecules in SMILES format. Your task is to provide one new, valid isocyanates molecule in SMILES format.\"\nThen: \"For each molecule requested below... give brief step-by-step reasoning about the constraints, then write the SMILES string.\"\nWait, the prompt structure is a bit confusing. It lists \"Molecule:\" followed by a SMILES string 10 times? Or is it asking me to take one of those and transform it?\nActually, looking at the very end: \"C1=CC=C(C=C1N=C=O)CC2=CC=C(C=C2)CC3=BC3\"\nIt seems the last line is the prompt for me to complete or is the target?\nNo, usually these prompts work like: \"Here are examples... Provide a new one.\"\nHowever, the instruction says \"For each molecule requested below...\". The section below contains a list of \"Molecule: [SMILES]\" pairs. It seems the user pasted a few examples and maybe forgot to specify the actual task clearly, or the task is to generate *one* new valid",
+      "num_tokens": 400,
+      "generation_seconds": 5.017183
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.095594
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " C1=CC=C(C=C1N=C=O)CC2=CC=C(C=C2CC3=CC=C(C=C3)N=C-isocyanate)\n<think>\nThinking Process:",
+      "num_tokens": 44,
+      "generation_seconds": 0.599164
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.096916
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C1)N=C=N",
+      "num_tokens": 19,
+      "generation_seconds": 0.300725
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)CC3=CC=C(C=C3)N=C=O\n<think>\nThe user wants a SMILES string for an isocyanate molecule.\nI need to analyze the input examples and understand the constraints implied by the prompt's instruction: \"Your task is to provide one new, valid isocyanates molecule in SMILES format.\"\nHowever, the prompt starts with \"For each molecule requested below...\". Then it lists several molecules.\nWait, looking at the prompt structure:\n1. Instruction: \"You are an expert in chemistry... given several examples... Your task is to provide one new, valid isocyanates molecule in SMILES format.\"\n2. Constraint: \"Your response must be a single SMILES molecule and nothing else.\"\n3. Input Data: A list of molecules (some are isocyanates, some are heterocyclic, some contain isocyanates).\nActually, the input data looks like a few examples of molecules that *contain* isocyanate groups (`N=C=O`) or are isocyanates.\nThe specific task seems to be to generate *another* isocyanate molecule, or perhaps the user has provided a list of examples and wants me to generate the SMILES for the next one in a sequence?\nNo, the prompt says \"For each molecule requested below...\". But there are no requests below. There is just a block of text labeled \"Molecule:\".\nLet's re-read carefully.\n\"For each molecule requested below, give brief step-by-step reasoning about the constraints, then write the SMILES string.\"\nThen: \"You are an expert in chemistry. You are given several examples of isocyanates molecules in SMILES format. Your task is to provide one new, valid isocyanates molecule in SMILES format.\"\nThen: \"",
+      "num_tokens": 400,
+      "generation_seconds": 5.098403
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C1)N=C=N",
+      "num_tokens": 18,
+      "generation_seconds": 0.273518
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C1)N=C=N",
+      "num_tokens": 18,
+      "generation_seconds": 0.279851
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C1)N=C=N\n O=C=NCC1=CP(=O)C(=C1)N=C=N\n O=C=NCC1=CC=CC(=C1)N=C=N\n O=C=NCC1=CC=CC(",
+      "num_tokens": 68,
+      "generation_seconds": 0.858685
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.085443
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O\nMolecule: O=C=NCC1=C(C=C(C=C1)N=C=O)CC2=CC=C(C=C2)N=C=",
+      "num_tokens": 72,
+      "generation_seconds": 0.89052
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " All of these are isocyanates. The task is to analyze the structure",
+      "num_tokens": 17,
+      "generation_seconds": 0.26375
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.088823
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C1)N -C=N\n21.  O=C=NCC1=CC=CC(=C1)N=C=N\n21.  O=C=NCC1=CC=CC(= - C=C=C1)N=C=N\n22.  O=C=NCC1=CC=CC( - C=C=C1)N=C=N\n23.  SMILES: O=C=NC1=CC(=C(C=C1)CC2=CC=C(C=C2)CC3=CC=C(C=C3)CC4=CC=C(C=C4)N=C=O)N=C=O",
+      "num_tokens": 148,
+      "generation_seconds": 1.786812
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.090042
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C\n<think>\nThe user wants a valid isocyanates molecule in SMILES format.\nThe input contains a list of example molecules, all of which are isocyanates or contain isocyanate groups (-N=C=O).\nThe constraint is to provide *one* new, valid isocyanates molecule.\nThe input examples show various structures: linear chains, aromatic rings with isocyanate groups attached, branched structures with isocyanate groups.\nThe prompt asks for \"one new, valid isocyanates molecule\".\nThe last example provided in the list seems cut off: \" O=C=NCC1=CC=CC(=C1)N=C=N\". This is not a valid isocyanate in the standard sense (it has N=C=N, a diisocyanide or isourea? No, N=C=N is an isocyanic acid derivative or a diazo-like structure, but typically N=C=O is the isocyanate group).\nWait, the last example is `O=C=NCC1=CC=CC(=C1)N=C=N`. This looks like a urea or similar derivative connected to a benzene ring. Actually, `N=C=N` is a diazo group or an isocyanide attached to C? No, `N=C=N` usually implies a specific functional group. Isocyanate is `N=C=O`.\nLet's look at the examples provided in the prompt. They all seem to contain `N=C=O`.\nExample 1: `O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1` (Isocyanate on benzyl/phenyl rings).\nExample 2: `O=C",
+      "num_tokens": 400,
+      "generation_seconds": 4.776402
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n</think>",
+      "num_tokens": 28,
+      "generation_seconds": 0.393815
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n O=C=NC1=CC=C(C=C1)CC2=CM=CC(=C2)N=C=O\n O=C=NCC2=CC=CC(=C2)N=C=N\n O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=1\n O=C=NCC1=AROMATIC=CC(=C1)N=C=N\n O=C=NCC1=CC=CC(NoAromatic)=C1\n O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C1)N=C=O\n O=C=",
+      "num_tokens": 218,
+      "generation_seconds": 2.66273
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CI=CC=C2\n O=C=NC1=CC=C(C=C1)CC2=CI=CC=C2",
+      "num_tokens": 42,
+      "generation_seconds": 0.555658
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n  O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C isocyanates\n  O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n  O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O",
+      "num_tokens": 109,
+      "generation_seconds": 1.351924
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " C1=CC=C(C=C1CC2=CC=C(C=C2)N=C=O)N=C=O\n1. For each molecule, provide a brief explanation of the structural constraints.\n2. Provide the SMILES string.\n3. Do not include any additional text, explanations, or comments.",
+      "num_tokens": 67,
+      "generation_seconds": 0.859959
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CCC(CC2=CC=C(C=C2)N=C isocyanates",
+      "num_tokens": 23,
+      "generation_seconds": 0.340581
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C1)N=C=N\n  O=C=NCC1=CC=C",
+      "num_tokens": 29,
+      "generation_seconds": 0.400793
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(O)=C1\nO=C=NCC1=NC(=C1)N=C=N\nO=C=NCC1=CC=CB(=C1)N=C=N\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1=HeteroRingC(=C1)N=C=N\nO=C=NCC1=CC=CC(_core_)=C1\nO=C=NCC1=CC=CC(=C1)N=C=N",
+      "num_tokens": 121,
+      "generation_seconds": 1.477209
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C1)N=C=N",
+      "num_tokens": 18,
+      "generation_seconds": 0.27796
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " [H]O=C=NC1=CC=CC(CC2=CC=C(C=C2)N=C=O)CC1\n[H]O=C=NC1=CC=CC(CC2=CC=C(C=C2)N isocyanates",
+      "num_tokens": 55,
+      "generation_seconds": 0.699344
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1\nMolecule: 1\nM placeholder",
+      "num_tokens": 11,
+      "generation_seconds": 0.192982
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.088552
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCCCCCCN=C=O\n O=C=NCCCCCCN=C",
+      "num_tokens": 16,
+      "generation_seconds": 0.260273
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "",
+      "num_tokens": 1,
+      "generation_seconds": 0.074679
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C isocyanate\n  O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C isocyanate\n  O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C isocyanate\n  O=C=NC1=CO\n  O=C=NC1=CO\n  O=C=NC1=CO\n  O \"O=C=NC1=CO\"",
+      "num_tokens": 125,
+      "generation_seconds": 1.521023
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "0100100001000010000100001001000010000100001000010000100001001000010000100001000010000100001001000010000100001000010000100001000010000100001000010000100001000010000100100001000010000100001000010000100001000010000100001000010000100001000010000100001001000010000100001000010000100001000010000100001000010000100001000010000100001000010010000100001000010000100001000010000100001000010000100001000010010000",
+      "num_tokens": 400,
+      "generation_seconds": 4.79832
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " C1=CC=C(C=C1CC2=CC=C(C=C2)N=C=O)N=C=O\n  C1=CC=C(C=C1CC2=CC=C(C=C2)N=CO)\n  C1=CC=C(C=C1CC2=CC=C(C=C2)N=C=O)N=C=O\n  C1=CC=C(C=C1CC2=CC=C(C=C2)N=C=O)N=C=O",
+      "num_tokens": 106,
+      "generation_seconds": 1.323862
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCCCCCN=C=O\n O=C=NCCCCCN=C=O\n O=C=NCCCCCN=C\n O=C=NCCCCCN=C=O\nMolecule: O=C=NCC1=CC=CC(=C1)N=C=N\nMolecule:  O=C=NCC1=CC=CC(=C1)N=C=O\n O=C=NCC1=CC=NC(=C1)C\n O=C=NCC1=CC=NC(=C1)C\n O=C=NCC1=CC=CC(=C1)N=C=N\n O=C=NCC1=CC=CC(<think>)C",
+      "num_tokens": 142,
+      "generation_seconds": 1.75946
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "4-phenyl-N'-(4'-phenylisocyanato)benzamide\n4-phenyl-N'-(4'-phenylisocyanato)benzamide\n4-",
+      "num_tokens": 43,
+      "generation_seconds": 0.585167
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1-azatriphenylene-4,4',4'',4'''-tetracarboxylic dianhydride\n1-azatriphenylene-4,4',4'',4'''-t one \n<think>\nThinking Process:",
+      "num_tokens": 50,
+      "generation_seconds": 0.660001
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.095614
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " C1=CC=C(C=C1CC2=CC=C(C=C2)C(=O)O",
+      "num_tokens": 24,
+      "generation_seconds": 0.366772
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C leading zeros\nO=C=NCC1=CC=CC(=C1)N=C=N\nMolecule: O=C=NCC1=CC=CC(=C1)N=C=N",
+      "num_tokens": 54,
+      "generation_seconds": 0.544104
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.086122
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " C1=CC=C(C=C1CC2=CC=C(C=C2)N=C=O)N=C=O\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\nO=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C isocyanates ",
+      "num_tokens": 84,
+      "generation_seconds": 0.774383
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n O=C=NC1=CC=C(C=C1)CC2=CN=C(C=C2)O\n O=C=NC1=C=CC(=C1)CC2=CC=C(C=C2)N=C=O\n O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C= \"\nMolecule:  O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\nMolecule:  O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\nM provided",
+      "num_tokens": 192,
+      "generation_seconds": 2.240717
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C leading to a molecule with two aromatic rings, each connected via alkyl linkers to isocyanate groups. The SMILES string should follow standard chemical notation.\n leading to a molecule with two aromatic rings, each connected via alkyl linkers to is \"O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\"\n leading to a molecule with two aromatic phenyl rings, each connected via ethyl linkers (-CH2CH2- or -CH2- depending on the pattern) to isocyanate groups. The SMILES string should follow standard chemical SMILES.\n leading to a leading to a molecule with two aromatic rings, each connected via alkyl linkers to isocyanate groups. The SM output should be a single SMILES string with no extra text.\n leading to a molecule with two aromatic rings, each connected via alkym linkers to isocyuato groups. The SMILES string should follow standard chemical notation.\n leading to a molecule with O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O",
+      "num_tokens": 285,
+      "generation_seconds": 3.516945
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\nMolecule:  O=C=NC1=CC=C(C=C1)CC2=\n<think>\nThinking Process:",
+      "num_tokens": 52,
+      "generation_seconds": 0.707038
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.104163
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.108914
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCCCCCCCCCN=C=O\n O=C=NCCCCCCCCCN=C=O\n O=C=NCCCCCCCCCN=CAlkyl\n O=C=NCCCCCCCCCN=C=O\n O=C=NCCCCCCCCCN=C=O\nMolecule: O=C=NCCCC",
+      "num_tokens": 59,
+      "generation_seconds": 0.793351
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.106358
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.10787
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.108302
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.1073
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.106707
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCCCC\nM  O=C=NCCCC\nO=C=NCCCC\nO=C=NCCCC\nO=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\nO=C=NC1=CC=C,CC=C1)CC2=CC=C(C=C2)N=CO\nO=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\nO=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\nO=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C isocyanates molecule question\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1= \"Molecule: O=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1=CC=CC(",
+      "num_tokens": 231,
+      "generation_seconds": 2.877156
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.102091
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "522-13-9\n522-13-9",
+      "num_tokens": 18,
+      "generation_seconds": 0.303725
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.106324
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " [I-] [He] 1:",
+      "num_tokens": 11,
+      "generation_seconds": 0.221303
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " [I]",
+      "num_tokens": 4,
+      "generation_seconds": 0.12598
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=C(C=C(C=C2)CC3=CC=C(C=C3)N=C=O)CC4=CC=C(C=C4)N=C=O\n O=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1=CC=CC(=C1)N",
+      "num_tokens": 83,
+      "generation_seconds": 1.104891
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " [I]\nM [I]\n [I]\n [I]\n [I]\n [I]\n [I]\n [I]\n [I]\n [I]\n[I]\n [I]\n [I]\n [I]\n [I]\n[I]\n [I]\n [I]\n[I]\n[I]\n [I]\n [I]\n [I]\n [I]\n [I]\n[I]\n [I]\n [I]\n [I]\n [I]\n[I]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D]\n[D] Iodine\n[D]\n[D]\n[D]\n[D]\n[D]\n [I]\n [I]\n[I]\n [I]\n[I]\n[I]\n[I]\n [I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I] \"[I]\"\n[I]\n [I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]\n[I]",
+      "num_tokens": 385,
+      "generation_seconds": 4.400397
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3-dimethylhydrazine\n1,3-dimethylhydrazine\n1, SMILES: [I]\n2, O=C=NC1=CC=C(C=C1)CC2=C(C=C(C=C2)CC3=CC=C(C=C3)N=C=O)CC4=CC=C(C=C4)N=C=O\n3, O=C=NCC1= mistake\n3, O=C=NCC1=CC=CC(=C1)N=C=N\n3, O=C=NCC1=CC=CC(=C1)N=N\n3, O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n3, O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C=O)C\n3, O=C=NCCCC\n3, O=C=NCCCC",
+      "num_tokens": 197,
+      "generation_seconds": 1.744068
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " [I]\nM entries:",
+      "num_tokens": 8,
+      "generation_seconds": 0.147007
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C1)N=C=N\n O=C=NCC1=CC=SMILES",
+      "num_tokens": 29,
+      "generation_seconds": 0.42844
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C containing",
+      "num_tokens": 25,
+      "generation_seconds": 0.395409
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "0\nM0",
+      "num_tokens": 5,
+      "generation_seconds": 0.145247
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(=C1)N-aniline\nO=C=NCC1=CC=CC(=R1)N=C=N",
+      "num_tokens": 36,
+      "generation_seconds": 0.529399
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C at\nO=C=NCCCCCN=C=O\nO=C=NCC1=CM=CC(=C1)N=C=N\n=C=C(C=C1)N\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1=CC=CC(O)=C1\nO=C=NCC1=CC=CC( \" \" )=C1\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n=O\nO=C=NCC1=CC= isocyanates\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1=CC=CC(=C1)1\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1=CC=CC( space )=C1\nO=C=NCC1=SMILES\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1=CC=CC(=C1)1\nO=C=NCC1=SMILES\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n=O\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=",
+      "num_tokens": 396,
+      "generation_seconds": 4.875218
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " [I]\nMolecule: O=C=NCC1=CC=C(CC2=CC=C(C=C2)N=C=O)=C1\nO=C=NCC1=CC=C(CC2=CC=C(C=C2)N=C=O)=C1\nO=C=NCC1=CC=C(CC2=SMILES)C=C1\nO=C=NCC1=SMILES=C(CC2=CC=C(C=C2)N=C=O)=C1\nO=C=NCC1=CC=C(CC2=SMILES)C=C1\nO=C=NCC1=SMILES=C(CC2=CC=C substituted with N=C=O)=C1\nO=C=NCC1=CC=C(CC2=SMILES)C=CI=CC=1\nO=C=NCC1=CC=C(CC2=SMILES)CC1\nO=C=NCC1=CC=C(CC2=SM=\n<think>",
+      "num_tokens": 199,
+      "generation_seconds": 2.506914
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1=CC=CC(\nand then write the SMILES string for the molecule.",
+      "num_tokens": 23,
+      "generation_seconds": 0.371531
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "",
+      "num_tokens": 1,
+      "generation_seconds": 0.097313
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " C1=CC=C(C=C1CC2=CC=C(C=C2)N=C=O)N=C=O\n1 C1=CC=C(C=C1CC2=CC=C(C=C2)C)N=C=O\n1 C1=CC=C(",
+      "num_tokens": 60,
+      "generation_seconds": 0.821107
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " [I]\nMolecule: C1=CC=C(C=C1CC2=CC=CC(=C2)N=C= isocyanates",
+      "num_tokens": 34,
+      "generation_seconds": 0.497781
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=CO\nO=C=NC1=",
+      "num_tokens": 32,
+      "generation_seconds": 0.481631
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>\nThinking Process:",
+      "num_tokens": 6,
+      "generation_seconds": 0.162527
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,4-Dicyanobenzene",
+      "num_tokens": 10,
+      "generation_seconds": 0.223131
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.109282
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NCC1= extra spaces or invalid.",
+      "num_tokens": 12,
+      "generation_seconds": 0.250509
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "4-Methylphenol\n-Methylphenol\nMolecule: O=C=NCC1= many things here.\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\nMolecule:",
+      "num_tokens": 58,
+      "generation_seconds": 0.809349
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C1)N=C=O\n O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C1)N=C=O\n O=C=O\n O=C=NCC1=CO\n O=C=NCC1=CO\n O=C=NCC1=CO\n O=C=NCC1=CO\n O=C=NCC1=CO\n O=C=NCC1=CO\n O=C=NCC1=CO\n O\n O=C=NCC1=CO\n O=C=NCC1=CO\n O\n O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n O=C=NC1=CC=C(=C1)CC2=CC=C(C=C2)N=C=O\n O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=CC",
+      "num_tokens": 212,
+      "generation_seconds": 2.695026
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " C1=CC=C(C=C1CC2=CC=C(C=C2)N=C=O)N=C=O\n C1=CC=C(C=C1CC2=CC=C(C=C2)N=C=O)N=C=O\nC1=CC=C(C=C1CC2=CC=C(C=C2)C3=CC=C(C=C3)N=C=O)N=C=O\nC1=CC=C(C=C1CC2=CC=CC(=C2)N=C=C3)N=C=O\nC1=CC=C(C=C1CC2=CC=CC(=C2)N=C=O)N=C=O",
+      "num_tokens": 149,
+      "generation_seconds": 1.942511
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " [I]\nMolecule: O=C=NCC1=CC=O\nO=C=NCC1=CC=CC(=C1)N=C=N\nO=C=NCC1=CC=CC( newline )=C1\nO=C=NCC1=SMILES",
+      "num_tokens": 61,
+      "generation_seconds": 0.853136
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": " O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C=O\n Molecule: O=C=NCC1=CC=C(C=C1)N=C=O",
+      "num_tokens": 47,
+      "generation_seconds": 0.69264
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,4-Diamino-2,3,5,6-tetramethylbenzene",
+      "num_tokens": 21,
+      "generation_seconds": 0.361621
+    }
+  ]
+}

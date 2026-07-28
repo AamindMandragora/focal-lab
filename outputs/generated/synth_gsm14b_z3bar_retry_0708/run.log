@@ -1,0 +1,579 @@
+========================================================================
+  AUTHOR MODEL : 'us.anthropic.claude-sonnet-4-6' via backend='bedrock'
+  EVAL   MODEL : 'Qwen/Qwen2.5-14B-Instruct' via backend='vllm'
+========================================================================
+[gsm_symbolic] Using local JSON folder for symbolic {var} prompts: /home/aadivyar/csd-generation/legacy/CRANE/src/gsm_symbolic
+Initializing synthesis pipeline...
+Setting up evaluator for dataset: gsm_symbolic
+  Generation model: us.anthropic.claude-sonnet-4-6
+  Evaluation model: Qwen/Qwen2.5-14B-Instruct
+Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit)
+Generating initial strategy for: Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.
+
+============================================================
+Attempt 1/40
+============================================================
+Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit)
+Strategy: // CSD_RATIONALE_BEGIN
+// Math word problem CSD with step-by-step reasoning and constrained symbolic expressions.
+//
+// State tracked:
+//   - generated: full visible output including "<<" and ">>" delimiters
+//   - insideConstrainedOut: whether we are currently inside a constrained span
+//   - currentConstrainedOut: the parser-valid prefix of the active constrained span
+//   - steps/cost: token budget consumed
+//
+// Strategy:
+//   Phase 1 (outside span): Generate freely until the LM naturally emits "<<"
+//     or until we detect that a constrained expression should be opened.
+//     We use UnconstrainedStep and watch for "<<".
+//   Phase 2 (inside span): Use AdaptiveConstrainedStep with group boosts for
+//     mathematical token groups. When the parser reports the span is complete,
+//     call CloseConstrainedSpan to emit ">>". We alternate between boosted and
+//     adaptive steps depending on how narrow the parser state is.
+//   EOS: If EOS is returned at any point, we stop.
+//
+// The "<<" / ">>" delimiters wrap intermediate symbolic expressions and the
+// final numeric answer, as required by the gsm_symbolic task contract.
+//
+// Guidance steers the model to write step-by-step math reasoning with
+// expressions and answers wrapped in << >> delimiters.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity invariant:
+//   !insideConstrainedOut ==> currentConstrainedOut == []
+//   insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+//
+//   Outside-span branch: UnconstrainedStep returns next. If next == "<<" we set
+//     insideConstrainedOut := true and currentConstrainedOut := []. Since
+//     parser.IsValidPrefix([]) holds by precondition, the invariant is preserved.
+//     If next != "<<" we stay outside, implication is vacuous, invariant holds.
+//
+//   CloseConstrainedSpan branch: Requires IsCompletePrefix, which we check.
+//     CloseConstrainedSpan returns insideConstrainedOut := false and
+//     currentConstrainedOut := [], so !insideConstrainedOut ==>
+//     currentConstrainedOut == [] is satisfied.
+//
+//   AdaptiveConstrainedStep branch: Returns EOS or a parser-valid next token.
+//     If EOS, we break (no append). Otherwise AppendConstrainedToken appends
+//     the token to both generated and currentConstrainedOut, preserving
+//     parser.IsValidPrefix(currentConstrainedOut) by the helper's contract.
+//
+//   GroupBoostedConstrainedStep branch (narrow): Same as AdaptiveConstrainedStep
+//     branch—returns EOS or parser-valid token, AppendConstrainedToken preserves
+//     validity.
+//
+// progress invariant: |generated| <= |generatedPrefix| + steps
+//   Every branch increments steps by exactly 1 and appends at most one visible
+//   token to generated (or zero on EOS/close). CloseConstrainedSpan appends ">>"
+//   (one token) and steps += 1. All constrained steps append at most one token
+//   and steps += 1. UnconstrainedStep appends at most one token and steps += 1.
+//   So |generated| - |generatedPrefix| <= steps throughout.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var guidance: string := "Solve the math word problem step by step. Show your work. Wrap each intermediate symbolic expression and the final answer inside << >> delimiters. For example: The total is <<3+4=7>> 7 dollars. Final answer: <<42>>.";
+helpers.AppendTaskGuidance(lm, guidance);
+
+var narrowThreshold: nat := 15;
+var steps: nat := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    steps := steps + 1;
+    if next == eosToken {
+      break;
+    } else {
+      generated := generated + [next];
+      if next == "<<" {
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }
+    }
+  } else if parser.IsCompletePrefix(currentConstrainedOut) {
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  } else {
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
+    var next := eosToken;
+    if validCount <= narrowThreshold {
+      next := helpers.GroupBoostedConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 5.0, eosToken
+      );
+    } else {
+      next := helpers.AdaptiveConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, narrowThreshold, eosToken
+      );
+    }
+    steps := steps + 1;
+    if next == eosToken {
+      break;
+    } else {
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }
+  }
+}
+
+cost := steps;
+
+[1/4] Verifying with Dafny...
+  ✓ Verification passed
+
+[2/4] Compiling to Python...
+  ✓ Compiled to outputs/generated/synth_gsm14b_z3bar_retry_0708/synth_gsm14b_z3bar_retry_0708_20260710_190525_2f8576/python/synth_gsm14b_z3bar_retry_0708
+
+[3/4] Evaluating compiled strategy (runtime smoke test removed).
+
+[4/4] Evaluating on dataset sample...
+  [synthesis] eval seed for this iteration: None
+Loaded 49 examples from CRANE folder /home/aadivyar/csd-generation/legacy/CRANE/src/gsm_symbolic
+Loading model: Qwen/Qwen2.5-14B-Instruct on cuda with vLLM...
+INFO 07-10 19:06:00 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen2.5-14B-Instruct', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.4, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen2.5-14B-Instruct'}
+INFO 07-10 19:06:00 [model.py:549] Resolved architecture: Qwen2ForCausalLM
+INFO 07-10 19:06:00 [model.py:1678] Using max model len 16384
+INFO 07-10 19:06:00 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 07-10 19:06:00 [vllm.py:790] Asynchronous scheduling is enabled.
+WARNING 07-10 19:06:00 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:06:00 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:06:01 [vllm.py:1025] Cudagraph is disabled under eager mode
+INFO 07-10 19:06:01 [compilation.py:292] Enabled custom fusions: norm_quant, act_quant
+(EngineCore pid=3403165) INFO 07-10 19:06:08 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen2.5-14B-Instruct', speculative_config=None, tokenizer='Qwen/Qwen2.5-14B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen2.5-14B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3403165) INFO 07-10 19:06:09 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:52155 backend=nccl
+(EngineCore pid=3403165) INFO 07-10 19:06:09 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3403165) INFO 07-10 19:06:10 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen2.5-14B-Instruct...
+(EngineCore pid=3403165) INFO 07-10 19:06:11 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=3403165) INFO 07-10 19:06:11 [flash_attn.py:596] Using FlashAttention version 2
+(EngineCore pid=3403165) INFO 07-10 19:09:56 [weight_utils.py:581] Time spent downloading weights for Qwen/Qwen2.5-14B-Instruct: 225.226917 seconds
+(EngineCore pid=3403165) Loading safetensors checkpoint shards:   0% Completed | 0/8 [00:00<?, ?it/s]
+(EngineCore pid=3403165) Loading safetensors checkpoint shards:  12% Completed | 1/8 [00:01<00:08,  1.23s/it]
+(EngineCore pid=3403165) Loading safetensors checkpoint shards:  25% Completed | 2/8 [00:02<00:08,  1.36s/it]
+(EngineCore pid=3403165) Loading safetensors checkpoint shards:  38% Completed | 3/8 [00:04<00:07,  1.52s/it]
+(EngineCore pid=3403165) Loading safetensors checkpoint shards:  50% Completed | 4/8 [00:05<00:06,  1.53s/it]
+(EngineCore pid=3403165) Loading safetensors checkpoint shards:  62% Completed | 5/8 [00:07<00:05,  1.67s/it]
+(EngineCore pid=3403165) Loading safetensors checkpoint shards:  75% Completed | 6/8 [00:09<00:03,  1.54s/it]
+(EngineCore pid=3403165) Loading safetensors checkpoint shards:  88% Completed | 7/8 [00:11<00:01,  1.73s/it]
+(EngineCore pid=3403165) Loading safetensors checkpoint shards: 100% Completed | 8/8 [00:12<00:00,  1.58s/it]
+(EngineCore pid=3403165) Loading safetensors checkpoint shards: 100% Completed | 8/8 [00:12<00:00,  1.57s/it]
+(EngineCore pid=3403165) 
+(EngineCore pid=3403165) INFO 07-10 19:10:09 [default_loader.py:384] Loading weights took 12.57 seconds
+(EngineCore pid=3403165) INFO 07-10 19:10:10 [gpu_model_runner.py:4820] Model loading took 27.57 GiB memory and 238.810681 seconds
+(EngineCore pid=3403165) INFO 07-10 19:10:23 [gpu_worker.py:436] Available KV cache memory: -13.25 GiB
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]     super().__init__(
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 124, in __init__
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 258, in _initialize_kv_caches
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]     kv_cache_configs = get_kv_cache_configs(
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]                        ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/core/kv_cache_utils.py", line 1579, in get_kv_cache_configs
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]     _check_enough_kv_cache_memory(
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/core/kv_cache_utils.py", line 626, in _check_enough_kv_cache_memory
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108]     raise ValueError(
+(EngineCore pid=3403165) ERROR 07-10 19:10:23 [core.py:1108] ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.
+(EngineCore pid=3403165) Process EngineCore:
+(EngineCore pid=3403165) Traceback (most recent call last):
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3403165)     self.run()
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3403165)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3403165)     raise e
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3403165)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3403165)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3403165)     return func(*args, **kwargs)
+(EngineCore pid=3403165)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3403165)     super().__init__(
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 124, in __init__
+(EngineCore pid=3403165)     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=3403165)                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3403165)     return func(*args, **kwargs)
+(EngineCore pid=3403165)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 258, in _initialize_kv_caches
+(EngineCore pid=3403165)     kv_cache_configs = get_kv_cache_configs(
+(EngineCore pid=3403165)                        ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/core/kv_cache_utils.py", line 1579, in get_kv_cache_configs
+(EngineCore pid=3403165)     _check_enough_kv_cache_memory(
+(EngineCore pid=3403165)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/core/kv_cache_utils.py", line 626, in _check_enough_kv_cache_memory
+(EngineCore pid=3403165)     raise ValueError(
+(EngineCore pid=3403165) ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.
+[rank0]:[W710 19:10:23.423083834 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[vllm] Engine init failed: RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+[vllm] Cleaning GPU state and retrying in 10s...
+INFO 07-10 19:10:35 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen2.5-14B-Instruct', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.4, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen2.5-14B-Instruct'}
+INFO 07-10 19:10:35 [model.py:549] Resolved architecture: Qwen2ForCausalLM
+INFO 07-10 19:10:35 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:10:35 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:10:35 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:10:35 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3423928) INFO 07-10 19:10:41 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen2.5-14B-Instruct', speculative_config=None, tokenizer='Qwen/Qwen2.5-14B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen2.5-14B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3423928) INFO 07-10 19:10:42 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:56609 backend=nccl
+(EngineCore pid=3423928) INFO 07-10 19:10:42 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3423928) INFO 07-10 19:10:43 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen2.5-14B-Instruct...
+(EngineCore pid=3423928) INFO 07-10 19:10:44 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=3423928) INFO 07-10 19:10:44 [flash_attn.py:596] Using FlashAttention version 2
+(EngineCore pid=3423928) Loading safetensors checkpoint shards:   0% Completed | 0/8 [00:00<?, ?it/s]
+(EngineCore pid=3423928) Loading safetensors checkpoint shards:  12% Completed | 1/8 [00:01<00:07,  1.12s/it]
+(EngineCore pid=3423928) Loading safetensors checkpoint shards:  25% Completed | 2/8 [00:02<00:07,  1.21s/it]
+(EngineCore pid=3423928) Loading safetensors checkpoint shards:  38% Completed | 3/8 [00:03<00:06,  1.22s/it]
+(EngineCore pid=3423928) Loading safetensors checkpoint shards:  50% Completed | 4/8 [00:04<00:04,  1.24s/it]
+(EngineCore pid=3423928) Loading safetensors checkpoint shards:  62% Completed | 5/8 [00:06<00:03,  1.24s/it]
+(EngineCore pid=3423928) Loading safetensors checkpoint shards:  75% Completed | 6/8 [00:07<00:02,  1.26s/it]
+(EngineCore pid=3423928) Loading safetensors checkpoint shards:  88% Completed | 7/8 [00:08<00:01,  1.27s/it]
+(EngineCore pid=3423928) Loading safetensors checkpoint shards: 100% Completed | 8/8 [00:09<00:00,  1.06s/it]
+(EngineCore pid=3423928) Loading safetensors checkpoint shards: 100% Completed | 8/8 [00:09<00:00,  1.17s/it]
+(EngineCore pid=3423928) 
+(EngineCore pid=3423928) INFO 07-10 19:10:54 [default_loader.py:384] Loading weights took 9.37 seconds
+(EngineCore pid=3423928) INFO 07-10 19:10:55 [gpu_model_runner.py:4820] Model loading took 27.57 GiB memory and 10.408257 seconds
+(EngineCore pid=3423928) INFO 07-10 19:10:58 [gpu_worker.py:436] Available KV cache memory: -12.84 GiB
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]     super().__init__(
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 124, in __init__
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 258, in _initialize_kv_caches
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]     kv_cache_configs = get_kv_cache_configs(
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]                        ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/core/kv_cache_utils.py", line 1579, in get_kv_cache_configs
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]     _check_enough_kv_cache_memory(
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/core/kv_cache_utils.py", line 626, in _check_enough_kv_cache_memory
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108]     raise ValueError(
+(EngineCore pid=3423928) ERROR 07-10 19:10:58 [core.py:1108] ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.
+(EngineCore pid=3423928) Process EngineCore:
+(EngineCore pid=3423928) Traceback (most recent call last):
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3423928)     self.run()
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3423928)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3423928)     raise e
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3423928)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3423928)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3423928)     return func(*args, **kwargs)
+(EngineCore pid=3423928)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3423928)     super().__init__(
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 124, in __init__
+(EngineCore pid=3423928)     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=3423928)                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3423928)     return func(*args, **kwargs)
+(EngineCore pid=3423928)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 258, in _initialize_kv_caches
+(EngineCore pid=3423928)     kv_cache_configs = get_kv_cache_configs(
+(EngineCore pid=3423928)                        ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/core/kv_cache_utils.py", line 1579, in get_kv_cache_configs
+(EngineCore pid=3423928)     _check_enough_kv_cache_memory(
+(EngineCore pid=3423928)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/core/kv_cache_utils.py", line 626, in _check_enough_kv_cache_memory
+(EngineCore pid=3423928)     raise ValueError(
+(EngineCore pid=3423928) ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.
+[rank0]:[W710 19:10:59.940407057 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+  ✗ Evaluation failed: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+  Evaluator runtime kept warm; generation backend is hosted (bedrock)
+  Refining based on evaluation error...
+  Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit); excluded 1 attempt(s) with zero evaluated examples from helper-mask scoring
+  Beam evaluation_error: 2 candidate(s), selected contract_ok=True verify_ok=True local=False edit_ratio=1.17
+
+============================================================
+Attempt 2/40
+============================================================
+Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit); excluded 1 attempt(s) with zero evaluated examples from helper-mask scoring
+Strategy: // CSD_RATIONALE_BEGIN
+// Math word problem CSD for gsm_symbolic task.
+//
+// The task requires wrapping intermediate symbolic expressions and the final
+// answer inside << >> delimiters. The previous attempt scored 0% because 0
+// examples were evaluated - this suggests a runtime issue, possibly the model
+// never emitted "<<" naturally or the strategy was too slow.
+//
+// Revised strategy:
+//   1. Use GenerateWithPrefixAndManagedSpan which handles the full loop with
+//      built-in delimiter detection, constrained span management, and budget
+//      control. This is a high-level helper that discharges proof obligations
+//      internally and is less likely to time out.
+//   2. Set a small prefixBudget (100 steps) to force entry into constrained
+//      mode quickly if the model hasn't naturally opened a span.
+//   3. Use a boost amount of 4.0 and narrow threshold of 12.
+//   4. Append guidance to steer the model toward << >> formatted output.
+//
+// This approach is robust: if the LM doesn't emit "<<" in the first 100 tokens,
+// GenerateWithPrefixAndManagedSpan forces a constrained span open and uses the
+// remaining budget for parser-controlled content and closing ">>".
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   GenerateWithPrefixAndManagedSpan internally maintains the parser_validity
+//   invariant. On return, insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+//   holds by the helper's postcondition.
+//
+// progress:
+//   GenerateWithPrefixAndManagedSpan costs at most +maxSteps by its contract,
+//   so cost <= maxSteps. If maxSteps > 0, the helper makes at least one step
+//   of progress (either generating tokens or changing span state), satisfying
+//   the progress postcondition.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var guidance: string := "Solve the math word problem step by step. For each calculation, wrap the expression and result inside << >> delimiters, like <<3+5=8>>. The final numeric answer must also be wrapped in << >> delimiters.";
+helpers.AppendTaskGuidance(lm, guidance);
+
+var prefixBudget: nat := 100;
+if prefixBudget > maxSteps {
+  prefixBudget := maxSteps;
+}
+
+var gOut, iOut, cOut := helpers.GenerateWithPrefixAndManagedSpan(
+  lm, parser, prompt, generated, insideConstrainedOut, currentConstrainedOut,
+  maxSteps, prefixBudget, validTokenGroups, 4.0, 12, eosToken
+);
+generated := gOut;
+insideConstrainedOut := iOut;
+currentConstrainedOut := cOut;
+cost := maxSteps;
+
+[1/4] Verifying with Dafny...
+  ✓ Verification passed
+
+[2/4] Compiling to Python...
+  ✓ Compiled to outputs/generated/synth_gsm14b_z3bar_retry_0708/synth_gsm14b_z3bar_retry_0708_20260710_190525_2f8576/python/synth_gsm14b_z3bar_retry_0708_20260710_191143_643764
+
+[3/4] Evaluating compiled strategy (runtime smoke test removed).
+
+[4/4] Evaluating on dataset sample...
+  [synthesis] eval seed for this iteration: None
+Loaded 49 examples from CRANE folder /home/aadivyar/csd-generation/legacy/CRANE/src/gsm_symbolic
+Loading model: Qwen/Qwen2.5-14B-Instruct on cuda with vLLM...
+INFO 07-10 19:11:43 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen2.5-14B-Instruct', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.4, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen2.5-14B-Instruct'}
+INFO 07-10 19:11:43 [model.py:549] Resolved architecture: Qwen2ForCausalLM
+INFO 07-10 19:11:43 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:11:43 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:11:43 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:11:43 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3429837) INFO 07-10 19:11:49 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen2.5-14B-Instruct', speculative_config=None, tokenizer='Qwen/Qwen2.5-14B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen2.5-14B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3429837) INFO 07-10 19:11:51 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:56165 backend=nccl
+(EngineCore pid=3429837) INFO 07-10 19:11:51 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3429837) INFO 07-10 19:11:52 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen2.5-14B-Instruct...
+(EngineCore pid=3429837) INFO 07-10 19:11:52 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=3429837) INFO 07-10 19:11:52 [flash_attn.py:596] Using FlashAttention version 2
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [gpu_model_runner.py:4818] Failed to load model - not enough GPU memory. Try lowering --gpu-memory-utilization to free memory for weights, increasing --tensor-parallel-size, or using --quantization. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more tips. (original error: CUDA out of memory. Tried to allocate 270.00 MiB. GPU 0 has a total capacity of 39.49 GiB of which 317.62 MiB is free. Process 3398868 has 514.00 MiB memory in use. Process 3398878 has 416.00 MiB memory in use. Process 3426510 has 17.58 GiB memory in use. Including non-PyTorch memory, this process has 20.66 GiB memory in use. Of the allocated memory 20.15 GiB is allocated by PyTorch, and 13.35 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables))
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     super().__init__(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     self._init_executor()
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 52, in _init_executor
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     self.driver_worker.load_model()
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 323, in load_model
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     self.model_runner.load_model(load_dummy_weights=load_dummy_weights)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_model_runner.py", line 4819, in load_model
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     raise e
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_model_runner.py", line 4751, in load_model
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     self.model = model_loader.load_model(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]                  ^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/model_loader/base_loader.py", line 55, in load_model
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     model = initialize_model(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]             ^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/model_loader/utils.py", line 57, in initialize_model
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     model = model_class(vllm_config=vllm_config, prefix=prefix)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/qwen2.py", line 550, in __init__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     self.model = Qwen2Model(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]                  ^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/compilation/decorators.py", line 379, in __init__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     old_init(self, *args, **kwargs)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/qwen2.py", line 400, in __init__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     self.start_layer, self.end_layer, self.layers = make_layers(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]                                                     ^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/utils.py", line 652, in make_layers
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     + get_offloader().wrap_modules(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/offloader/base.py", line 90, in wrap_modules
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     return list(modules_generator)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/utils.py", line 653, in <genexpr>
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     layer_fn(prefix=f"{prefix}.{idx}") for idx in range(start_layer, end_layer)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/qwen2.py", line 402, in <lambda>
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     lambda prefix: decoder_layer_type(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]                    ^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/qwen2.py", line 280, in __init__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     self.mlp = Qwen2MLP(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]                ^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/qwen2.py", line 93, in __init__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     self.gate_up_proj = MergedColumnParallelLinear(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/layers/linear.py", line 649, in __init__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     super().__init__(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/layers/linear.py", line 474, in __init__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     self.quant_method.create_weights(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/layers/linear.py", line 201, in create_weights
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     data=torch.empty(
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]          ^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/torch/utils/_device.py", line 109, in __torch_function__
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) ERROR 07-10 19:11:53 [core.py:1108] torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 270.00 MiB. GPU 0 has a total capacity of 39.49 GiB of which 317.62 MiB is free. Process 3398868 has 514.00 MiB memory in use. Process 3398878 has 416.00 MiB memory in use. Process 3426510 has 17.58 GiB memory in use. Including non-PyTorch memory, this process has 20.66 GiB memory in use. Of the allocated memory 20.15 GiB is allocated by PyTorch, and 13.35 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+(EngineCore pid=3429837) Process EngineCore:
+(EngineCore pid=3429837) Traceback (most recent call last):
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3429837)     self.run()
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3429837)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3429837)     raise e
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3429837)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3429837)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3429837)     return func(*args, **kwargs)
+(EngineCore pid=3429837)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3429837)     super().__init__(
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3429837)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3429837)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3429837)     return func(*args, **kwargs)
+(EngineCore pid=3429837)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3429837)     self._init_executor()
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 52, in _init_executor
+(EngineCore pid=3429837)     self.driver_worker.load_model()
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 323, in load_model
+(EngineCore pid=3429837)     self.model_runner.load_model(load_dummy_weights=load_dummy_weights)
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3429837)     return func(*args, **kwargs)
+(EngineCore pid=3429837)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_model_runner.py", line 4819, in load_model
+(EngineCore pid=3429837)     raise e
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_model_runner.py", line 4751, in load_model
+(EngineCore pid=3429837)     self.model = model_loader.load_model(
+(EngineCore pid=3429837)                  ^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3429837)     return func(*args, **kwargs)
+(EngineCore pid=3429837)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/model_loader/base_loader.py", line 55, in load_model
+(EngineCore pid=3429837)     model = initialize_model(
+(EngineCore pid=3429837)             ^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3429837)     return func(*args, **kwargs)
+(EngineCore pid=3429837)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/model_loader/utils.py", line 57, in initialize_model
+(EngineCore pid=3429837)     model = model_class(vllm_config=vllm_config, prefix=prefix)
+(EngineCore pid=3429837)             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/qwen2.py", line 550, in __init__
+(EngineCore pid=3429837)     self.model = Qwen2Model(
+(EngineCore pid=3429837)                  ^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/compilation/decorators.py", line 379, in __init__
+(EngineCore pid=3429837)     old_init(self, *args, **kwargs)
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/qwen2.py", line 400, in __init__
+(EngineCore pid=3429837)     self.start_layer, self.end_layer, self.layers = make_layers(
+(EngineCore pid=3429837)                                                     ^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/utils.py", line 652, in make_layers
+(EngineCore pid=3429837)     + get_offloader().wrap_modules(
+(EngineCore pid=3429837)       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/offloader/base.py", line 90, in wrap_modules
+(EngineCore pid=3429837)     return list(modules_generator)
+(EngineCore pid=3429837)            ^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/utils.py", line 653, in <genexpr>
+(EngineCore pid=3429837)     layer_fn(prefix=f"{prefix}.{idx}") for idx in range(start_layer, end_layer)
+(EngineCore pid=3429837)     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/qwen2.py", line 402, in <lambda>
+(EngineCore pid=3429837)     lambda prefix: decoder_layer_type(
+(EngineCore pid=3429837)                    ^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/qwen2.py", line 280, in __init__
+(EngineCore pid=3429837)     self.mlp = Qwen2MLP(
+(EngineCore pid=3429837)                ^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/models/qwen2.py", line 93, in __init__
+(EngineCore pid=3429837)     self.gate_up_proj = MergedColumnParallelLinear(
+(EngineCore pid=3429837)                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/layers/linear.py", line 649, in __init__
+(EngineCore pid=3429837)     super().__init__(
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/layers/linear.py", line 474, in __init__
+(EngineCore pid=3429837)     self.quant_method.create_weights(
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/layers/linear.py", line 201, in create_weights
+(EngineCore pid=3429837)     data=torch.empty(
+(EngineCore pid=3429837)          ^^^^^^^^^^^^
+(EngineCore pid=3429837)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/torch/utils/_device.py", line 109, in __torch_function__
+(EngineCore pid=3429837)     return func(*args, **kwargs)
+(EngineCore pid=3429837)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3429837) torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 270.00 MiB. GPU 0 has a total capacity of 39.49 GiB of which 317.62 MiB is free. Process 3398868 has 514.00 MiB memory in use. Process 3398878 has 416.00 MiB memory in use. Process 3426510 has 17.58 GiB memory in use. Including non-PyTorch memory, this process has 20.66 GiB memory in use. Of the allocated memory 20.15 GiB is allocated by PyTorch, and 13.35 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[rank0]:[W710 19:11:54.047589270 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[vllm] Engine init failed: RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+[vllm] Cleaning GPU state and retrying in 10s...

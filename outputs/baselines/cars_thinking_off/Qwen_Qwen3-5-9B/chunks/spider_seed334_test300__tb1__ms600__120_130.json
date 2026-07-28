@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.6,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 562.0496,
+    "mean_generation_seconds_per_example": 56.204964,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 584.1441,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 120,
+    "eval_end_index": 130
+  },
+  "answers": [
+    {
+      "question": "How many visitors below age 30 are there?",
+      "generated_answer": "SELECT COUNT(*) FROM visitor WHERE age < 30",
+      "generation_seconds": 19.553551
+    },
+    {
+      "question": "Find the names of the visitors whose membership level is higher than 4, and order the results by the level from high to low.",
+      "generated_answer": "SELECT v.name FROM visitor v WHERE v.level_of_membership > 4 ORDER BY v.level_of_membership DESC",
+      "generation_seconds": 38.684536
+    },
+    {
+      "question": "What are the opening year and staff number of the museum named Plaza Museum?",
+      "generated_answer": "SELECT open_year, num_of_staff FROM museum WHERE name = 'Plaza Museum'",
+      "generation_seconds": 24.726435
+    },
+    {
+      "question": "find the id, name and age for visitors who visited some museums more than once.",
+      "generated_answer": "SELECT id, name, age FROM visitor WHERE id IN (SELECT visitor_id FROM visit GROUP BY visitor_id HAVING COUNT(*) > 1)",
+      "generation_seconds": 23.098376
+    },
+    {
+      "question": "What are the id, name and membership level of visitors who have spent the largest amount of money in total in all museum tickets?",
+      "generated_answer": "SELECT id, name, level_of_membership FROM visitor WHERE id = (SELECT visitor_id FROM visit ORDER BY total_spent DESC LIMIT 1)",
+      "generation_seconds": 99.438609
+    },
+    {
+      "question": "What is the name of the museum that had no visitor yet?",
+      "generated_answer": "SELECT name FROM museum WHERE museum_id NOT IN (SELECT DISTINCT museum_id FROM visit)",
+      "generation_seconds": 46.866073
+    },
+    {
+      "question": "What are the average and maximum number of tickets bought in all visits?",
+      "generated_answer": "SELECT AVG(num_of_ticket) AS avg_tickets, MAX(num_of_ticket) AS max_tickets FROM visit",
+      "generation_seconds": 37.585633
+    },
+    {
+      "question": "Find the number of visitors who did not visit any museum opened after 2010.",
+      "generated_answer": "SELECT COUNT(*) as num_visitors FROM visitor WHERE id NOT IN (SELECT DISTINCT visitor_id FROM visit WHERE museum_id IN (SELECT museum_id FROM museum WHERE open_year > 2010))",
+      "generation_seconds": 75.825245
+    },
+    {
+      "question": "Find the name of tourney that has more than 10 matches.",
+      "generated_answer": "SELECT tourney_name FROM matches GROUP BY tourney_name, tourney_id HAVING COUNT(*) > 10",
+      "generation_seconds": 150.968024
+    },
+    {
+      "question": "What are the first names and country codes for players who won both the WTA Championships and the Australian Open?",
+      "generated_answer": "SELECT DISTINCT p1.first_name, p1.country_code FROM players p1, matches m1 WHERE m1.winner_id = p1.player_id AND m1.tourney_name = 'WTA Championships' AND p1.player_id IN (SELECT player_id FROM players p2, matches m2 WHERE m2.winner_id = p2.player_id AND m2.tourney_name = 'Australian Open')",
+      "generation_seconds": 45.303156
+    }
+  ]
+}

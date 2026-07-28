@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+# Explicit user-approved exception (2026-07-11): resume four runs interrupted by
+# Bedrock HTTP 429 by replaying their last completed attempt, then rebuilding the
+# normal evaluation-failure refinement prompt. This does not change the default
+# cold-only launcher or any other synthesis run.
+set -uo pipefail
+
+REPO="${REPO:-/home/aadivyar/csd-generation}"
+PY="${PY:-/apps/conda/aadivyar/envs/csd/bin/python}"
+MODE="${1:-controller}"
+CELL="${2:-}"
+LOG_DIR="$REPO/logs"
+RECOVERY_DIR="$REPO/.context/http429_resume_seeds"
+QUEUE_LOG="$LOG_DIR/paid_synth_http429_resume_queue_driver.log"
+
+mkdir -p "$LOG_DIR" "$RECOVERY_DIR"
+
+log() {
+  printf '%s [http429-resume] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"
+}
+
+extract_last_strategy() {
+  local source_log="$1" attempt="$2" destination="$3"
+  "$PY" - "$source_log" "$attempt" "$destination" <<'PY'
+from pathlib import Path
+import sys
+
+source, attempt, destination = Path(sys.argv[1]), int(sys.argv[2]), Path(sys.argv[3])
+text = source.read_text(encoding="utf-8", errors="replace")
+marker = f"Attempt {attempt}/40"
+start = text.rfind(marker)
+if start < 0:
+    raise SystemExit(f"missing {marker} in {source}")
+strategy_start = text.find("Strategy: ", start)
+stage_start = text.find("\n\n[1/4] Verifying with Dafny...", strategy_start)
+if strategy_start < 0 or stage_start < 0:
+    raise SystemExit(f"could not isolate strategy for attempt {attempt} in {source}")
+strategy = text[strategy_start + len("Strategy: "):stage_start].strip() + "\n"
+if "method Main" in strategy or len(strategy) < 100:
+    raise SystemExit(f"invalid recovered method body for attempt {attempt}")
+destination.write_text(strategy, encoding="utf-8")
+print(f"recovered attempt={attempt} chars={len(strategy)} destination={destination}")
+PY
+}
+
+run_worker() {
+  local dataset model gpu util sample min_acc min_syn max_steps output last_attempt
+  local split_file split_name smiles_class smiles_task source_log seed log_file remaining offset
+
+  case "$CELL" in
+    gsm-qwen35-2b)
+      dataset=gsm_symbolic; model=Qwen/Qwen3.5-2B; gpu=0; util=0.40
+      sample=49; min_acc=0.265306122449; min_syn=0.918367346939; max_steps=900
+      output=post14b_rebar_gsm-qwen35-2b_0711; last_attempt=10
+      ;;
+    gsm-qwen35-4b)
+      dataset=gsm_symbolic; model=Qwen/Qwen3.5-4B; gpu=3; util=0.45
+      sample=49; min_acc=0.448979591837; min_syn=0.918367346939; max_steps=900
+      output=post14b_rebar_gsm-qwen35-4b_0711; last_attempt=10
+      ;;
+    gsm-qwen35-9b)
+      dataset=gsm_symbolic; model=Qwen/Qwen3.5-9B; gpu=2; util=0.60
+      sample=49; min_acc=0.551020408163; min_syn=0.918367346939; max_steps=900
+      output=post14b_rebar_gsm-qwen35-9b_0711; last_attempt=3
+      ;;
+    smiles-qwen35-9b-isocyanates)
+      dataset=smiles; model=Qwen/Qwen3.5-9B; gpu=2; util=0.60
+      sample=50; min_acc=0.41; min_syn=0.90; max_steps=400
+      output=post14b_rebar_smiles-qwen35-9b-isocyanates_0711; last_attempt=1
+      smiles_class=isocyanates
+      smiles_task='Generate one new, valid, non-exemplar SMILES molecule for the isocyanates class. The answer contract is a single SMILES string and nothing else.'
+      ;;
+    *) log "unknown cell=$CELL"; return 2 ;;
+  esac
+
+  source_log="$REPO/outputs/generated/$output/run.log"
+  seed="$RECOVERY_DIR/${CELL}_attempt${last_attempt}.dfy"
+  log_file="$LOG_DIR/paid_synth_http429_resume_${CELL}.log"
+  extract_last_strategy "$source_log" "$last_attempt" "$seed"
+
+  if [[ "${DRY_RUN:-0}" == 1 ]]; then
+    log "DRY_RUN_OK cell=$CELL seed=$seed replay_attempt=$last_attempt"
+    return 0
+  fi
+
+  remaining=$((41 - last_attempt))
+  offset=$((last_attempt - 1))
+  split_file="$REPO/environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json"
+  split_name=train
+
+  export LD_LIBRARY_PATH=/apps/conda/aadivyar/envs/csd/lib:${LD_LIBRARY_PATH:-}
+  export CUDA_VISIBLE_DEVICES="$gpu"
+  export HF_HOME=/home/aadivyar/.cache/huggingface
+  export TRANSFORMERS_CACHE=/home/aadivyar/.cache/huggingface
+  set -a; source "$REPO/.env"; set +a
+  cd "$REPO"
+
+  args=(
+    --generation-model us.anthropic.claude-sonnet-4-6 --generation-backend bedrock
+    --eval-model "$model" --eval-backend vllm
+    --max-iterations "$remaining" --initial-attempt-offset "$offset"
+    --initial-strategy-file "$seed"
+    --output-name "$output" --output-dir "outputs/generated/$output"
+    --min-accuracy "$min_acc" --min-syntax-rate "$min_syn"
+    --eval-sample-size "$sample" --eval-max-steps "$max_steps" --eval-step-token-budget 1
+    --eval-max-seconds-per-example 600 --eval-min-examples-before-threshold-stop "$sample"
+    --max-tokens 32768 --restart-after-stuck-iters 0
+    --vllm-gpu-memory-utilization "$util" --vllm-max-model-len 16384 --device auto
+    --adaptive-helper-mask --helper-selection-policy bandit --refinement-beam-size 2
+    --anthropic-thinking enabled --anthropic-effort high --anthropic-thinking-display summarized
+    --vllm-tensor-parallel-size 1
+  )
+  if [[ "$dataset" == gsm_symbolic ]]; then
+    args+=(--dataset gsm_symbolic --gsm-split-file "$split_file" --gsm-split-name "$split_name")
+    task='Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.'
+  else
+    args+=(--dataset smiles --smiles-classes "$smiles_class" --smiles-samples-per-class "$sample")
+    task="$smiles_task"
+  fi
+
+  log "START cell=$CELL gpu=$gpu replay_attempt=$last_attempt next_new_attempt=$((last_attempt + 1)) total_cap=40 log=$log_file"
+  "$PY" -m synthesis.run_synthesis --task "$task" "${args[@]}" 2>&1 | tee -a "$log_file"
+  status=${PIPESTATUS[0]}
+  log "DONE cell=$CELL status=$status"
+  return "$status"
+}
+
+wait_for_gpu2_then_launch_smiles() {
+  local watched_pid="$1" used
+  log "WAIT cell=smiles-qwen35-9b-isocyanates after_pid=$watched_pid gpu=2"
+  while kill -0 "$watched_pid" 2>/dev/null; do sleep 30; done
+  while true; do
+    used=$(nvidia-smi --id=2 --query-gpu=memory.used --format=csv,noheader,nounits | tr -d ' ')
+    [[ "$used" =~ ^[0-9]+$ ]] && (( used < 1000 )) && break
+    sleep 30
+  done
+  nohup "$0" worker smiles-qwen35-9b-isocyanates >>"$QUEUE_LOG" 2>&1 &
+  log "LAUNCHED cell=smiles-qwen35-9b-isocyanates pid=$! gpu=2"
+}
+
+case "$MODE" in
+  worker) run_worker ;;
+  controller)
+    log "CONTROLLER_START override_scope=four_http429_interrupted_cells"
+    nohup "$0" worker gsm-qwen35-2b >>"$QUEUE_LOG" 2>&1 & p2=$!
+    nohup "$0" worker gsm-qwen35-4b >>"$QUEUE_LOG" 2>&1 & p4=$!
+    nohup "$0" worker gsm-qwen35-9b >>"$QUEUE_LOG" 2>&1 & p9=$!
+    nohup "$0" waiter "$p9" >>"$QUEUE_LOG" 2>&1 & pw=$!
+    log "LAUNCHED gsm2_pid=$p2 gpu0 gsm4_pid=$p4 gpu3 gsm9_pid=$p9 gpu2 smiles_waiter_pid=$pw"
+    ;;
+  waiter) wait_for_gpu2_then_launch_smiles "$CELL" ;;
+  *) log "unknown mode=$MODE"; exit 2 ;;
+esac

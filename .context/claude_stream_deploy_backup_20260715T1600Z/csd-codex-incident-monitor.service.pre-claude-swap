@@ -1,0 +1,20 @@
+[Unit]
+Description=Dynamic CSD Codex catastrophic incident monitor
+After=network-online.target csd-claude-recovery-queue.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/aadivyar/csd-generation
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/home/aadivyar/.local/share/codex-node20/bin:/home/aadivyar/.local/share/codex-cli/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/apps/conda/aadivyar/envs/csd/bin/python /home/aadivyar/csd-generation/scripts/runtime/incident_repair/monitor.py --repo /home/aadivyar/csd-generation --manifest /home/aadivyar/csd-generation/saved-results/2026-07-15-claude-helper-recovery-manifest.json --state-dir /home/aadivyar/csd-generation/.context/codex_incident_monitor --codex /home/aadivyar/.local/share/codex-cli/bin/codex --codex-model gpt-5.5 --python /apps/conda/aadivyar/envs/csd/bin/python --result-schema /home/aadivyar/csd-generation/scripts/runtime/incident_repair/result.schema.json --extra-log-glob /home/aadivyar/csd-generation/logs/paid_synth_warmfix_supervisor.log --own-log /home/aadivyar/csd-generation/logs/paid_synth_codex_incident_monitor.log --recovery-service csd-claude-recovery-queue.service --poll-seconds 30
+Restart=always
+RestartSec=60
+KillMode=control-group
+TimeoutStopSec=30
+StandardOutput=append:/home/aadivyar/csd-generation/logs/paid_synth_codex_incident_monitor.log
+StandardError=inherit
+
+[Install]
+WantedBy=default.target

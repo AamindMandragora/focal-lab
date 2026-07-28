@@ -1,0 +1,35 @@
+{
+  "account_record": "887730490125",
+  "billed_api_calls": 0,
+  "class": "isocyanates",
+  "dry_run": true,
+  "eval_model": "Qwen/Qwen3.5-9B",
+  "gpu_calls": 0,
+  "gpu_gate": "real launch requires explicit GPU, at least 30000 MiB free, and no compute process already on the chosen GPU",
+  "h65_guard": "real launch refuses while H65 pid is alive unless ALLOW_WHILE_H65_RUNNING=yes",
+  "heldout_sample_size": 100,
+  "hypothesis": "H86",
+  "max_iterations": 40,
+  "min_acc": 0.92,
+  "min_syn": 0.5,
+  "model_calls": 0,
+  "planned_generated_root": "outputs/generated/smiles_qwen35_9b_isocyanates_uv_qwen35_0627",
+  "planned_output_json": "outputs/controlled_comparison/smiles_qwen35_9b/isocyanates/metadecode_uv.json",
+  "provenance_hardening": {
+    "artifact_root": "outputs/generated/h86_smiles_qwen35_9b_isocyanates_train100_materialization_20260630",
+    "postlaunch_snapshot_dir": "outputs/generated/h86_smiles_qwen35_9b_isocyanates_train100_materialization_20260630/provenance_20260630T083531Z/postlaunch",
+    "prelaunch_snapshot_dir": "outputs/generated/h86_smiles_qwen35_9b_isocyanates_train100_materialization_20260630/provenance_20260630T083531Z/prelaunch",
+    "snapshots_current_heldout_json": "outputs/controlled_comparison/smiles_qwen35_9b/isocyanates/metadecode_uv.json",
+    "snapshots_latest_run_metadata": "outputs/generated/smiles_qwen35_9b_isocyanates_uv_qwen35_0627/latest_run.txt"
+  },
+  "requires_real_launch_env": [
+    "DRY_RUN=0",
+    "SAFE_GPU_ID=<gpu>",
+    "CONFIRM_BEDROCK_ACCOUNT_887730490125=yes"
+  ],
+  "scientific_target": "sample-size-aligned cold Qwen3.5-9B isocyanates SMILES UV matrix cell",
+  "train_eval_sample_size": 100,
+  "train_smiles_samples_per_class": 100,
+  "uses_initial_strategy_file": false,
+  "util": 0.55
+}

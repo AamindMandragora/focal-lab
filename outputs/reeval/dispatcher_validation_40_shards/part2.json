@@ -1,0 +1,73 @@
+{
+  "accuracy": 0.2857142857142857,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 7,
+    "total_generation_seconds": 2.6908,
+    "mean_generation_seconds_per_example": 0.384405,
+    "examples_with_generation_timing": 7,
+    "total_output_tokens": 64,
+    "mean_output_tokens_per_example": 9.1429,
+    "examples_with_token_counts": 7,
+    "evaluator_total_time_seconds": 36.5527,
+    "evaluator_max_sample_time_seconds": 1.0179
+  },
+  "answers": [
+    {
+      "question": "How much does the youngest dog weigh?",
+      "generated_answer": "SELECT T2.weight FROM pets>>",
+      "num_tokens": 7,
+      "generation_seconds": 1.017859,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "List the maximum weight and type for each type of pet.",
+      "generated_answer": "SELECT pettype ,  MAX(weight) FROM pets>>",
+      "num_tokens": 11,
+      "generation_seconds": 0.354629,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many dog pets are raised by female students?",
+      "generated_answer": "SELECT COUNT(petid) FROM pets>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.243614,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many different types of pet are there?",
+      "generated_answer": "SELECT COUNT(DISTINCT pettype) FROM pets>>",
+      "num_tokens": 11,
+      "generation_seconds": 0.330359,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the first names of every student who has a cat or dog as a pet?",
+      "generated_answer": "SELECT DISTINCT T1.fname FROM student>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.193387,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the ids of the students who do not own cats as pets?",
+      "generated_answer": "SELECT stuid FROM student>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.166524,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Find the first name and age of students who have a pet.",
+      "generated_answer": "SELECT T1.fname ,  T1.age FROM student>>",
+      "num_tokens": 12,
+      "generation_seconds": 0.384463,
+      "is_correct": false,
+      "is_syntax_valid": true
+    }
+  ]
+}

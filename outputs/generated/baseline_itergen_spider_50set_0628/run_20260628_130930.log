@@ -1,0 +1,879 @@
+=================================================================
+BASELINE_START itergen_spider_50set model=Qwen/Qwen3.5-2B gpu=2 Sun Jun 28 01:09:30 PM UTC 2026
+Loaded 50 seed334 test indices from /home/aadivyar/csd-generation/environment/benchmark_splits/spider_dev_50eval_for_itergen_seed334.json
+Selected 50 problems (dataset size=1034)
+  0%|          | 0/50 [00:00<?, ?it/s]`torch_dtype` is deprecated! Use `dtype` instead!
+The fast path is not available because one of the required library is not installed. Falling back to torch implementation. To install follow https://github.com/fla-org/flash-linear-attention#installation and https://github.com/Dao-AILab/causal-conv1d
+
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s][A
+Loading weights:  49%|████▉     | 157/320 [00:00<00:00, 1567.94it/s][A
+Loading weights:  98%|█████████▊| 314/320 [00:00<00:00, 1556.34it/s][ALoading weights: 100%|██████████| 320/320 [00:00<00:00, 1578.61it/s]
+  2%|▏         | 1/50 [00:36<29:57, 36.68s/it]  4%|▍         | 2/50 [00:42<14:48, 18.51s/it]  6%|▌         | 3/50 [00:50<10:48, 13.80s/it]  8%|▊         | 4/50 [00:53<07:24,  9.66s/it] 10%|█         | 5/50 [00:57<05:36,  7.48s/it] 12%|█▏        | 6/50 [01:01<04:30,  6.16s/it] 14%|█▍        | 7/50 [01:04<03:49,  5.35s/it]['SELECT DISTINCT country\nFROM']
+['SELECT DISTINCT country\nFROM singer\n']
+['SELECT DISTINCT country\nFROM singer\nWHERE age >']
+['SELECT DISTINCT country\nFROM singer\nWHERE age > 20;']
+{'total_tokens': 18}
+['SELECT stadium.name,']
+['SELECT stadium.name, stadium.location\n']
+['SELECT stadium.name, stadium.location\nFROM stadium\n']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON stadium.stadium_id =']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON stadium.stadium_id = concert.stadium_id\n']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON stadium.stadium_id = concert.stadium_id\nJOIN singer_in_concert ON']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON stadium.stadium_id = concert.stadium_id\nJOIN singer_in_concert ON concert.concert_id =']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON stadium.stadium_id = concert.stadium_id\nJOIN singer_in_concert ON concert.concert_id = singer_in_concert.concert_id\n']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON stadium.stadium_id = concert.stadium_id\nJOIN singer_in_concert ON concert.concert_id = singer_in_concert.concert_id\nJOIN singer ON']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON stadium.stadium_id = concert.stadium_id\nJOIN singer_in_concert ON concert.concert_id = singer_in_concert.concert_id\nJOIN singer ON singer_in_concert.singer_id =']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON stadium.stadium_id = concert.stadium_id\nJOIN singer_in_concert ON concert.concert_id = singer_in_concert.concert_id\nJOIN singer ON singer_in_concert.singer_id = singer.singer_id\n']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON stadium.stadium_id = concert.stadium_id\nJOIN singer_in_concert ON concert.concert_id = singer_in_concert.concert_id\nJOIN singer ON singer_in_concert.singer_id = singer.singer_id\nWHERE stadium.capacity BETWEEN']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON stadium.stadium_id = concert.stadium_id\nJOIN singer_in_concert ON concert.concert_id = singer_in_concert.concert_id\nJOIN singer ON singer_in_concert.singer_id = singer.singer_id\nWHERE stadium.capacity BETWEEN 5000 AND 10000;']
+{'total_tokens': 79}
+['SELECT DISTINCT\nst.name AS']
+['SELECT DISTINCT\nst.name AS stadium_name,\nst.location AS']
+['SELECT DISTINCT\nst.name AS stadium_name,\nst.location AS stadium_location\nFROM concert c']
+['SELECT DISTINCT\nst.name AS stadium_name,\nst.location AS stadium_location\nFROM concert c\nJOIN stadium s ON c.stadium_id = s.stadium_id\nJOIN singer_in_concert sic ON c.concert_id = sic.concert_id\nJOIN singer si ON sic.singer_id = si.singer_id\nWHERE c.year IN (2014, 2015)\n  AND s.location IS NOT NULL;']
+{'total_tokens': 129}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) AS num_concerts\nFROM concert c']
+['SELECT COUNT(*) AS num_concerts\nFROM concert c\nJOIN stadium s ON c.stadium_id = s.stadium_id\nWHERE s.capacity = (SELECT MAX(capacity) FROM stadium);']
+{'total_tokens': 41}
+['SELECT DISTINCT student.fname,']
+['SELECT DISTINCT student.fname, student.age\n']
+['SELECT DISTINCT student.fname, student.age\nFROM student\n']
+['SELECT DISTINCT student.fname, student.age\nFROM student\nJOIN has_pet ON']
+['SELECT DISTINCT student.fname, student.age\nFROM student\nJOIN has_pet ON student.stuid =']
+['SELECT DISTINCT student.fname, student.age\nFROM student\nJOIN has_pet ON student.stuid = has_pet.stuid\n']
+['SELECT DISTINCT student.fname, student.age\nFROM student\nJOIN has_pet ON student.stuid = has_pet.stuid\nJOIN pets ON']
+['SELECT DISTINCT student.fname, student.age\nFROM student\nJOIN has_pet ON student.stuid = has_pet.stuid\nJOIN pets ON has_pet.petid =']
+['SELECT DISTINCT student.fname, student.age\nFROM student\nJOIN has_pet ON student.stuid = has_pet.stuid\nJOIN pets ON has_pet.petid = pets.petid;']
+['SELECT DISTINCT student.fname, student.age\nFROM student\nJOIN has_pet ON student.stuid = has_pet.stuid\nJOIN pets ON has_pet.petid = pets.petid;']
+{'total_tokens': 40}
+['SELECT fname,']
+['SELECT fname, sex\nFROM']
+['SELECT fname, sex\nFROM student\n']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM has_pet\n']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM has_pet\n    GROUP']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM has_pet\n    GROUP BY stuid\n    HAVING']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM has_pet\n    GROUP BY stuid\n    HAVING COUNT(petid)']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM has_pet\n    GROUP BY stuid\n    HAVING COUNT(petid) > 1\n);']
+{'total_tokens': 43}
+['SELECT maker,']
+['SELECT maker, id,']
+['SELECT maker, id, COUNT(*)']
+['SELECT maker, id, COUNT(*) AS model_count\nFROM car_makers\n']
+['SELECT maker, id, COUNT(*) AS model_count\nFROM car_makers\nJOIN model_list ON']
+['SELECT maker, id, COUNT(*) AS model_count\nFROM car_makers\nJOIN model_list ON car_makers.id =']
+['SELECT maker, id, COUNT(*) AS model_count\nFROM car_makers\nJOIN model_list ON car_makers.id = model_list.maker\n']
+['SELECT maker, id, COUNT(*) AS model_count\nFROM car_makers\nJOIN model_list ON car_makers.id = model_list.maker\nGROUP BY car_makers.id,']
+['SELECT maker, id, COUNT(*) AS model_count\nFROM car_makers\nJOIN model_list ON car_makers.id = model_list.maker\nGROUP BY car_makers.id, car_makers.maker;']
+['SELECT maker, id, COUNT(*) AS model_count\nFROM car_makers\nJOIN model_list ON car_makers.id = model_list.maker\nGROUP BY car_makers.id, car_makers.maker;']
+{'total_tokens': 44}
+['SELECT MIN(cars_data.weight)']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id =']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model =']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON model_list.maker =']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON model_list.maker = car_makers.id JOIN']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON model_list.maker = car_makers.id JOIN car_makers ON']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON model_list.maker = car_makers.id JOIN car_makers ON car_makers.country =']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON model_list.maker = car_makers.id JOIN car_makers ON car_makers.country = countries.countryid JOIN']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON model_list.maker = car_makers.id JOIN car_makers ON car_makers.country = countries.countryid JOIN continents ON'] 16%|█▌        | 8/50 [01:11<04:01,  5.76s/it] 18%|█▊        | 9/50 [01:18<04:10,  6.11s/it] 20%|██        | 10/50 [01:20<03:18,  4.95s/it] 22%|██▏       | 11/50 [01:23<02:47,  4.29s/it] 24%|██▍       | 12/50 [01:26<02:27,  3.88s/it] 26%|██▌       | 13/50 [01:30<02:23,  3.88s/it] 28%|██▊       | 14/50 [01:32<02:02,  3.40s/it] 30%|███       | 15/50 [01:37<02:09,  3.69s/it] 32%|███▏      | 16/50 [01:40<02:02,  3.59s/it] 34%|███▍      | 17/50 [01:42<01:42,  3.12s/it] 36%|███▌      | 18/50 [01:45<01:41,  3.16s/it] 38%|███▊      | 19/50 [01:48<01:32,  2.99s/it] 40%|████      | 20/50 [01:51<01:28,  2.95s/it]
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON model_list.maker = car_makers.id JOIN car_makers ON car_makers.country = countries.countryid JOIN continents ON countries.continent =']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON model_list.maker = car_makers.id JOIN car_makers ON car_makers.country = countries.countryid JOIN continents ON countries.continent = continents.contid WHERE']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON model_list.maker = car_makers.id JOIN car_makers ON car_makers.country = countries.countryid JOIN continents ON countries.continent = continents.contid WHERE cars_data.year =']
+['SELECT MIN(cars_data.weight) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.model JOIN countries ON model_list.maker = car_makers.id JOIN car_makers ON car_makers.country = countries.countryid JOIN continents ON countries.continent = continents.contid WHERE cars_data.year = 1974 AND cars_data.cylinders =']
+{'total_tokens': 88}
+['SELECT DISTINCT\n    model_list.model\n']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\n']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker =']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker = car_makers.id\n']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker = car_makers.id\nJOIN\n    cars_data ON']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker = car_makers.id\nJOIN\n    cars_data ON car_makers.id =']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker = car_makers.id\nJOIN\n    cars_data ON car_makers.id = car_names.makeid\n']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker = car_makers.id\nJOIN\n    cars_data ON car_makers.id = car_names.makeid\nJOIN\n    car_names ON']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker = car_makers.id\nJOIN\n    cars_data ON car_makers.id = car_names.makeid\nJOIN\n    car_names ON car_names.model =']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker = car_makers.id\nJOIN\n    cars_data ON car_makers.id = car_names.makeid\nJOIN\n    car_names ON car_names.model = model_list.model\n']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker = car_makers.id\nJOIN\n    cars_data ON car_makers.id = car_names.makeid\nJOIN\n    car_names ON car_names.model = model_list.model\nWHERE\n    cars_data.edispl <']
+['SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker = car_makers.id\nJOIN\n    cars_data ON car_makers.id = car_names.makeid\nJOIN\n    car_names ON car_names.model = model_list.model\nWHERE\n    cars_data.edispl < 3500\n    AND car_makers.fullname !=']
+["SELECT DISTINCT\n    model_list.model\nFROM\n    model_list\nJOIN\n    car_makers ON model_list.maker = car_makers.id\nJOIN\n    cars_data ON car_makers.id = car_names.makeid\nJOIN\n    car_names ON car_names.model = model_list.model\nWHERE\n    cars_data.edispl < 3500\n    AND car_makers.fullname != 'Ford Motor Company';"]
+{'total_tokens': 99}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) FROM flights WHERE']
+['SELECT COUNT(*) FROM flights WHERE destairport =']
+["SELECT COUNT(*) FROM flights WHERE destairport = 'Aberdeen'"]
+{'total_tokens': 15}
+['SELECT COUNT(*)']
+['SELECT COUNT(*)\nFROM flights\n']
+['SELECT COUNT(*)\nFROM flights\nWHERE airline =']
+["SELECT COUNT(*)\nFROM flights\nWHERE airline = 'United Airlines'\n  AND destairport ="]
+["SELECT COUNT(*)\nFROM flights\nWHERE airline = 'United Airlines'\n  AND destairport = 'Aberdeen';"]
+{'total_tokens': 26}
+['SELECT DISTINCT flightno FROM']
+['SELECT DISTINCT flightno FROM flights WHERE']
+['SELECT DISTINCT flightno FROM flights WHERE airline =']
+["SELECT DISTINCT flightno FROM flights WHERE airline = 'United Airlines';"]
+{'total_tokens': 24}
+["SELECT DISTINCT DISTINCT.flightno FROM flights f JOIN airports a ON f.sourceairport = a.airportcode AND f.destairport = a.airportcode WHERE a.airline = 'United Airlines'"]
+{'total_tokens': 50}
+['SELECT name,']
+['SELECT name, age\nFROM']
+['SELECT name, age\nFROM employee\n']
+['SELECT name, age\nFROM employee\nORDER BY age ASC']
+['SELECT name, age\nFROM employee\nORDER BY age ASC;']
+{'total_tokens': 14}
+['SELECT DISTINCT shop.name\n']
+['SELECT DISTINCT shop.name\nFROM shop\n']
+['SELECT DISTINCT shop.name\nFROM shop\nJOIN hiring ON']
+['SELECT DISTINCT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id =']
+['SELECT DISTINCT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\n']
+['SELECT DISTINCT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\nWHERE (shop.number_products >']
+['SELECT DISTINCT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\nWHERE (shop.number_products > (SELECT AVG(number_products)']
+['SELECT DISTINCT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\nWHERE (shop.number_products > (SELECT AVG(number_products) FROM hiring));']
+['SELECT DISTINCT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\nWHERE (shop.number_products > (SELECT AVG(number_products) FROM hiring));']
+{'total_tokens': 49}
+['SELECT name\nFROM']
+['SELECT name\nFROM employee\n']
+['SELECT name\nFROM employee\nWHERE employee_id IN']
+['SELECT name\nFROM employee\nWHERE employee_id IN (\n    SELECT employee_id\n    FROM']
+['SELECT name\nFROM employee\nWHERE employee_id IN (\n    SELECT employee_id\n    FROM evaluation\n']
+['SELECT name\nFROM employee\nWHERE employee_id IN (\n    SELECT employee_id\n    FROM evaluation\n    ORDER']
+['SELECT name\nFROM employee\nWHERE employee_id IN (\n    SELECT employee_id\n    FROM evaluation\n    ORDER BY bonus DESC']
+['SELECT name\nFROM employee\nWHERE employee_id IN (\n    SELECT employee_id\n    FROM evaluation\n    ORDER BY bonus DESC\n    LIMIT 1\n);']
+{'total_tokens': 37}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) FROM documents;']
+['SELECT COUNT(*) FROM documents;']
+{'total_tokens': 7}
+['SELECT template_type_code\nFROM']
+['SELECT template_type_code\nFROM documents\n']
+['SELECT template_type_code\nFROM documents\nJOIN templates ON']
+['SELECT template_type_code\nFROM documents\nJOIN templates ON documents.template_id =']
+['SELECT template_type_code\nFROM documents\nJOIN templates ON documents.template_id = templates.template_id\n']
+['SELECT template_type_code\nFROM documents\nJOIN templates ON documents.template_id = templates.template_id\nGROUP BY template_type_code\nORDER']
+['SELECT template_type_code\nFROM documents\nJOIN templates ON documents.template_id = templates.template_id\nGROUP BY template_type_code\nORDER BY COUNT(*)']
+['SELECT template_type_code\nFROM documents\nJOIN templates ON documents.template_id = templates.template_id\nGROUP BY template_type_code\nORDER BY COUNT(*) DESC\nLIMIT 1;']
+{'total_tokens': 36}
+['SELECT name\nFROM']
+['SELECT name\nFROM teacher\n']
+['SELECT name\nFROM teacher\nWHERE age =']
+['SELECT name\nFROM teacher\nWHERE age = 32 OR age =']
+['SELECT name\nFROM teacher\nWHERE age = 32 OR age = 33;']
+{'total_tokens': 20}
+['SELECT AVG(visitor.age)']
+['SELECT AVG(visitor.age) AS average_age\nFROM visitor\n']
+['SELECT AVG(visitor.age) AS average_age\nFROM visitor\nWHERE level_of_membership <=']
+['SELECT AVG(visitor.age) AS average_age\nFROM visitor\nWHERE level_of_membership <= 4;']
+{'total_tokens': 24}
+['SELECT DISTINCT player_id FROM']
+['SELECT DISTINCT player_id FROM matches WHERE'] 42%|████▏     | 21/50 [01:54<01:27,  3.03s/it] 44%|████▍     | 22/50 [02:03<02:12,  4.75s/it] 46%|████▌     | 23/50 [02:05<01:51,  4.13s/it] 48%|████▊     | 24/50 [02:09<01:46,  4.11s/it] 50%|█████     | 25/50 [02:12<01:28,  3.53s/it] 52%|█████▏    | 26/50 [02:19<01:54,  4.77s/it]
+['SELECT DISTINCT player_id FROM matches WHERE loser_id IS']
+['SELECT DISTINCT player_id FROM matches WHERE loser_id IS NOT NULL;']
+{'total_tokens': 26}
+['SELECT DISTINCT\nT1.winner_name AS']
+['SELECT DISTINCT\nT1.winner_name AS winner_name_2013,\nT2.winner_name AS']
+['SELECT DISTINCT\nT1.winner_name AS winner_name_2013,\nT2.winner_name AS winner_name_2016\nFROM matches AS']
+['SELECT DISTINCT\nT1.winner_name AS winner_name_2013,\nT2.winner_name AS winner_name_2016\nFROM matches AS T1\nJOIN players AS']
+['SELECT DISTINCT\nT1.winner_name AS winner_name_2013,\nT2.winner_name AS winner_name_2016\nFROM matches AS T1\nJOIN players AS T1p ON T1.winner_id =']
+['SELECT DISTINCT\nT1.winner_name AS winner_name_2013,\nT2.winner_name AS winner_name_2016\nFROM matches AS T1\nJOIN players AS T1p ON T1.winner_id = T1p.player_id\n']
+['SELECT DISTINCT\nT1.winner_name AS winner_name_2013,\nT2.winner_name AS winner_name_2016\nFROM matches AS T1\nJOIN players AS T1p ON T1.winner_id = T1p.player_id\nJOIN matches AS']
+['SELECT DISTINCT\nT1.winner_name AS winner_name_2013,\nT2.winner_name AS winner_name_2016\nFROM matches AS T1\nJOIN players AS T1p ON T1.winner_id = T1p.player_id\nJOIN matches AS T2 ON T2.winner_id =']
+['SELECT DISTINCT\nT1.winner_name AS winner_name_2013,\nT2.winner_name AS winner_name_2016\nFROM matches AS T1\nJOIN players AS T1p ON T1.winner_id = T1p.player_id\nJOIN matches AS T2 ON T2.winner_id = T1p.player_id\n']
+['SELECT DISTINCT\nT1.winner_name AS winner_name_2013,\nT2.winner_name AS winner_name_2016\nFROM matches AS T1\nJOIN players AS T1p ON T1.winner_id = T1p.player_id\nJOIN matches AS T2 ON T2.winner_id = T1p.player_id\nWHERE T1.tourney_name =']
+{'total_tokens': 130}
+['SELECT first_name,']
+['SELECT first_name, last_name\nFROM']
+['SELECT first_name, last_name\nFROM players\n']
+['SELECT first_name, last_name\nFROM players\nORDER BY birth_date;']
+['SELECT first_name, last_name\nFROM players\nORDER BY birth_date;']
+{'total_tokens': 20}
+['SELECT DISTINCT death.note\n']
+['SELECT DISTINCT death.note\nFROM death\n']
+['SELECT DISTINCT death.note\nFROM death\nJOIN ship ON']
+['SELECT DISTINCT death.note\nFROM death\nJOIN ship ON death.caused_by_ship_id =']
+['SELECT DISTINCT death.note\nFROM death\nJOIN ship ON death.caused_by_ship_id = ship.id\n']
+['SELECT DISTINCT death.note\nFROM death\nJOIN ship ON death.caused_by_ship_id = ship.id\nWHERE ship.lost_in_battle =']
+['SELECT DISTINCT death.note\nFROM death\nJOIN ship ON death.caused_by_ship_id = ship.id\nWHERE ship.lost_in_battle = battle.id\n']
+['SELECT DISTINCT death.note\nFROM death\nJOIN ship ON death.caused_by_ship_id = ship.id\nWHERE ship.lost_in_battle = battle.id\nAND ship.name LIKE']
+["SELECT DISTINCT death.note\nFROM death\nJOIN ship ON death.caused_by_ship_id = ship.id\nWHERE ship.lost_in_battle = battle.id\nAND ship.name LIKE '%East%';"]
+{'total_tokens': 47}
+['SELECT section_name,']
+['SELECT section_name, section_description\nFROM']
+['SELECT section_name, section_description\nFROM sections;']
+['SELECT section_name, section_description\nFROM sections;']
+{'total_tokens': 11}
+['SELECT DISTINCT\nT.first_name,']
+['SELECT DISTINCT\nT.first_name,\nT.middle_name,']
+['SELECT DISTINCT\nT.first_name,\nT.middle_name,\nT.last_name\n']
+['SELECT DISTINCT\nT.first_name,\nT.middle_name,\nT.last_name\nFROM student_transcripts_tracking AS']
+['SELECT DISTINCT\nT.first_name,\nT.middle_name,\nT.last_name\nFROM student_transcripts_tracking AS T\nJOIN student_enrolment AS']
+['SELECT DISTINCT\nT.first_name,\nT.middle_name,\nT.last_name\nFROM student_transcripts_tracking AS T\nJOIN student_enrolment AS E ON T.student_id =']
+['SELECT DISTINCT\nT.first_name,\nT.middle_name,\nT.last_name\nFROM student_transcripts_tracking AS T\nJOIN student_enrolment AS E ON T.student_id = E.student_id\n']
+['SELECT DISTINCT\nT.first_name,\nT.middle_name,\nT.last_name\nFROM student_transcripts_tracking AS T\nJOIN student_enrolment AS E ON T.student_id = E.student_id\nJOIN degree_programs AS']
+['SELECT DISTINCT\nT.first_name,\nT.middle_name,\nT.last_name\nFROM student_transcripts_tracking AS T\nJOIN student_enrolment AS E ON T.student_id = E.student_id\nJOIN degree_programs AS D ON E.degree_program_id =']
+['SELECT DISTINCT\nT.first_name,\nT.middle_name,\nT.last_name\nFROM student_transcripts_tracking AS T\nJOIN student_enrolment AS E ON T.student_id = E.student_id\nJOIN degree_programs AS D ON E.degree_program_id = D.degree_program_id\n']
+{'total_tokens': 102}
+['SELECT DISTINCT\n    semesters.semester_id,']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\n']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\n']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id =']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\n']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON student_enrolment.degree_program_id =']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON student_enrolment.degree_program_id = degree_programs.degree_program_id\n']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON student_enrolment.degree_program_id = degree_programs.degree_program_id\nWHERE\n    degree_programs.department_id =']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON student_enrolment.degree_program_id = degree_programs.degree_program_id\nWHERE\n    degree_programs.department_id = departments.department_id\n']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON student_enrolment.degree_program_id = degree_programs.degree_program_id\nWHERE\n    degree_programs.department_id = departments.department_id\n    AND']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON student_enrolment.degree_program_id = degree_programs.degree_program_id\nWHERE\n    degree_programs.department_id = departments.department_id\n    AND (\n        (degree_programs.department_id =']
+['SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON student_enrolment.degree_program_id = degree_programs.degree_program_id\nWHERE\n    degree_programs.department_id = departments.department_id\n    AND (\n        (degree_programs.department_id = 1 AND degree_programs.degree_summary_name =']
+["SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON student_enrolment.degree_program_id = degree_programs.degree_program_id\nWHERE\n    degree_programs.department_id = departments.department_id\n    AND (\n        (degree_programs.department_id = 1 AND degree_programs.degree_summary_name = 'Master')\n        OR\n        (degree_programs.department_id ="] 54%|█████▍    | 27/50 [02:29<02:25,  6.33s/it] 56%|█████▌    | 28/50 [02:36<02:20,  6.40s/it] 58%|█████▊    | 29/50 [02:38<01:50,  5.24s/it] 60%|██████    | 30/50 [02:41<01:29,  4.49s/it] 62%|██████▏   | 31/50 [02:47<01:33,  4.89s/it] 64%|██████▍   | 32/50 [02:49<01:15,  4.22s/it] 66%|██████▌   | 33/50 [02:52<01:00,  3.57s/it] 68%|██████▊   | 34/50 [02:54<00:50,  3.18s/it] 70%|███████   | 35/50 [02:57<00:47,  3.18s/it] 72%|███████▏  | 36/50 [03:01<00:46,  3.29s/it] 74%|███████▍  | 37/50 [03:05<00:47,  3.66s/it] 76%|███████▌  | 38/50 [03:10<00:47,  3.93s/it]
+["SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON student_enrolment.degree_program_id = degree_programs.degree_program_id\nWHERE\n    degree_programs.department_id = departments.department_id\n    AND (\n        (degree_programs.department_id = 1 AND degree_programs.degree_summary_name = 'Master')\n        OR\n        (degree_programs.department_id = 2 AND degree_programs.degree_summary_name ="]
+["SELECT DISTINCT\n    semesters.semester_id,\n    semesters.semester_name\nFROM\n    semesters\nJOIN\n    student_enrolment ON semesters.semester_id = student_enrolment.semester_id\nJOIN\n    degree_programs ON student_enrolment.degree_program_id = degree_programs.degree_program_id\nWHERE\n    degree_programs.department_id = departments.department_id\n    AND (\n        (degree_programs.department_id = 1 AND degree_programs.degree_summary_name = 'Master')\n        OR\n        (degree_programs.department_id = 2 AND degree_programs.degree_summary_name = 'Bachelor')\n    );"]
+{'total_tokens': 150}
+['SELECT DISTINCT semester_id\nFROM']
+['SELECT DISTINCT semester_id\nFROM student_enrolment\n']
+['SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN']
+['SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN (\n    SELECT degree_program_id\n    FROM']
+['SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n']
+['SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE']
+['SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE degree_summary_name =']
+["SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE degree_summary_name = 'Masters'\n)\nAND degree_program_id IN"]
+["SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE degree_summary_name = 'Masters'\n)\nAND degree_program_id IN (\n    SELECT degree_program_id\n    FROM"]
+["SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE degree_summary_name = 'Masters'\n)\nAND degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n"]
+["SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE degree_summary_name = 'Masters'\n)\nAND degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE"]
+["SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE degree_summary_name = 'Masters'\n)\nAND degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE degree_summary_name ="]
+["SELECT DISTINCT semester_id\nFROM student_enrolment\nWHERE degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE degree_summary_name = 'Masters'\n)\nAND degree_program_id IN (\n    SELECT degree_program_id\n    FROM degree_programs\n    WHERE degree_summary_name = 'Bachelors'\n);"]
+{'total_tokens': 96}
+['SELECT title\nFROM']
+['SELECT title\nFROM cartoon\n']
+['SELECT title\nFROM cartoon\nWHERE directed_by IN']
+["SELECT title\nFROM cartoon\nWHERE directed_by IN ('Ben Jones', 'Brandon Vietti');"]
+{'total_tokens': 20}
+['SELECT language,']
+['SELECT language, COUNT(DISTINCT tv_channel.id)']
+['SELECT language, COUNT(DISTINCT tv_channel.id) AS channel_count\nFROM tv_channel\n']
+['SELECT language, COUNT(DISTINCT tv_channel.id) AS channel_count\nFROM tv_channel\nGROUP BY language;']
+['SELECT language, COUNT(DISTINCT tv_channel.id) AS channel_count\nFROM tv_channel\nGROUP BY language;']
+{'total_tokens': 24}
+['SELECT\n\tepisode,']
+['SELECT\n\tepisode,\n\tseries_name\nFROM']
+['SELECT\n\tepisode,\n\tseries_name\nFROM\n\t\ttv_series\n']
+['SELECT\n\tepisode,\n\tseries_name\nFROM\n\t\ttv_series\nWHERE\n\t\tseries_name IS']
+['SELECT\n\tepisode,\n\tseries_name\nFROM\n\t\ttv_series\nWHERE\n\t\tseries_name IS NOT NULL\nORDER BY\n\t\trating DESC']
+['SELECT\n\tepisode,\n\tseries_name\nFROM\n\t\ttv_series\nWHERE\n\t\tseries_name IS NOT NULL\nORDER BY\n\t\trating DESC;']
+{'total_tokens': 74}
+['SELECT tv_series.weekly_rank\n']
+['SELECT tv_series.weekly_rank\nFROM tv_series\n']
+['SELECT tv_series.weekly_rank\nFROM tv_series\nWHERE episode =']
+["SELECT tv_series.weekly_rank\nFROM tv_series\nWHERE episode = 'A Love of a Lifetime';"]
+{'total_tokens': 22}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) FROM poker_player;']
+['SELECT COUNT(*) FROM poker_player;']
+{'total_tokens': 8}
+['SELECT final_table_made,']
+['SELECT final_table_made, best_finish FROM']
+['SELECT final_table_made, best_finish FROM poker_player;']
+['SELECT final_table_made, best_finish FROM poker_player;']
+{'total_tokens': 13}
+['SELECT AVG(money_rank)']
+['SELECT AVG(money_rank) AS average_earnings FROM poker_player JOIN']
+['SELECT AVG(money_rank) AS average_earnings FROM poker_player JOIN people ON']
+['SELECT AVG(money_rank) AS average_earnings FROM poker_player JOIN people ON poker_player.people_id =']
+['SELECT AVG(money_rank) AS average_earnings FROM poker_player JOIN people ON poker_player.people_id = people.people_id;']
+['SELECT AVG(money_rank) AS average_earnings FROM poker_player JOIN people ON poker_player.people_id = people.people_id;']
+{'total_tokens': 31}
+['SELECT DISTINCT nationality FROM']
+['SELECT DISTINCT nationality FROM people WHERE']
+['SELECT DISTINCT nationality FROM people WHERE nationality IN']
+['SELECT DISTINCT nationality FROM people WHERE nationality IN (SELECT nationality FROM']
+['SELECT DISTINCT nationality FROM people WHERE nationality IN (SELECT nationality FROM people GROUP']
+['SELECT DISTINCT nationality FROM people WHERE nationality IN (SELECT nationality FROM people GROUP BY nationality HAVING']
+['SELECT DISTINCT nationality FROM people WHERE nationality IN (SELECT nationality FROM people GROUP BY nationality HAVING COUNT(*)']
+['SELECT DISTINCT nationality FROM people WHERE nationality IN (SELECT nationality FROM people GROUP BY nationality HAVING COUNT(*) >= 2);']
+{'total_tokens': 36}
+['SELECT AVG(\n    country.lifeexpectancy\n']
+['SELECT AVG(\n    country.lifeexpectancy\n) AS avg_lifeexpectancy\nFROM country\n']
+['SELECT AVG(\n    country.lifeexpectancy\n) AS avg_lifeexpectancy\nFROM country\nWHERE country.region =']
+["SELECT AVG(\n    country.lifeexpectancy\n) AS avg_lifeexpectancy\nFROM country\nWHERE country.region = 'Central Africa';"]
+{'total_tokens': 53}
+['SELECT DISTINCT country.name\n']
+['SELECT DISTINCT country.name\nFROM country\n']
+['SELECT DISTINCT country.name\nFROM country\nJOIN countrylanguage ON']
+['SELECT DISTINCT country.name\nFROM country\nJOIN countrylanguage ON country.code =']
+['SELECT DISTINCT country.name\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\n']
+['SELECT DISTINCT country.name\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nWHERE countrylanguage.isofficial =']
+['SELECT DISTINCT country.name\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nWHERE countrylanguage.isofficial = 1\nAND (countrylanguage.language =']
+["SELECT DISTINCT country.name\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nWHERE countrylanguage.isofficial = 1\nAND (countrylanguage.language = 'English' OR countrylanguage.language ="]
+["SELECT DISTINCT country.name\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nWHERE countrylanguage.isofficial = 1\nAND (countrylanguage.language = 'English' OR countrylanguage.language = 'Dutch');"]
+{'total_tokens': 57}
+['SELECT name,'] 78%|███████▊  | 39/50 [03:13<00:40,  3.67s/it] 80%|████████  | 40/50 [03:15<00:33,  3.34s/it] 82%|████████▏ | 41/50 [03:23<00:40,  4.53s/it] 84%|████████▍ | 42/50 [03:25<00:32,  4.03s/it] 86%|████████▌ | 43/50 [03:34<00:38,  5.45s/it] 88%|████████▊ | 44/50 [03:37<00:28,  4.75s/it] 90%|█████████ | 45/50 [03:40<00:20,  4.17s/it] 92%|█████████▏| 46/50 [03:44<00:16,  4.00s/it] 94%|█████████▍| 47/50 [03:48<00:11,  3.95s/it] 96%|█████████▌| 48/50 [03:50<00:07,  3.64s/it] 98%|█████████▊| 49/50 [03:53<00:03,  3.25s/it]100%|██████████| 50/50 [03:56<00:00,  3.26s/it]100%|██████████| 50/50 [03:56<00:00,  4.73s/it]
+[nltk_data] Downloading package punkt to /home/aadivyar/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/aadivyar/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+
+['SELECT name, population,']
+['SELECT name, population, lifeexpectancy FROM']
+['SELECT name, population, lifeexpectancy FROM country WHERE']
+['SELECT name, population, lifeexpectancy FROM country WHERE continent =']
+["SELECT name, population, lifeexpectancy FROM country WHERE continent = 'Asia' ORDER BY surfacearea DESC"]
+["SELECT name, population, lifeexpectancy FROM country WHERE continent = 'Asia' ORDER BY surfacearea DESC LIMIT 1;"]
+{'total_tokens': 29}
+['SELECT name,']
+['SELECT name, surfacearea\nFROM']
+['SELECT name, surfacearea\nFROM country\n']
+['SELECT name, surfacearea\nFROM country\nORDER BY surfacearea DESC']
+['SELECT name, surfacearea\nFROM country\nORDER BY surfacearea DESC\nLIMIT 5;']
+{'total_tokens': 20}
+['SELECT DISTINCT\ncountry.code AS']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS spoken_language,\ncountrylanguage.percentage AS']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS spoken_language,\ncountrylanguage.percentage AS percentage_spoken\nFROM country\n']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS spoken_language,\ncountrylanguage.percentage AS percentage_spoken\nFROM country\nJOIN countrylanguage ON']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS spoken_language,\ncountrylanguage.percentage AS percentage_spoken\nFROM country\nJOIN countrylanguage ON country.code =']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS spoken_language,\ncountrylanguage.percentage AS percentage_spoken\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\n']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS spoken_language,\ncountrylanguage.percentage AS percentage_spoken\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nWHERE countrylanguage.percentage =']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS spoken_language,\ncountrylanguage.percentage AS percentage_spoken\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nWHERE countrylanguage.percentage = (\n    SELECT MAX(countrylanguage.percentage)']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS spoken_language,\ncountrylanguage.percentage AS percentage_spoken\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nWHERE countrylanguage.percentage = (\n    SELECT MAX(countrylanguage.percentage)\n    FROM countrylanguage\n']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS spoken_language,\ncountrylanguage.percentage AS percentage_spoken\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nWHERE countrylanguage.percentage = (\n    SELECT MAX(countrylanguage.percentage)\n    FROM countrylanguage\n    WHERE']
+['SELECT DISTINCT\ncountry.code AS country_code,\ncountrylanguage.language AS spoken_language,\ncountrylanguage.percentage AS percentage_spoken\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nWHERE countrylanguage.percentage = (\n    SELECT MAX(countrylanguage.percentage)\n    FROM countrylanguage\n    WHERE countrylanguage.countrycode =']
+{'total_tokens': 102}
+['SELECT record_company,']
+['SELECT record_company, COUNT(DISTINCT orchestra_id)']
+['SELECT record_company, COUNT(DISTINCT orchestra_id) AS number_of_orchestras\nFROM orchestra\n']
+['SELECT record_company, COUNT(DISTINCT orchestra_id) AS number_of_orchestras\nFROM orchestra\nGROUP BY record_company;']
+['SELECT record_company, COUNT(DISTINCT orchestra_id) AS number_of_orchestras\nFROM orchestra\nGROUP BY record_company;']
+{'total_tokens': 27}
+['SELECT DISTINCT\nt.orchestra_name\n']
+['SELECT DISTINCT\nt.orchestra_name\nFROM orchestra o']
+['SELECT DISTINCT\nt.orchestra_name\nFROM orchestra o\nJOIN performance p ON o.orchestra_id = p.orchestra_id\nJOIN show s ON p.performance_id = s.performance_id\nJOIN record_company t ON o.record_company = t.record_company\nWHERE (o.year_of_founded < 2003 OR o.year_of_founded > 2003)\n  AND s.result =cancelled;']
+{'total_tokens': 140}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) AS friend_count FROM friend WHERE']
+['SELECT COUNT(*) AS friend_count FROM friend WHERE friend.student_id =']
+['SELECT COUNT(*) AS friend_count FROM friend WHERE friend.student_id = highschooler.id']
+{'total_tokens': 25}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) FROM friend WHERE']
+['SELECT COUNT(*) FROM friend WHERE friend_id =']
+['SELECT COUNT(*) FROM friend WHERE friend_id = (SELECT id FROM']
+['SELECT COUNT(*) FROM friend WHERE friend_id = (SELECT id FROM highschooler WHERE']
+['SELECT COUNT(*) FROM friend WHERE friend_id = (SELECT id FROM highschooler WHERE name =']
+["SELECT COUNT(*) FROM friend WHERE friend_id = (SELECT id FROM highschooler WHERE name = 'Kyle');"]
+{'total_tokens': 23}
+['SELECT owner_id,']
+['SELECT owner_id, first_name,']
+['SELECT owner_id, first_name, last_name\nFROM']
+['SELECT owner_id, first_name, last_name\nFROM owners\n']
+['SELECT owner_id, first_name, last_name\nFROM owners\nGROUP BY owner_id,']
+['SELECT owner_id, first_name, last_name\nFROM owners\nGROUP BY owner_id, first_name,']
+['SELECT owner_id, first_name, last_name\nFROM owners\nGROUP BY owner_id, first_name, last_name\nORDER']
+['SELECT owner_id, first_name, last_name\nFROM owners\nGROUP BY owner_id, first_name, last_name\nORDER BY COUNT(*)']
+['SELECT owner_id, first_name, last_name\nFROM owners\nGROUP BY owner_id, first_name, last_name\nORDER BY COUNT(*) DESC\nLIMIT 1;']
+{'total_tokens': 39}
+['SELECT last_name\nFROM']
+['SELECT last_name\nFROM owners\n']
+['SELECT last_name\nFROM owners\nJOIN dogs ON']
+['SELECT last_name\nFROM owners\nJOIN dogs ON owners.owner_id =']
+['SELECT last_name\nFROM owners\nJOIN dogs ON owners.owner_id = dogs.owner_id\n']
+['SELECT last_name\nFROM owners\nJOIN dogs ON owners.owner_id = dogs.owner_id\nWHERE dogs.age =']
+['SELECT last_name\nFROM owners\nJOIN dogs ON owners.owner_id = dogs.owner_id\nWHERE dogs.age = (SELECT MIN(dogs.age)']
+['SELECT last_name\nFROM owners\nJOIN dogs ON owners.owner_id = dogs.owner_id\nWHERE dogs.age = (SELECT MIN(dogs.age) FROM dogs)']
+['SELECT last_name\nFROM owners\nJOIN dogs ON owners.owner_id = dogs.owner_id\nWHERE dogs.age = (SELECT MIN(dogs.age) FROM dogs)\nORDER BY dogs.age ASC']
+['SELECT last_name\nFROM owners\nJOIN dogs ON owners.owner_id = dogs.owner_id\nWHERE dogs.age = (SELECT MIN(dogs.age) FROM dogs)\nORDER BY dogs.age ASC\nLIMIT 1;']
+{'total_tokens': 44}
+['SELECT first_name,']
+['SELECT first_name, last_name,']
+['SELECT first_name, last_name, email_address\nFROM']
+['SELECT first_name, last_name, email_address\nFROM owners\n']
+['SELECT first_name, last_name, email_address\nFROM owners\nWHERE state LIKE']
+["SELECT first_name, last_name, email_address\nFROM owners\nWHERE state LIKE '%North%';"]
+{'total_tokens': 25}
+['SELECT MAX(dogs.age)']
+['SELECT MAX(dogs.age) AS oldest_age FROM dogs;']
+['SELECT MAX(dogs.age) AS oldest_age FROM dogs;']
+{'total_tokens': 13}
+['SELECT first_name,']
+['SELECT first_name, last_name,']
+['SELECT first_name, last_name, email_address,']
+['SELECT first_name, last_name, email_address, home_phone,']
+['SELECT first_name, last_name, email_address, home_phone, cell_number\nFROM']
+['SELECT first_name, last_name, email_address, home_phone, cell_number\nFROM professionals;']
+['SELECT first_name, last_name, email_address, home_phone, cell_number\nFROM professionals;']
+{'total_tokens': 28}
+Average number of tokens: 46.36
+Scores: [('easy', 0.0), ('medium', 0.0), ('hard', 0.0), ('extra', 0.0), ('all', 0.0)]
+Error types: defaultdict(<class 'int'>, {'Valid': 3, 'Other Error': 42, 'Syntax Error': 5})
+Counts: [('easy', 6), ('medium', 27), ('hard', 13), ('extra', 4), ('all', 50)]
+
+===== RESULT =====
+Execution accuracy (all): 0.0
+Execution accuracy by difficulty: [('easy', 0.0), ('medium', 0.0), ('hard', 0.0), ('extra', 0.0), ('all', 0.0)]
+Valid/Syntax counts: defaultdict(<class 'int'>, {'Valid': 3, 'Other Error': 42, 'Syntax Error': 5})
+Total time: 237.3s  (4.7s/example)
+
+Saved: results/sql_results/Qwen/Qwen3.5-2B/itergen_seed334_test300_tempt:None_seed:0_rp:0.3_maxiter_20_num:50.jsonl
+Summary appended to results/sql_results/results.jsonl
+EVAL_DONE model=Qwen/Qwen3.5-2B exit=0 Sun Jun 28 01:13:35 PM UTC 2026
+--- Rescoring Qwen/Qwen3.5-2B on 50-set (results/sql_results/Qwen/Qwen3.5-2B/itergen_seed334_test300_tempt:None_seed:0_rp:0.3_maxiter_20_num:50.jsonl) ---
+[nltk_data] Downloading package punkt to /home/aadivyar/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/aadivyar/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+test_indices: 50 entries, range 9..994
+Full gold file: 1034 lines
+Subset gold: 50 lines
+Loaded 50 predictions
+
+===== CORRECTED RESULT =====
+Execution accuracy (all): 0.5
+By difficulty: [('easy', 0.417), ('medium', 0.571), ('hard', 0.333), ('extra', 0.625), ('all', 0.5)]
+Error types: {'Valid': 36, 'Other Error': 9, 'Syntax Error': 5}
+RESCORE_DONE model=Qwen/Qwen3.5-2B Sun Jun 28 01:13:41 PM UTC 2026
+=================================================================
+BASELINE_START itergen_spider_50set model=Qwen/Qwen3.5-4B gpu=2 Sun Jun 28 01:13:41 PM UTC 2026
+Loaded 50 seed334 test indices from /home/aadivyar/csd-generation/environment/benchmark_splits/spider_dev_50eval_for_itergen_seed334.json
+Selected 50 problems (dataset size=1034)
+  0%|          | 0/50 [00:00<?, ?it/s]`torch_dtype` is deprecated! Use `dtype` instead!
+
+Fetching 2 files:   0%|          | 0/2 [00:00<?, ?it/s][AFetching 2 files: 100%|██████████| 2/2 [00:00<00:00, 2383.13it/s]
+The fast path is not available because one of the required library is not installed. Falling back to torch implementation. To install follow https://github.com/fla-org/flash-linear-attention#installation and https://github.com/Dao-AILab/causal-conv1d
+
+Loading weights:   0%|          | 0/426 [00:00<?, ?it/s][A
+Loading weights:  45%|████▍     | 191/426 [00:00<00:00, 1908.79it/s][A
+Loading weights:  90%|████████▉ | 382/426 [00:00<00:00, 1614.03it/s][ALoading weights: 100%|██████████| 426/426 [00:00<00:00, 1656.85it/s]
+  2%|▏         | 1/50 [00:34<28:28, 34.86s/it]  4%|▍         | 2/50 [00:38<13:10, 16.46s/it]  6%|▌         | 3/50 [00:45<09:39, 12.34s/it]  8%|▊         | 4/50 [00:50<07:00,  9.14s/it] 10%|█         | 5/50 [00:54<05:31,  7.37s/it] 12%|█▏        | 6/50 [00:59<04:48,  6.55s/it] 14%|█▍        | 7/50 [01:04<04:22,  6.11s/it] 16%|█▌        | 8/50 [01:12<04:38,  6.64s/it]['SELECT DISTINCT country\nFROM']
+['SELECT DISTINCT country\nFROM singer\n']
+['SELECT DISTINCT country\nFROM singer\nWHERE age >']
+['SELECT DISTINCT country\nFROM singer\nWHERE age > 20;']
+{'total_tokens': 18}
+['SELECT location,']
+['SELECT location, name\nFROM']
+['SELECT location, name\nFROM stadium\n']
+['SELECT location, name\nFROM stadium\nWHERE capacity BETWEEN']
+['SELECT location, name\nFROM stadium\nWHERE capacity BETWEEN 5000 AND 10000;']
+{'total_tokens': 25}
+['SELECT stadium.name,']
+['SELECT stadium.name, stadium.location\n']
+['SELECT stadium.name, stadium.location\nFROM stadium\n']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON concert.stadium_id =']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON concert.stadium_id = stadium.stadium_id\n']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON concert.stadium_id = stadium.stadium_id\nWHERE concert.year IN']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON concert.stadium_id = stadium.stadium_id\nWHERE concert.year IN (2014, 2015)\nGROUP BY concert.stadium_id,']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON concert.stadium_id = stadium.stadium_id\nWHERE concert.year IN (2014, 2015)\nGROUP BY concert.stadium_id, stadium.name,']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON concert.stadium_id = stadium.stadium_id\nWHERE concert.year IN (2014, 2015)\nGROUP BY concert.stadium_id, stadium.name, stadium.location\n']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON concert.stadium_id = stadium.stadium_id\nWHERE concert.year IN (2014, 2015)\nGROUP BY concert.stadium_id, stadium.name, stadium.location\nHAVING COUNT(DISTINCT concert.year)']
+['SELECT stadium.name, stadium.location\nFROM stadium\nJOIN concert ON concert.stadium_id = stadium.stadium_id\nWHERE concert.year IN (2014, 2015)\nGROUP BY concert.stadium_id, stadium.name, stadium.location\nHAVING COUNT(DISTINCT concert.year) = 2;']
+{'total_tokens': 70}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) \nFROM concert c']
+['SELECT COUNT(*) \nFROM concert c\nJOIN stadium s ON c.stadium_id = s.stadium_id\nWHERE s.capacity = (SELECT MAX(capacity) FROM stadium);']
+{'total_tokens': 36}
+['SELECT DISTINCT fname,']
+['SELECT DISTINCT fname, age\nFROM']
+['SELECT DISTINCT fname, age\nFROM student\n']
+['SELECT DISTINCT fname, age\nFROM student\nWHERE stuid IN']
+['SELECT DISTINCT fname, age\nFROM student\nWHERE stuid IN (SELECT stuid FROM']
+['SELECT DISTINCT fname, age\nFROM student\nWHERE stuid IN (SELECT stuid FROM has_pet);']
+['SELECT DISTINCT fname, age\nFROM student\nWHERE stuid IN (SELECT stuid FROM has_pet);']
+{'total_tokens': 28}
+['SELECT fname,']
+['SELECT fname, sex\nFROM']
+['SELECT fname, sex\nFROM student\n']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM has_pet\n']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM has_pet\n    GROUP']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM has_pet\n    GROUP BY stuid\n    HAVING']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM has_pet\n    GROUP BY stuid\n    HAVING COUNT(petid)']
+['SELECT fname, sex\nFROM student\nWHERE stuid IN (\n    SELECT stuid\n    FROM has_pet\n    GROUP BY stuid\n    HAVING COUNT(petid) > 1\n);']
+{'total_tokens': 43}
+['SELECT maker,']
+['SELECT maker, fullname,']
+['SELECT maker, fullname, COUNT(*)']
+['SELECT maker, fullname, COUNT(*) AS model_count\nFROM model_list\n']
+['SELECT maker, fullname, COUNT(*) AS model_count\nFROM model_list\nJOIN car_makers ON']
+['SELECT maker, fullname, COUNT(*) AS model_count\nFROM model_list\nJOIN car_makers ON model_list.maker =']
+['SELECT maker, fullname, COUNT(*) AS model_count\nFROM model_list\nJOIN car_makers ON model_list.maker = car_makers.id\n']
+['SELECT maker, fullname, COUNT(*) AS model_count\nFROM model_list\nJOIN car_makers ON model_list.maker = car_makers.id\nGROUP BY maker,']
+['SELECT maker, fullname, COUNT(*) AS model_count\nFROM model_list\nJOIN car_makers ON model_list.maker = car_makers.id\nGROUP BY maker, fullname;']
+['SELECT maker, fullname, COUNT(*) AS model_count\nFROM model_list\nJOIN car_makers ON model_list.maker = car_makers.id\nGROUP BY maker, fullname;']
+{'total_tokens': 41}
+['SELECT MIN(weight)']
+['SELECT MIN(weight)\nFROM cars_data\n']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id =']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id = car_names.makeid\n']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id = car_names.makeid\nJOIN model_list ON']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id = car_names.makeid\nJOIN model_list ON car_names.model =']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id = car_names.makeid\nJOIN model_list ON car_names.model = model_list.model\n']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id = car_names.makeid\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id = car_names.makeid\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON model_list.maker =']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id = car_names.makeid\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON model_list.maker = car_makers.id\n']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id = car_names.makeid\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON model_list.maker = car_makers.id\nWHERE cylinders =']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id = car_names.makeid\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON model_list.maker = car_makers.id\nWHERE cylinders = 8 AND year =']
+['SELECT MIN(weight)\nFROM cars_data\nJOIN car_names ON cars_data.id = car_names.makeid\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON model_list.maker = car_makers.id\nWHERE cylinders = 8 AND year = 1974;']
+{'total_tokens': 70}
+['SELECT DISTINCT model\nFROM']
+['SELECT DISTINCT model\nFROM car_names\n']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid =']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid = cars_data.id\n']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid = cars_data.id\nJOIN model_list ON']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid = cars_data.id\nJOIN model_list ON car_names.model =']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid = cars_data.id\nJOIN model_list ON car_names.model = model_list.model\n']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid = cars_data.id\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid = cars_data.id\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON model_list.maker =']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid = cars_data.id\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON model_list.maker = car_makers.id\n']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid = cars_data.id\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON model_list.maker = car_makers.id\nWHERE cars_data.weight <']
+['SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid = cars_data.id\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON model_list.maker = car_makers.id\nWHERE cars_data.weight < 3500\n  AND car_makers.maker !='] 18%|█▊        | 9/50 [01:20<04:56,  7.24s/it] 20%|██        | 10/50 [01:24<04:06,  6.17s/it] 22%|██▏       | 11/50 [01:29<03:40,  5.66s/it] 24%|██▍       | 12/50 [01:33<03:25,  5.41s/it] 26%|██▌       | 13/50 [01:37<03:01,  4.92s/it] 28%|██▊       | 14/50 [01:40<02:30,  4.19s/it] 30%|███       | 15/50 [01:45<02:40,  4.59s/it] 32%|███▏      | 16/50 [01:50<02:37,  4.62s/it] 34%|███▍      | 17/50 [01:52<02:09,  3.94s/it] 36%|███▌      | 18/50 [01:57<02:10,  4.09s/it] 38%|███▊      | 19/50 [02:00<01:57,  3.79s/it] 40%|████      | 20/50 [02:04<01:56,  3.88s/it] 42%|████▏     | 21/50 [02:06<01:39,  3.44s/it] 44%|████▍     | 22/50 [02:10<01:39,  3.56s/it] 46%|████▌     | 23/50 [02:13<01:27,  3.25s/it] 48%|████▊     | 24/50 [02:15<01:19,  3.07s/it] 50%|█████     | 25/50 [02:18<01:10,  2.83s/it]
+["SELECT DISTINCT model\nFROM car_names\nJOIN cars_data ON car_names.makeid = cars_data.id\nJOIN model_list ON car_names.model = model_list.model\nJOIN car_makers ON model_list.maker = car_makers.id\nWHERE cars_data.weight < 3500\n  AND car_makers.maker != 'Ford Motor Company';"]
+{'total_tokens': 79}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) \nFROM flights f']
+['SELECT COUNT(*) \nFROM flights f\nJOIN airports a ON f.destairport = a.airportcode\nWHERE a.city =ober']
+{'total_tokens': 27}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) \nFROM flights f']
+['SELECT COUNT(*) \nFROM flights f\nJOIN airports a ON f.destairport = a.airportcode\nWHERE f.airline =United Airlines\nAND a.city =Aberdeen;']
+{'total_tokens': 38}
+['SELECT flightno\nFROM']
+['SELECT flightno\nFROM flights\n']
+['SELECT flightno\nFROM flights\nJOIN airports ON']
+['SELECT flightno\nFROM flights\nJOIN airports ON flights.destairport =']
+['SELECT flightno\nFROM flights\nJOIN airports ON flights.destairport = airports.airportcode\n']
+['SELECT flightno\nFROM flights\nJOIN airports ON flights.destairport = airports.airportcode\nJOIN airlines ON']
+['SELECT flightno\nFROM flights\nJOIN airports ON flights.destairport = airports.airportcode\nJOIN airlines ON flights.airline =']
+['SELECT flightno\nFROM flights\nJOIN airports ON flights.destairport = airports.airportcode\nJOIN airlines ON flights.airline = airlines.airline\n']
+['SELECT flightno\nFROM flights\nJOIN airports ON flights.destairport = airports.airportcode\nJOIN airlines ON flights.airline = airlines.airline\nWHERE airlines.airline =']
+["SELECT flightno\nFROM flights\nJOIN airports ON flights.destairport = airports.airportcode\nJOIN airlines ON flights.airline = airlines.airline\nWHERE airlines.airline = 'United Airlines';"]
+{'total_tokens': 40}
+['SELECT flightno \nFROM']
+['SELECT flightno \nFROM flights \n']
+['SELECT flightno \nFROM flights \nJOIN airlines ON']
+['SELECT flightno \nFROM flights \nJOIN airlines ON flights.airline =']
+['SELECT flightno \nFROM flights \nJOIN airlines ON flights.airline = airlines.airline \n']
+['SELECT flightno \nFROM flights \nJOIN airlines ON flights.airline = airlines.airline \nWHERE airlines.abbreviation =']
+["SELECT flightno \nFROM flights \nJOIN airlines ON flights.airline = airlines.airline \nWHERE airlines.abbreviation = 'United';"]
+{'total_tokens': 27}
+['SELECT name FROM']
+['SELECT name FROM employee ORDER']
+['SELECT name FROM employee ORDER BY age ASC']
+['SELECT name FROM employee ORDER BY age ASC;']
+{'total_tokens': 10}
+['SELECT shop.name\n']
+['SELECT shop.name\nFROM shop\n']
+['SELECT shop.name\nFROM shop\nJOIN hiring ON']
+['SELECT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id =']
+['SELECT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\n']
+['SELECT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\nGROUP BY shop.shop_id,']
+['SELECT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\nGROUP BY shop.shop_id, shop.name\n']
+['SELECT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\nGROUP BY shop.shop_id, shop.name\nHAVING AVG(number_products)']
+['SELECT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\nGROUP BY shop.shop_id, shop.name\nHAVING AVG(number_products) > (\n    SELECT AVG(number_products)']
+['SELECT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\nGROUP BY shop.shop_id, shop.name\nHAVING AVG(number_products) > (\n    SELECT AVG(number_products)\n    FROM shop\n']
+['SELECT shop.name\nFROM shop\nJOIN hiring ON shop.shop_id = hiring.shop_id\nGROUP BY shop.shop_id, shop.name\nHAVING AVG(number_products) > (\n    SELECT AVG(number_products)\n    FROM shop\n);']
+{'total_tokens': 49}
+['SELECT name\nFROM']
+['SELECT name\nFROM employee\n']
+['SELECT name\nFROM employee\nWHERE employee_id =']
+['SELECT name\nFROM employee\nWHERE employee_id = (\n    SELECT employee_id\n    FROM']
+['SELECT name\nFROM employee\nWHERE employee_id = (\n    SELECT employee_id\n    FROM evaluation\n']
+['SELECT name\nFROM employee\nWHERE employee_id = (\n    SELECT employee_id\n    FROM evaluation\n    ORDER']
+['SELECT name\nFROM employee\nWHERE employee_id = (\n    SELECT employee_id\n    FROM evaluation\n    ORDER BY bonus DESC']
+['SELECT name\nFROM employee\nWHERE employee_id = (\n    SELECT employee_id\n    FROM evaluation\n    ORDER BY bonus DESC\n    LIMIT 1\n);']
+{'total_tokens': 37}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) FROM documents;']
+['SELECT COUNT(*) FROM documents;']
+{'total_tokens': 7}
+['SELECT template_type_code\nFROM']
+['SELECT template_type_code\nFROM templates\n']
+['SELECT template_type_code\nFROM templates\nGROUP BY template_type_code\nORDER']
+['SELECT template_type_code\nFROM templates\nGROUP BY template_type_code\nORDER BY COUNT(documents.document_id)']
+['SELECT template_type_code\nFROM templates\nGROUP BY template_type_code\nORDER BY COUNT(documents.document_id) DESC\nLIMIT 1;']
+{'total_tokens': 34}
+['SELECT name \nFROM']
+['SELECT name \nFROM teacher \n']
+['SELECT name \nFROM teacher \nWHERE age IN']
+['SELECT name \nFROM teacher \nWHERE age IN (32, 33);']
+{'total_tokens': 18}
+['SELECT AVG(visitor.age)']
+['SELECT AVG(visitor.age)\nFROM visitor\n']
+['SELECT AVG(visitor.age)\nFROM visitor\nJOIN visit ON']
+['SELECT AVG(visitor.age)\nFROM visitor\nJOIN visit ON visitor.id =']
+['SELECT AVG(visitor.age)\nFROM visitor\nJOIN visit ON visitor.id = visit.visitor_id\n']
+['SELECT AVG(visitor.age)\nFROM visitor\nJOIN visit ON visitor.id = visit.visitor_id\nWHERE visitor.level_of_membership <=']
+['SELECT AVG(visitor.age)\nFROM visitor\nJOIN visit ON visitor.id = visit.visitor_id\nWHERE visitor.level_of_membership <= 4;']
+{'total_tokens': 34}
+['SELECT COUNT(DISTINCT loser_name)']
+['SELECT COUNT(DISTINCT loser_name)\nFROM matches;']
+['SELECT COUNT(DISTINCT loser_name)\nFROM matches;']
+{'total_tokens': 13}
+['SELECT DISTINCT winner_name\nFROM']
+['SELECT DISTINCT winner_name\nFROM matches\n']
+['SELECT DISTINCT winner_name\nFROM matches\nWHERE year =']
+['SELECT DISTINCT winner_name\nFROM matches\nWHERE year = 2013\nINTERSECT\nSELECT winner_name\nFROM']
+['SELECT DISTINCT winner_name\nFROM matches\nWHERE year = 2013\nINTERSECT\nSELECT winner_name\nFROM matches\n']
+['SELECT DISTINCT winner_name\nFROM matches\nWHERE year = 2013\nINTERSECT\nSELECT winner_name\nFROM matches\nWHERE year =']
+['SELECT DISTINCT winner_name\nFROM matches\nWHERE year = 2013\nINTERSECT\nSELECT winner_name\nFROM matches\nWHERE year = 2016;']
+{'total_tokens': 38}
+['SELECT first_name,']
+['SELECT first_name, last_name\nFROM']
+['SELECT first_name, last_name\nFROM players\n']
+['SELECT first_name, last_name\nFROM players\nORDER BY birth_date;']
+['SELECT first_name, last_name\nFROM players\nORDER BY birth_date;']
+{'total_tokens': 16}
+['SELECT note FROM']
+['SELECT note FROM death WHERE']
+['SELECT note FROM death WHERE note LIKE']
+["SELECT note FROM death WHERE note LIKE '%East%';"]
+{'total_tokens': 15}
+['SELECT section_name,']
+['SELECT section_name, section_description\nFROM']
+['SELECT section_name, section_description\nFROM sections;']
+['SELECT section_name, section_description\nFROM sections;']
+{'total_tokens': 11}
+['SELECT DISTINCT\n      s.first_name,']
+['SELECT DISTINCT\n      s.first_name,\n      s.middle_name,']
+['SELECT DISTINCT\n      s.first_name,\n      s.middle_name,\n      s.last_name\n']
+['SELECT DISTINCT\n      s.first_name,\n      s.middle_name,\n      s.last_name\nFROM students AS']
+['SELECT DISTINCT\n      s.first_name,\n      s.middle_name,\n      s.last_name\nFROM students AS s\nJOIN student_enrolment AS']
+['SELECT DISTINCT\n      s.first_name,\n      s.middle_name,\n      s.last_name\nFROM students AS s\nJOIN student_enrolment AS se ON s.student_id =']
+['SELECT DISTINCT\n      s.first_name,\n      s.middle_name,\n      s.last_name\nFROM students AS s\nJOIN student_enrolment AS se ON s.student_id = se.student_id\n']
+['SELECT DISTINCT\n      s.first_name,\n      s.middle_name,\n      s.last_name\nFROM students AS s\nJOIN student_enrolment AS se ON s.student_id = se.student_id\nJOIN degree_programs AS']
+['SELECT DISTINCT\n      s.first_name,\n      s.middle_name,\n      s.last_name\nFROM students AS s\nJOIN student_enrolment AS se ON s.student_id = se.student_id\nJOIN degree_programs AS dp ON se.degree_program_id ='] 52%|█████▏    | 26/50 [02:27<01:58,  4.92s/it] 54%|█████▍    | 27/50 [02:38<02:30,  6.56s/it] 56%|█████▌    | 28/50 [02:47<02:39,  7.25s/it] 58%|█████▊    | 29/50 [02:49<02:03,  5.89s/it] 60%|██████    | 30/50 [02:52<01:38,  4.92s/it] 62%|██████▏   | 31/50 [02:56<01:26,  4.54s/it] 64%|██████▍   | 32/50 [02:58<01:11,  3.97s/it] 66%|██████▌   | 33/50 [03:00<00:57,  3.40s/it] 68%|██████▊   | 34/50 [03:03<00:49,  3.11s/it] 70%|███████   | 35/50 [03:05<00:42,  2.85s/it] 72%|███████▏  | 36/50 [03:08<00:39,  2.81s/it]
+['SELECT DISTINCT\n      s.first_name,\n      s.middle_name,\n      s.last_name\nFROM students AS s\nJOIN student_enrolment AS se ON s.student_id = se.student_id\nJOIN degree_programs AS dp ON se.degree_program_id = dp.degree_program_id\n']
+{'total_tokens': 105}
+['SELECT DISTINCT\n        s.semester_name\n']
+['SELECT DISTINCT\n        s.semester_name\nFROM\n        semesters AS']
+['SELECT DISTINCT\n        s.semester_name\nFROM\n        semesters AS s\nJOIN\n        student_enrolment AS']
+['SELECT DISTINCT\n        s.semester_name\nFROM\n        semesters AS s\nJOIN\n        student_enrolment AS se ON s.semester_id =']
+['SELECT DISTINCT\n        s.semester_name\nFROM\n        semesters AS s\nJOIN\n        student_enrolment AS se ON s.semester_id = se.semester_id\n']
+['SELECT DISTINCT\n        s.semester_name\nFROM\n        semesters AS s\nJOIN\n        student_enrolment AS se ON s.semester_id = se.semester_id\nJOIN\n        degree_programs AS']
+['SELECT DISTINCT\n        s.semester_name\nFROM\n        semesters AS s\nJOIN\n        student_enrolment AS se ON s.semester_id = se.semester_id\nJOIN\n        degree_programs AS dp ON se.degree_program_id =']
+['SELECT DISTINCT\n        s.semester_name\nFROM\n        semesters AS s\nJOIN\n        student_enrolment AS se ON s.semester_id = se.semester_id\nJOIN\n        degree_programs AS dp ON se.degree_program_id = dp.degree_program_id\n']
+['SELECT DISTINCT\n        s.semester_name\nFROM\n        semesters AS s\nJOIN\n        student_enrolment AS se ON s.semester_id = se.semester_id\nJOIN\n        degree_programs AS dp ON se.degree_program_id = dp.degree_program_id\nJOIN\n        departments AS']
+['SELECT DISTINCT\n        s.semester_name\nFROM\n        semesters AS s\nJOIN\n        student_enrolment AS se ON s.semester_id = se.semester_id\nJOIN\n        degree_programs AS dp ON se.degree_program_id = dp.degree_program_id\nJOIN\n        departments AS d ON dp.department_id =']
+{'total_tokens': 120}
+['SELECT DISTINCT semester_id\nFROM']
+['SELECT DISTINCT semester_id\nFROM semesters\n']
+['SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN']
+['SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM']
+['SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n']
+['SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE']
+['SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN']
+['SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM']
+['SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n']
+['SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n        WHERE']
+['SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n        WHERE degree_summary_name LIKE']
+["SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n        WHERE degree_summary_name LIKE '%Masters%'\n    )\n)\nAND semester_id IN"]
+["SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n        WHERE degree_summary_name LIKE '%Masters%'\n    )\n)\nAND semester_id IN (\n    SELECT semester_id\n    FROM"]
+["SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n        WHERE degree_summary_name LIKE '%Masters%'\n    )\n)\nAND semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n"]
+["SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n        WHERE degree_summary_name LIKE '%Masters%'\n    )\n)\nAND semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE"]
+["SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n        WHERE degree_summary_name LIKE '%Masters%'\n    )\n)\nAND semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN"]
+["SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n        WHERE degree_summary_name LIKE '%Masters%'\n    )\n)\nAND semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM"]
+["SELECT DISTINCT semester_id\nFROM semesters\nWHERE semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n        WHERE degree_summary_name LIKE '%Masters%'\n    )\n)\nAND semester_id IN (\n    SELECT semester_id\n    FROM student_enrolment\n    WHERE degree_program_id IN (\n        SELECT degree_program_id\n        FROM degree_programs\n"]
+{'total_tokens': 111}
+['SELECT title\nFROM']
+['SELECT title\nFROM cartoon\n']
+['SELECT title\nFROM cartoon\nWHERE directed_by IN']
+["SELECT title\nFROM cartoon\nWHERE directed_by IN ('Ben Jones', 'Brandon Vietti');"]
+{'total_tokens': 20}
+['SELECT language,']
+['SELECT language, COUNT(*)']
+['SELECT language, COUNT(*) AS num_channels\nFROM tv_channel\n']
+['SELECT language, COUNT(*) AS num_channels\nFROM tv_channel\nGROUP BY language;']
+['SELECT language, COUNT(*) AS num_channels\nFROM tv_channel\nGROUP BY language;']
+{'total_tokens': 18}
+['SELECT tv_series.episode,']
+['SELECT tv_series.episode, tv_series.rating\n']
+['SELECT tv_series.episode, tv_series.rating\nFROM tv_series\n']
+['SELECT tv_series.episode, tv_series.rating\nFROM tv_series\nORDER BY tv_series.rating DESC']
+['SELECT tv_series.episode, tv_series.rating\nFROM tv_series\nORDER BY tv_series.rating DESC;']
+{'total_tokens': 31}
+['SELECT weekly_rank\nFROM']
+['SELECT weekly_rank\nFROM tv_series\n']
+['SELECT weekly_rank\nFROM tv_series\nWHERE episode =']
+["SELECT weekly_rank\nFROM tv_series\nWHERE episode = 'A Love of a Lifetime';"]
+{'total_tokens': 19}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) FROM poker_player;']
+['SELECT COUNT(*) FROM poker_player;']
+{'total_tokens': 8}
+['SELECT final_table_made,']
+['SELECT final_table_made, best_finish\nFROM']
+['SELECT final_table_made, best_finish\nFROM poker_player;']
+['SELECT final_table_made, best_finish\nFROM poker_player;']
+{'total_tokens': 14}
+['SELECT AVG(earnings)']
+['SELECT AVG(earnings) FROM poker_player;']
+['SELECT AVG(earnings) FROM poker_player;']
+{'total_tokens': 11}
+['SELECT nationality\nFROM']
+['SELECT nationality\nFROM people\n']
+['SELECT nationality\nFROM people\nGROUP BY nationality\nHAVING']
+['SELECT nationality\nFROM people\nGROUP BY nationality\nHAVING COUNT(*)']
+['SELECT nationality\nFROM people\nGROUP BY nationality\nHAVING COUNT(*) >= 2;']
+{'total_tokens': 19}
+['SELECT AVG(lifeexpectancy)']
+['SELECT AVG(lifeexpectancy)\nFROM country\n'] 74%|███████▍  | 37/50 [03:11<00:37,  2.91s/it] 76%|███████▌  | 38/50 [03:16<00:41,  3.47s/it] 78%|███████▊  | 39/50 [03:19<00:37,  3.41s/it] 80%|████████  | 40/50 [03:22<00:31,  3.16s/it] 82%|████████▏ | 41/50 [03:27<00:34,  3.84s/it] 84%|████████▍ | 42/50 [03:30<00:28,  3.53s/it] 86%|████████▌ | 43/50 [03:34<00:25,  3.64s/it] 88%|████████▊ | 44/50 [03:38<00:23,  3.87s/it] 90%|█████████ | 45/50 [03:41<00:18,  3.62s/it] 92%|█████████▏| 46/50 [03:47<00:16,  4.21s/it]
+['SELECT AVG(lifeexpectancy)\nFROM country\nWHERE region =']
+["SELECT AVG(lifeexpectancy)\nFROM country\nWHERE region = 'Central Africa';"]
+{'total_tokens': 24}
+['SELECT DISTINCT country.name \n']
+['SELECT DISTINCT country.name \nFROM country \n']
+['SELECT DISTINCT country.name \nFROM country \nJOIN countrylanguage ON']
+['SELECT DISTINCT country.name \nFROM country \nJOIN countrylanguage ON country.code =']
+['SELECT DISTINCT country.name \nFROM country \nJOIN countrylanguage ON country.code = countrylanguage.countrycode \n']
+['SELECT DISTINCT country.name \nFROM country \nJOIN countrylanguage ON country.code = countrylanguage.countrycode \nWHERE countrylanguage.isofficial =']
+['SELECT DISTINCT country.name \nFROM country \nJOIN countrylanguage ON country.code = countrylanguage.countrycode \nWHERE countrylanguage.isofficial = 1 \nAND (countrylanguage.language =']
+["SELECT DISTINCT country.name \nFROM country \nJOIN countrylanguage ON country.code = countrylanguage.countrycode \nWHERE countrylanguage.isofficial = 1 \nAND (countrylanguage.language = 'English' OR countrylanguage.language ="]
+["SELECT DISTINCT country.name \nFROM country \nJOIN countrylanguage ON country.code = countrylanguage.countrycode \nWHERE countrylanguage.isofficial = 1 \nAND (countrylanguage.language = 'English' OR countrylanguage.language = 'Dutch');"]
+{'total_tokens': 51}
+['SELECT name,']
+['SELECT name, population,']
+['SELECT name, population, lifeexpectancy \nFROM']
+['SELECT name, population, lifeexpectancy \nFROM country \n']
+['SELECT name, population, lifeexpectancy \nFROM country \nWHERE region =']
+["SELECT name, population, lifeexpectancy \nFROM country \nWHERE region = 'Asia' \nORDER BY surfacearea DESC"]
+["SELECT name, population, lifeexpectancy \nFROM country \nWHERE region = 'Asia' \nORDER BY surfacearea DESC \nLIMIT 1;"]
+{'total_tokens': 30}
+['SELECT name,']
+['SELECT name, surfacearea FROM']
+['SELECT name, surfacearea FROM country ORDER']
+['SELECT name, surfacearea FROM country ORDER BY surfacearea DESC']
+['SELECT name, surfacearea FROM country ORDER BY surfacearea DESC LIMIT 5;']
+{'total_tokens': 17}
+['SELECT country.code,']
+['SELECT country.code, countrylanguage.language,']
+['SELECT country.code, countrylanguage.language, MAX(countrylanguage.percentage)']
+['SELECT country.code, countrylanguage.language, MAX(countrylanguage.percentage) as max_percentage\nFROM country\n']
+['SELECT country.code, countrylanguage.language, MAX(countrylanguage.percentage) as max_percentage\nFROM country\nJOIN countrylanguage ON']
+['SELECT country.code, countrylanguage.language, MAX(countrylanguage.percentage) as max_percentage\nFROM country\nJOIN countrylanguage ON country.code =']
+['SELECT country.code, countrylanguage.language, MAX(countrylanguage.percentage) as max_percentage\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\n']
+['SELECT country.code, countrylanguage.language, MAX(countrylanguage.percentage) as max_percentage\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nGROUP BY country.code,']
+['SELECT country.code, countrylanguage.language, MAX(countrylanguage.percentage) as max_percentage\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nGROUP BY country.code, countrylanguage.language\n']
+['SELECT country.code, countrylanguage.language, MAX(countrylanguage.percentage) as max_percentage\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nGROUP BY country.code, countrylanguage.language\nORDER BY country.code,']
+['SELECT country.code, countrylanguage.language, MAX(countrylanguage.percentage) as max_percentage\nFROM country\nJOIN countrylanguage ON country.code = countrylanguage.countrycode\nGROUP BY country.code, countrylanguage.language\nORDER BY country.code, -max_percentage;']
+{'total_tokens': 58}
+['SELECT record_company,']
+['SELECT record_company, COUNT(*)']
+['SELECT record_company, COUNT(*) AS num_orchestras\nFROM orchestra\n']
+['SELECT record_company, COUNT(*) AS num_orchestras\nFROM orchestra\nGROUP BY record_company;']
+['SELECT record_company, COUNT(*) AS num_orchestras\nFROM orchestra\nGROUP BY record_company;']
+{'total_tokens': 21}
+['SELECT DISTINCT record_company\nFROM']
+['SELECT DISTINCT record_company\nFROM orchestra\n']
+['SELECT DISTINCT record_company\nFROM orchestra\nWHERE year_of_founded <']
+['SELECT DISTINCT record_company\nFROM orchestra\nWHERE year_of_founded < 2003\n   OR year_of_founded >']
+['SELECT DISTINCT record_company\nFROM orchestra\nWHERE year_of_founded < 2003\n   OR year_of_founded > 2003;']
+{'total_tokens': 38}
+['SELECT highschooler.id,']
+['SELECT highschooler.id, COUNT(friend.friend_id)']
+['SELECT highschooler.id, COUNT(friend.friend_id) AS friend_count\nFROM highschooler\n']
+['SELECT highschooler.id, COUNT(friend.friend_id) AS friend_count\nFROM highschooler\nLEFT JOIN friend ON']
+['SELECT highschooler.id, COUNT(friend.friend_id) AS friend_count\nFROM highschooler\nLEFT JOIN friend ON highschooler.id =']
+['SELECT highschooler.id, COUNT(friend.friend_id) AS friend_count\nFROM highschooler\nLEFT JOIN friend ON highschooler.id = friend.friend_id\n']
+['SELECT highschooler.id, COUNT(friend.friend_id) AS friend_count\nFROM highschooler\nLEFT JOIN friend ON highschooler.id = friend.friend_id\nGROUP BY highschooler.id;']
+['SELECT highschooler.id, COUNT(friend.friend_id) AS friend_count\nFROM highschooler\nLEFT JOIN friend ON highschooler.id = friend.friend_id\nGROUP BY highschooler.id;']
+{'total_tokens': 45}
+['SELECT COUNT(*)']
+['SELECT COUNT(*) FROM friend WHERE']
+['SELECT COUNT(*) FROM friend WHERE friend.student_id =']
+['SELECT COUNT(*) FROM friend WHERE friend.student_id = (SELECT id FROM']
+['SELECT COUNT(*) FROM friend WHERE friend.student_id = (SELECT id FROM highschooler WHERE']
+['SELECT COUNT(*) FROM friend WHERE friend.student_id = (SELECT id FROM highschooler WHERE name =']
+["SELECT COUNT(*) FROM friend WHERE friend.student_id = (SELECT id FROM highschooler WHERE name = 'Kyle');"]
+{'total_tokens': 24}
+['SELECT owners.owner_id,']
+['SELECT owners.owner_id, owners.first_name,']
+['SELECT owners.owner_id, owners.first_name, owners.last_name\n']
+['SELECT owners.owner_id, owners.first_name, owners.last_name\nFROM owners\n']
+['SELECT owners.owner_id, owners.first_name, owners.last_name\nFROM owners\nINNER JOIN dogs ON']
+['SELECT owners.owner_id, owners.first_name, owners.last_name\nFROM owners\nINNER JOIN dogs ON owners.owner_id =']
+['SELECT owners.owner_id, owners.first_name, owners.last_name\nFROM owners\nINNER JOIN dogs ON owners.owner_id = dogs.owner_id\n']
+['SELECT owners.owner_id, owners.first_name, owners.last_name\nFROM owners\nINNER JOIN dogs ON owners.owner_id = dogs.owner_id\nGROUP BY owners.owner_id,']
+['SELECT owners.owner_id, owners.first_name, owners.last_name\nFROM owners\nINNER JOIN dogs ON owners.owner_id = dogs.owner_id\nGROUP BY owners.owner_id, owners.first_name,']
+['SELECT owners.owner_id, owners.first_name, owners.last_name\nFROM owners\nINNER JOIN dogs ON owners.owner_id = dogs.owner_id\nGROUP BY owners.owner_id, owners.first_name, owners.last_name\n']
+['SELECT owners.owner_id, owners.first_name, owners.last_name\nFROM owners\nINNER JOIN dogs ON owners.owner_id = dogs.owner_id\nGROUP BY owners.owner_id, owners.first_name, owners.last_name\nORDER BY COUNT(dogs.dog_id)']
+['SELECT owners.owner_id, owners.first_name, owners.last_name\nFROM owners\nINNER JOIN dogs ON owners.owner_id = dogs.owner_id\nGROUP BY owners.owner_id, owners.first_name, owners.last_name\nORDER BY COUNT(dogs.dog_id) DESC\nLIMIT 1;']
+{'total_tokens': 62}
+['SELECT last_name\nFROM']
+['SELECT last_name\nFROM owners\n']
+['SELECT last_name\nFROM owners\nWHERE owner_id =']
+['SELECT last_name\nFROM owners\nWHERE owner_id = (\n    SELECT owner_id\n    FROM']
+['SELECT last_name\nFROM owners\nWHERE owner_id = (\n    SELECT owner_id\n    FROM dogs\n']
+['SELECT last_name\nFROM owners\nWHERE owner_id = (\n    SELECT owner_id\n    FROM dogs\n    WHERE']
+['SELECT last_name\nFROM owners\nWHERE owner_id = (\n    SELECT owner_id\n    FROM dogs\n    WHERE date_of_birth =']
+['SELECT last_name\nFROM owners\nWHERE owner_id = (\n    SELECT owner_id\n    FROM dogs\n    WHERE date_of_birth = (\n        SELECT MAX(date_of_birth)'] 94%|█████████▍| 47/50 [03:51<00:13,  4.37s/it] 96%|█████████▌| 48/50 [03:54<00:07,  3.91s/it] 98%|█████████▊| 49/50 [03:57<00:03,  3.59s/it]100%|██████████| 50/50 [04:00<00:00,  3.24s/it]100%|██████████| 50/50 [04:00<00:00,  4.80s/it]
+[nltk_data] Downloading package punkt to /home/aadivyar/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/aadivyar/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+
+['SELECT last_name\nFROM owners\nWHERE owner_id = (\n    SELECT owner_id\n    FROM dogs\n    WHERE date_of_birth = (\n        SELECT MAX(date_of_birth)\n        FROM dogs\n']
+['SELECT last_name\nFROM owners\nWHERE owner_id = (\n    SELECT owner_id\n    FROM dogs\n    WHERE date_of_birth = (\n        SELECT MAX(date_of_birth)\n        FROM dogs\n    )']
+['SELECT last_name\nFROM owners\nWHERE owner_id = (\n    SELECT owner_id\n    FROM dogs\n    WHERE date_of_birth = (\n        SELECT MAX(date_of_birth)\n        FROM dogs\n    )\n);']
+{'total_tokens': 51}
+['SELECT first_name,']
+['SELECT first_name, last_name,']
+['SELECT first_name, last_name, email_address\nFROM']
+['SELECT first_name, last_name, email_address\nFROM owners\n']
+['SELECT first_name, last_name, email_address\nFROM owners\nWHERE state LIKE']
+["SELECT first_name, last_name, email_address\nFROM owners\nWHERE state LIKE '%North%';"]
+{'total_tokens': 21}
+['SELECT MAX(dogs.age)']
+['SELECT MAX(dogs.age) AS oldest_age\nFROM dogs\n']
+['SELECT MAX(dogs.age) AS oldest_age\nFROM dogs\nWHERE dogs.age IS']
+['SELECT MAX(dogs.age) AS oldest_age\nFROM dogs\nWHERE dogs.age IS NOT NULL;']
+{'total_tokens': 21}
+['SELECT email_address,']
+['SELECT email_address, cell_number,']
+['SELECT email_address, cell_number, home_phone\nFROM']
+['SELECT email_address, cell_number, home_phone\nFROM professionals;']
+['SELECT email_address, cell_number, home_phone\nFROM professionals;']
+{'total_tokens': 14}
+Average number of tokens: 35.54
+Scores: [('easy', 0.0), ('medium', 0.0), ('hard', 0.0), ('extra', 0.0), ('all', 0.0)]
+Error types: defaultdict(<class 'int'>, {'Valid': 4, 'Other Error': 43, 'Syntax Error': 3})
+Counts: [('easy', 6), ('medium', 27), ('hard', 13), ('extra', 4), ('all', 50)]
+
+===== RESULT =====
+Execution accuracy (all): 0.0
+Execution accuracy by difficulty: [('easy', 0.0), ('medium', 0.0), ('hard', 0.0), ('extra', 0.0), ('all', 0.0)]
+Valid/Syntax counts: defaultdict(<class 'int'>, {'Valid': 4, 'Other Error': 43, 'Syntax Error': 3})
+Total time: 240.9s  (4.8s/example)
+
+Saved: results/sql_results/Qwen/Qwen3.5-4B/itergen_seed334_test300_tempt:None_seed:0_rp:0.3_maxiter_20_num:50.jsonl
+Summary appended to results/sql_results/results.jsonl
+EVAL_DONE model=Qwen/Qwen3.5-4B exit=0 Sun Jun 28 01:17:49 PM UTC 2026
+--- Rescoring Qwen/Qwen3.5-4B on 50-set (results/sql_results/Qwen/Qwen3.5-4B/itergen_seed334_test300_tempt:None_seed:0_rp:0.3_maxiter_20_num:50.jsonl) ---
+[nltk_data] Downloading package punkt to /home/aadivyar/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/aadivyar/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+test_indices: 50 entries, range 9..994
+Full gold file: 1034 lines
+Subset gold: 50 lines
+Loaded 50 predictions
+
+===== CORRECTED RESULT =====
+Execution accuracy (all): 0.6
+By difficulty: [('easy', 0.833), ('medium', 0.619), ('hard', 0.667), ('extra', 0.125), ('all', 0.6)]
+Error types: {'Valid': 43, 'Other Error': 4, 'Syntax Error': 3}
+RESCORE_DONE model=Qwen/Qwen3.5-4B Sun Jun 28 01:17:55 PM UTC 2026
+ALL_SENTINEL_DONE itergen_spider_50set 2b+4b Sun Jun 28 01:17:55 PM UTC 2026

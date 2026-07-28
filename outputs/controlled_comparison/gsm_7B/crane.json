@@ -1,0 +1,213 @@
+{
+  "accuracy": 0.5102040816326531,
+  "syntax_rate": 0.9795918367346939,
+  "metrics": {
+    "num_examples": 49,
+    "run_wall_time_seconds": 469.6708,
+    "adapter": "crane_repo",
+    "crane_repo_path": "/home/aadivyar/CRANE",
+    "crane_grammar_mode": "adaptive",
+    "crane_do_cot": true,
+    "crane_num_shots": 8,
+    "strategy_mapped": "crane",
+    "result_file": "/home/aadivyar/CRANE/src/logging/gsm_symbolic/no_judge/cot-model=Qwen2.5-7B-Instruct/cot=True/parsing=regex/gsm-gsm/cot-grammar-mode=adaptive/8-shot_1_samples_True.jsonl"
+  },
+  "answers": [
+    {
+      "question": "{n} saw a {x}-foot {big_fish} with {k} {y}-inch remoras attached to it. What percentage of the {big_fish}'s body length is the combined length of the remoras?",
+      "generated_answer": "Let's think step by step. The length of the {big_fish} is {x} feet. The length of each {y}-inch remora is <<y/12>> feet, since there are 12 inches in a foot. The combined length of the {k} remoras is <<k * (y/12)>> feet. The percentage of the {big_fish}'s body length that the combined length of the remoras represents is <<(k * (y/12)) / x * 100>>. The final answer is <<(k * (y/12)) / x * 100>>."
+    },
+    {
+      "question": "A fog bank rolls in from the ocean to cover a city. It takes {t} minutes to cover every {d} miles of the city. If the city is {y} miles across from the oceanfront to the opposite inland edge, how many minutes will it take for the fog bank to cover the whole city?",
+      "generated_answer": "Let's think step by step. The fog bank covers every {d} miles in {t} minutes. To cover the entire city which is {y} miles across, we need to find out how many {d} mile segments are in {y} miles, which is <<y // d + (y % d) >>. Since each {d} mile segment takes {t} minutes, the total time is <<(y // d + (y % d)) * t>>. The final answer is <<(y // d + (y % d)) * t>>."
+    },
+    {
+      "question": "{name} makes {drink} using teaspoons of sugar and cups of water in the ratio of {m}:{n}. If she used a total of {x} teaspoons of sugar and cups of water, calculate the number of teaspoonfuls of sugar she used.",
+      "generated_answer": "Let's think step by step. The ratio of sugar to water is {m}:{n}, so for every {m} teaspoons of sugar, there are {n} cups of water. The total parts in the ratio are {m} + {n}. If the total amount used is {x}, then each part of the ratio is <<x / (m + n)>>. The amount of sugar used is <<x / (m + n) * m>>. The final answer is <<x / (m + n) * m>>."
+    },
+    {
+      "question": "A farmer is buying feed for his {animals}. He buys a variety of {o1}, {o2}, {o3} and {o4}. Since {o4} are a rare treat, he only buys {n4} {w4}-{unit} boxes of them for the whole stable. He only wants enough {o3} to feed the {animals} while the vegetables are fresh, so he buys {n3} {w3}-bags. {o1} are the main diet of his {animals}, so he buys {n1} {w1}-bales. {o2} are a staple to supplement the {o1}, so he buys {n2} {w2}-sacks. If his farm truck can carry {total} pounds at a time, how many trips does the farmer need to transport all the feed?",
+      "generated_answer": "Let's think step by step. The total weight of the feed is the sum of the weights of each type of feed. The weight of {o1} is <<n1 * w1>> pounds, the weight of {o2} is <<n2 * w2>> pounds, the weight of {o3} is <<n3 * w3>> pounds, and the weight of {o4} is <<n4 * w4>> pounds. The total weight is <<n1 * w1 + n2 * w2 + n3 * w3 + n4 * w4>> pounds. The number of trips needed is the total weight divided by the truck's capacity, which is <<total>> pounds. The number of trips is <<(n1 * w1 + n2 * w2 + n3 * w3 + n4 * w4) / total>>. Since the number of trips must be an integer, we need to round up to the nearest whole number. The final answer is <<int((n1 * w1 + n2 * w2 + n3 * w3 + n4 * w4) / total) + (1)  >> if <<(n1 * w1 + n2 * w2 + n3 * w3 + n4 * w4) % total  % 1  % 0>> else <<int((n1 * w1 + n2 * w2 + n3 * w3 + n4 * w4) / total)>>."
+    },
+    {
+      "question": "When {name} watches her {family}, she gets out a variety of toys for him. The bag of building blocks has {x} blocks in it. The bin of stuffed animals has {y} stuffed animals inside. The tower of stacking rings has {z} multicolored rings on it. {name} recently bought a tube of bouncy balls, bringing her total number of toys for her {family} up to {total}. How many bouncy balls came in the tube?",
+      "generated_answer": "Let's think step by step. The total number of toys {name} has is the sum of the building blocks, stuffed animals, stacking rings, and bouncy balls. We know the total number of toys is {total}, and we know the number of building blocks, stuffed animals, and stacking rings. So, the number of bouncy balls can be found by subtracting the known quantities from the total. The number of bouncy balls is <<total - x - y - z>>. The final answer is <<total - x - y - z>>."
+    },
+    {
+      "question": "{name} places {obj} on some {surface}s. Each {surface} can hold {x} {obj}s. If he has {n} {obj}s and {k} {surface}s, how many {obj}s won't he be able to place on the {surface}?",
+      "generated_answer": "Let's think step by step. Each {surface} can hold {x} {obj}s, and there are {k} {surface}s, so the total capacity is <<k * x>>. If {name} has {n} {obj}s, the number of {obj}s that won't be able to be placed is <<n % x>> if {n} is greater than the total capacity, otherwise, it's 0. The final answer is <<n - k * x>> if <<n - k * x>> >= 0, otherwise <<0>>."
+    },
+    {
+      "question": "{name} is an avid gardener. {time}, she received {x} new potted plants from her favorite plant nursery. She already has {r} potted plants on each of the {w} window ledges of her large country home. Feeling generous, she has decided that she will give {n} potted plants from each ledge to friends and family tomorrow. How many potted plants will {name} remain with?",
+      "generated_answer": "Let's think step by step. Initially, {name} has {r} potted plants on each of the {w} window ledges, so she has <<r * w>> potted plants. She will give away <<n * w>> potted plants tomorrow. After receiving {x} new potted plants, she will have <<r * w + x>> potted plants. After giving away <<n * w>> potted plants, she will have <<r * w + x - n * w>> potted plants left. The final answer is <<r * w + x - n * w>>."
+    },
+    {
+      "question": "{name} is selling {food} and {fruit} pie for a fundraiser. On {d1}, he sold {n1} boxes of {food} and {m1} fewer boxes of {fruit} pie, than on {d2}. On {d2}, he sold {n2} more boxes of {food}s than on {d1} and {m2} boxes of {fruit} pie. If the {food} cost {cur}{cn} and the {fruit} pie cost {cur}{cm}, how much did {name} earn for two days?",
+      "generated_answer": "Let's think step by step. On {d1}, {name} sold {n1} boxes of {food} and {n1 - m1} boxes of {fruit}. On {d2}, {name} sold {n1 + n2} boxes of {food} and {m2} boxes of {fruit}. The earnings for {d1} are <<n1 * cn + (n1 - m1) * cm>> and for {d2} are <<(n1 + n2) * cn + m2 * cm>>. The total earnings for two days are <<n1 * cn + (n1 - m1) * cm + (n1 + n2) * cn + m2 * cm>>. The final answer is <<n1 * cn + (n1 - m1) * cm + (n1 + n2) * cn + m2 * cm>>."
+    },
+    {
+      "question": "{name} walks {n} {unit} every day on her favorite walking trail, which includes {m} {unit} of walking on the beach and {k} {unit} of walking on the sidewalk. On the sidewalk, {name} walks at {mult} the rate of speed that she does on the beach. If {t} minutes of her walk is spent on the beach, how long does it take for her to complete the entire {n}-{unit} walk, in minutes?",
+      "generated_answer": "Let's think step by step. {name} walks {m} {unit} on the beach in {t} minutes. The rate of walking on the beach is <<m / t>> {unit} per minute. On the sidewalk, {name} walks at <<mult>> times the beach rate, which is <<mult * (m / t)>> {unit} per minute. {name} walks {k} {unit} on the sidewalk, so the time spent on the sidewalk is <<k / (mult * (m / t))>> minutes. The total time for the walk is the sum of the time spent on the beach and the time spent on the sidewalk, which is <<t + k / (mult * (m / t))>> minutes. The final answer is <<t + k / (mult * (m / t))>>."
+    },
+    {
+      "question": "In a {n}-item quiz, {p1}% of the questions are {s1}, and the rest are equally divided as {s2} and {s3} questions. If {name} is sure to get {r1}% of the {s1} questions, and {frac} of the {s2} and {s3} questions correctly, how many points is she sure to get?",
+      "generated_answer": "Let's think step by step. The total number of questions is {n}. The number of {s1} questions is <<n * p1 / 100>>. The number of {s2} and {s3} questions combined is <<n - n * p1 / 100>>. Since these are equally divided, the number of {s2} questions is <<(n - n * p1 / 100) / 2>> and the number of {s3} questions is also <<(n - n * p1 / 100) / 2>>. {name} is sure to get <<r1 * n * p1 / 10000>> points from the {s1} questions and <<frac * (n - n * p1 / 100) / 2>> points from each of the {s2} and {s3} questions. The total points are <<r1 * n * p1 / 10000 + 2 * frac * (n - n * p1 / 100) / 2>>. The final answer is <<r1 * n * p1 / 10000 + frac * (n - n * p1 / 100)>>."
+    },
+    {
+      "question": "{name} picks {n1} {fruit} on {d1}. Then he picks {n2} {fruit} on {d2}. On {d3}, he picks {mult} the number of {fruit} he did on {d1}. How many {fruit} does {name} have?",
+      "generated_answer": "Let's think step by step. On {d1}, {name} picks {n1} {fruit}. On {d2}, {name} picks {n2} {fruit}. On {d3}, {name} picks {mult} times the number of {fruit} he picked on {d1}, which is <<n1 * mult>>. The total number of {fruit} is <<n1 + n2 + n1 * mult>>. The final answer is <<n1 + n2 + n1 * mult>>."
+    },
+    {
+      "question": "{name} watches TV after he finishes his homework every night. On {d1} and {d2}, he watched a {h1}-hour episode of his favorite show each night. On {d3}, he watched a few episodes of a {m1}-minute show. On {d4}, he finished homework early and watched a {h2}-hour episode and a {m2}-minute show. On {d5}, he got to stay up late, so he watched {n2} {h3}-hour episodes. If he watched {total} hours of TV in all, how many {m1}-minute episodes did he watch on {d3}?",
+      "generated_answer": "Let's think step by step. We know the total hours of TV watched is {total}. On {d1} and {d2}, he watched <<2 * h1>> hours. On {d4}, he watched <<h2>> hours and {m2} minutes. On {d5}, he watched <<n2 * h3>> hours. Let's denote the number of {m1}-minute episodes watched on {d3} as {x}. The total time in hours for {d3} is <<(m1 * 60) / 60>>. The equation for the total hours of TV watched is: <<2 * h1 + (h2 + m2 / 60) + (m1 * 60 / 60) + n2 * h3  //  total>>. Solving for {x} gives us <<(total - 2 * h1 - (h2 + m2 / 60) - n2 * h3) * 60 / m1>>. The final answer is <<(total - 2 * h1 - (h2 + m2 / 60) - n2 * h3) * 60 / m1>>."
+    },
+    {
+      "question": "In {teacher}'s class of {total} students, {p1}% of the class are {group1}. Out of the remaining class, {p2}% of the students are {group2} or part of {group3}. These 3 groups of students will need to leave early today to travel to an away {event}. How many students are leaving early?",
+      "generated_answer": "Let's think step by step. First, we calculate the number of students in {group1}. This is <<total * p1 / 100>>. The remaining students after removing {group1} are <<total - total * p1 / 100>>. Out of these remaining students, {group2} or {group3} make up {p2}% of the remaining class. This is <<(total - total * p1 / 100) * p2 / 100>>. The total number of students leaving early is the sum of {group1} and {group2} or {group3}, which is <<total * p1 / 100 + (total - total * p1 / 100) * p2 / 100>>. The final answer is <<total * p1 / 100 + (total - total * p1 / 100) * p2 / 100>>."
+    },
+    {
+      "question": "{name1} eats {n1} {food} per {time_unit}, {name2} eats {n2} {food} per {time_unit}, and their {relation} eats {n3} {food} per {time_unit}. How many {food} does this family eat in one week?",
+      "generated_answer": "Let's think step by step. Each person eats a certain amount of {food} per {time_unit}. We need to find out how much {food} the family eats in one week. \n\n- {name1} eats {n1} {food} per {time_unit}.\n- {name2} eats {n2} {food} per {time_unit}.\n- Their {relation} eats {n3} {food} per {time_unit}.\n\nFirst, we need to determine the number of {time_units} in a week. Assuming {time_unit} is a day, there are 7 days in a week. \n\n- {name1} eats {n1} * 7 {food} in a week.\n- {name2} eats {n2} * 7 {food} in a week.\n- Their {relation} eats {n3} * 7 {food} in a week.\n\nThe total amount of {food} the family eats in one week is the sum of the amounts each person eats:\n\n- Total {food} = ({n1} * 7) + ({n2} * 7) + ({n3} * 7)\n\nThe final answer is <<7 * (n1 + n2 + n3)>>."
+    },
+    {
+      "question": "{name} gets {n} emails a day. {p}% of those emails don't require any response. He responds to the rest of them. How many emails does he respond to in a {d} day work week?",
+      "generated_answer": "Let's think step by step. {name} gets {n} emails a day. {p}% of these emails don't require a response, which is <<n * (p / 100)>>. Therefore, the number of emails that do require a response is <<n - n * (p / 100)>>. Over a {d} day work week, the total number of emails {name} responds to is <<d * (n - n * (p / 100))>>. The final answer is <<d * (n - n * (p / 100))>>."
+    },
+    {
+      "question": "{name1} is {age1} years old. In {years} years his {relation_type} {name2} will be {mult} times as old as {name1} is now. How old is {name2} right now?",
+      "generated_answer": "Let's think step by step. Currently, {name1} is {age1} years old. In {years} years, {name1} will be <<age1 + years>> years old. At that time, {name2} will be {mult} times as old as {name1} is now, which is <<mult * age1>>. Therefore, {name2}'s age in {years} years will be <<mult * age1>>. To find {name2}'s current age, we subtract {years} from <<mult * age1>>. The final answer is <<(mult * age1) - years>>."
+    },
+    {
+      "question": "{name1} and {name2} are currently {age_diff} years apart in age. If {name1}, who is younger than {name2}, is {age1} years old, what's the average of their ages?",
+      "generated_answer": "Let's think step by step. {name1} is {age1} years old. Since {name1} is younger than {name2} and the age difference is {age_diff}, {name2} is {age1 + age_diff} years old. The sum of their ages is <<age1 + (age1 + age_diff)>>, which simplifies to <<2 * age1 + age_diff>>. The average of their ages is the sum divided by 2, which is <<(2 * age1 + age_diff) / 2>>. The final answer is <<(2 * age1 + age_diff) / 2>>."
+    },
+    {
+      "question": "{name1} and {name2} are sisters from {city} who love collecting signatures from {celebrity_type}. During their {vacation_type} from school, the sisters spend every afternoon collecting signatures. After {n1} weeks, {name1} and {name2} compare their autograph books, counting up the number of signatures each sister has collected. {name1} has {s1} signatures in her book, and {name2} has {s2}. The sisters have {n2} more weeks of {vacation_type}, and they decide they want to reach {goal} signatures between them by the end of the break. How many signatures do the sisters need to collect to reach their goal?",
+      "generated_answer": "Let's think step by step. The total number of signatures the sisters currently have is <<s1 + s2>>. They want to reach a goal of <<goal>> signatures. The number of signatures they still need to collect is <<goal - (s1 + s2)>>. The final answer is <<goal - (s1 + s2)>>."
+    },
+    {
+      "question": "{title} {name} sold his {property} for ${price}. He paid the {fee1_name} fees that amount to {fee1_percent}% of the selling price and also paid a {fee2_name} fee that is {fee2_percent}% of the selling price. If he also paid ${loan} for the remaining loan amount of the {property}, how much is {title} {name}'s net proceeds from selling the {property}?",
+      "generated_answer": "Let's think step by step. The total fees paid are the sum of the {fee1_name} fees and the {fee2_name} fees. The {fee1_name} fees amount to <<price * fee1_percent / 100>> and the {fee2_name} fees amount to <<price * fee2_percent / 100>>. The total fees are <<price * fee1_percent / 100 + price * fee2_percent / 100>>. After paying the fees, the remaining amount is <<price - (price * fee1_percent / 100 + price * fee2_percent / 100)>>. After paying the remaining loan amount of ${loan}, the net proceeds are <<price - (price * fee1_percent / 100 + price * fee2_percent / 100) - loan>>. The final answer is <<price - (price * fee1_percent / 100 + price * fee2_percent / 100) - loan>>."
+    },
+    {
+      "question": "A loaf of {item1} at the {shop} costs {currency}{price1}. {item2} cost {currency}{price2} each. How much more do {n1} loaves of {item1} cost than {n2} {item2}?",
+      "generated_answer": "Let's think step by step. The cost of {n1} loaves of {item1} is <<n1 * price1>>. The cost of {n2} {item2} is <<n2 * price2>>. The difference in cost is <<n1 * price1 - n2 * price2>>. The final answer is <<n1 * price1 - n2 * price2>>."
+    },
+    {
+      "question": "{name} went to the {location} for vacation. Her parents gave her {cur}{total} to buy whatever she wanted. At the {shop}, {item1} was on sale for \"Buy {n1} {unit}s at {cur}{p1} per {unit}, get {n2} {unit}s {discount} off.\" She scooped up {n12} {unit}s. She also bought a mixed bag of {item2} for {cur}{p2} and {n3} {item3} that were {cur}{p3} each. How much money does {name} have left?",
+      "generated_answer": "Let's think step by step. Initially, {name} had {cur}{total}. At the {shop}, she bought {n12} {unit}s of {item1} with the offer \"Buy {n1} {unit}s at {cur}{p1} per {unit}, get {n2} {unit}s {discount} off.\" The cost for {n12} {unit}s is calculated as follows: \n- The cost for {n1} {unit}s is <<n1 * p1>>.\n- The cost for the remaining {n12 - n1} {unit}s is <<(n12 - n1) * p1 * (1 - n2 / n1)>>.\n- The total cost for {item1} is <<n1 * p1 + (n12 - n1) * p1 * (1 - n2 / n1)>>.\n\nShe also bought a mixed bag of {item2} for {cur}{p2} and {n3} {item3} that were {cur}{p3} each. The total cost for {item2} and {item3} is <<p2 + n3 * p3>>.\n\nThe total amount spent is <<n1 * p1 + (n12 - n1) * p1 * (1 - n2 / n1) + p2 + n3 * p3>>. The remaining money is <<total - (n1 * p1 + (n12 - n1) * p1 * (1 - n2 / n1) + p2 + n3 * p3)>>. The final answer is <<total - (n1 * p1 + (n12 - n1) * p1 * (1 - n2 / n1) + p2 + n3 * p3)>>."
+    },
+    {
+      "question": "{name} went to their {place} to pick some {fruit} and found {frac} as many {insect1} as {insect2} in the {location}. If there were {n} {insect2}, calculate the total number of insects in the {location}.",
+      "generated_answer": "Let's think step by step. {name} found {frac} as many {insect1} as {insect2}. If there were {n} {insect2}, then the number of {insect1} is <<n * frac>>. The total number of insects is the sum of {insect1} and {insect2}, which is <<n + n * frac>>. The final answer is <<n + n * frac>>."
+    },
+    {
+      "question": "{school} is holding graduation in their {venue} this year which has space for {total} people. After accounting for {graduates} seats for graduates and {faculty} seats for faculty attending, how many tickets would each graduate receive to give to their friends and family if the tickets are split equally?",
+      "generated_answer": "Let's think step by step. The total number of seats in the venue is {total}. After accounting for the seats for graduates and faculty, the remaining seats are <<total - graduates - faculty>>. These remaining seats are to be split equally among the graduates, so each graduate would receive <<(total - graduates - faculty) // graduates>> tickets. The final answer is <<(total - graduates - faculty) // graduates>>."
+    },
+    {
+      "question": "{name1} hid {n} dozen eggs in the yard for the Easter egg hunt. {name2} finds {x} eggs. {name3} finds {mult1} as many as {name2}. {name4} finds {y} less than {name3}, and {name5} finds {frac} as many as {name4}. How many eggs are still hidden in the yard?",
+      "generated_answer": "Let's think step by step. Initially, there are {n} dozen eggs, which is <<n * 12>> eggs. {name2} finds {x} eggs, so <<n * 12 - x>> eggs are left. {name3} finds {mult1} as many as {name2}, which is <<x * mult1>> eggs. The total now is <<n * 12 - x - x * mult1>>. {name4} finds {y} less than {name3}, which is <<x * mult1 - y>> eggs. The total now is <<n * 12 - x - x * mult1 - (x * mult1 - y)>>. {name5} finds {frac} as many as {name4}, which is <<(x * mult1 - y) * frac>> eggs. The final total is <<n * 12 - x - x * mult1 - (x * mult1 - y) - (x * mult1 - y) * frac>>. The final answer is <<n * 12 - x - x * mult1 - (x * mult1 - y) - (x * mult1 - y) * frac>>."
+    },
+    {
+      "question": "The area of {name}'s rectangular {room_type} is {area} square feet. If the length of his room is {length} yards, what is the perimeter of the room in feet?",
+      "generated_answer": "Let's think step by step. The area of the room is given as {area} square feet. The length of the room is {length} yards, which is <<length * 3>> feet (since 1 yard = 3 feet). Let the width of the room be {w} feet. The area of a rectangle is given by length times width, so we have <<length * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * 3 * "
+    },
+    {
+      "question": "{name} has a {product} stand at the {location}. He sells three kinds of {product}s: {item1}, {item2} and {item3}. He usually sells {item1} for {cur}{p1} per {unit}, {item2} for {cur}{p2} per {unit} and {item3} for {cur}{p3} per {unit}. {name} has no change today, so he has decided to round all his prices to the nearest dollar. If {name} sells {n1} {unit}s of {item1}, {n2} {unit}s of {item2} and {n3} {unit}s of {item3}, how much will he make?",
+      "generated_answer": "Let's think step by step. The price of {item1} after rounding to the nearest dollar is <<int(1.5 + p1)>>. The price of {item2} after rounding to the nearest dollar is <<int(1.5 + p2)>>. The price of {item3} after rounding to the nearest dollar is <<int(1.5 + p3)>>. The total money made from selling {n1} {unit}s of {item1} is <<n1 * int(1.5 + p1)>>. The total money made from selling {n2} {unit}s of {item2} is <<n2 * int(1.5 + p2)>>. The total money made from selling {n3} {unit}s of {item3} is <<n3 * int(1.5 + p3)>>. The total money made is <<n1 * int(1.5 + p1)  +  n2 * int(1.5 +  p2)  +  n3 * int(1.5 +  p3)>>. The final answer is <<n1 * int(1.5 + p1)  +  n2 * int(1.5 +  p2)  +  n3 * int(1.5 +  p3)>>."
+    },
+    {
+      "question": "{name1} scored {n1} points in one game of {game}. {name2} scored {n2} points more than {frac} as many as {name1}. How many points did {name1} and {name2} have in total?",
+      "generated_answer": "Let's think step by step. {name1} scored {n1} points. {name2} scored {n2} points more than {frac} as many as {name1}, which is <<n1 * frac + n2>>. The total points scored by {name1} and {name2} is <<n1 + n1 * frac + n2>>. The final answer is <<n1 + n1 * frac + n2>>."
+    },
+    {
+      "question": "{name} sliced a whole {fruit} into {total} pieces. She ate {n1} slices, her {sibling1} ate {n2} more than her, and her {sibling2} ate {n3} more than her {sibling1}. How many slices of {fruit} did they all eat?",
+      "generated_answer": "Let's think step by step. {name} ate {n1} slices. {sibling1} ate {n2} more than {name}, so {sibling1} ate <<n1 + n2>> slices. {sibling2} ate {n3} more than {sibling1}, so {sibling2} ate <<n1 + n2 + n3>> slices. The total number of slices eaten is <<n1 + (n1 + n2) + (n1 + n2 + n3)>>. Simplifying, we get <<3 * n1 + 2 * n2 + n3>>. The final answer is <<3 * n1 + 2 * n2 + n3>>."
+    },
+    {
+      "question": "{name} is learning to write and decides to keep re-writing the {alphabets} until she knows it. She writes it in full {n1} time(s), writes {frac} of it once, then re-writes everything she has already written. How many letters has {name} written in total?",
+      "generated_answer": "Let's think step by step. Initially, {name} writes the {alphabets} in full {n1} times. This means she writes <<alphabets * n1>> letters. Then, she writes {frac} of the {alphabets} once, which is <<alphabets * frac>>. After this, she re-writes everything she has already written, which means she writes <<alphabets * n1 + alphabets * frac>> again. The total number of letters written is <<alphabets * n1 + alphabets * frac + alphabets * n1 + alphabets * frac>>. The final answer is <<alphabets * (n1 + frac + n1 + frac)>>."
+    },
+    {
+      "question": "A {container} of {liquid} is {vol} {unit}s of {liquid}. {name} drinks {num} {container}s of {liquid}. If {liquid} has {cal} calories per {unit} how many calories did he consume?",
+      "generated_answer": "Let's think step by step. Each {container} of {liquid} is {vol} {unit}s, and {name} drinks {num} {container}s. So, the total {unit}s of {liquid} consumed is <<num * vol>>. Since there are {cal} calories per {unit}, the total calories consumed is <<num * vol * cal>>. The final answer is <<num * vol * cal>>."
+    },
+    {
+      "question": "{name} works a {h}-hour shift each day, {d} days a week. He earns {cur}{r} per hour and gets a {cur}{b} bonus each week if the company performs well. How much money did {name} make in {month} if the company performed very well for the whole month?",
+      "generated_answer": "Let's think step by step. {name} works {h} hours each day for {d} days a week, so in a week, he works <<h * d>> hours. He earns {cur}{r} per hour, so in a week, he earns <<r * h * d>>. Since the company performed well for the whole month, he also gets a bonus of {cur}{b} each week. If we assume there are 4 weeks in a month, then in a month, he earns <<4 * r * h * d + 4 * b>>. The final answer is <<4 * r * h * d + 4 * b>>."
+    },
+    {
+      "question": "{name} has a bag of {objects} with {n} inside. He tripped over {obstacle} while carrying it and dropped {frac} of them. He scrambled to search for them but only came up with {k}. When he went back home, he inspected the {objects} further. {fake_num} of them he picked up weren't {objects}, but actually {fake_object} so he got rid of it. How many {objects} did {name} end up with?",
+      "generated_answer": "Let's think step by step. Initially, {name} had {n} {objects}. He dropped {frac} of them, so he lost <<n * frac>>. He then found {k} of them, so he now has <<n - n * frac + k>>. However, {fake_num} of the found items were not {objects}, so he lost those, leaving him with <<n - n * frac + k - fake_num>>. After inspecting, he got rid of {fake_num} {fake_object}s, but since they were not {objects}, the number of {objects} he ended up with is still <<n - n * frac + k - fake_num>>. The final answer is <<n - n * frac + k - fake_num>>."
+    },
+    {
+      "question": "A {person1} has {n} {item}s. His {relation} has {k} fewer {item}s than he has. How many {item}s do they have together?",
+      "generated_answer": "Let's think step by step. {person1} has {n} {item}s. {relation} has {k} fewer {item}s, so {relation} has <<n - k>> {item}s. Together, they have <<n + (n - k)>> {item}s. The final answer is <<2 * n - k>>."
+    },
+    {
+      "question": "{name} is trying to decide whether to do {task} herself or hire one {profession}. If she does it herself, she'll be able to do {n} fewer hours of {work_type} work, losing {cur}{rate}/hour in missed income. The {profession} charges {cur}{fee}. How much more money will she have if she hires the {profession}?",
+      "generated_answer": "Let's think step by step. If {name} does the {task} herself, she will lose <<n * rate>> in missed income. The cost of hiring one {profession} is <<fee>>. The difference in money between doing it herself and hiring the {profession} is <<fee - n * rate>>. The final answer is <<fee - n * rate>>."
+    },
+    {
+      "question": "{name} has {n1} light {c1} spools of thread, {n2} dark {c1} spools of thread, {n3} light {c2} spools of thread, and {n4} dark {c2} spools of thread. What percent of the spools are {c1}?",
+      "generated_answer": "Let's think step by step. The total number of spools is <<n1 + n2 + n3 + n4>>. The number of {c1} spools is <<n1 + n2>>. The percentage of {c1} spools is <<(n1 + n2) / (n1 + n2 + n3 + n4) * 100>>. The final answer is <<(n1 + n2) / (n1 + n2 + n3 + n4) * 100>>."
+    },
+    {
+      "question": "{name}'s {vehicle} breaks down. The {vehicle} weighs {weight_vehicle} {unit} and he has {item} in it weighing {weight_item} {unit}. He also has his {num_passengers} young {passenger_type} who weigh {weight_passenger} {unit} each in it. If the force to move the {vehicle} is {force_percent}% of the weight, how much force does he need to push the {vehicle}?",
+      "generated_answer": "Let's think step by step. The total weight of the vehicle and its contents is the sum of the vehicle's weight, the item's weight, and the weight of the passengers. The total weight is <<weight_vehicle + weight_item + num_passengers * weight_passenger>>. The force needed to move the vehicle is {force_percent}% of this total weight. Therefore, the force is <<(weight_vehicle + weight_item + num_passengers * weight_passenger) * force_percent / 100>>. The final answer is <<(weight_vehicle + weight_item + num_passengers * weight_passenger) * force_percent / 100>>."
+    },
+    {
+      "question": "It takes {name} {t1} minutes to finish a {game1} and {t2} minutes to finish a {game2}. Over the {period} she solved {n1} {game1}s and {n2} {game2}s. How much time did she spend playing these games?",
+      "generated_answer": "Let's think step by step. The time spent on {game1}s is <<n1 * t1>> minutes. The time spent on {game2}s is <<n2 * t2>> minutes. The total time spent is <<n1 * t1 + n2 * t2>> minutes. The final answer is <<n1 * t1 + n2 * t2>>."
+    },
+    {
+      "question": "On {day3}, {name} wants to exercise for {mult} the amount of time he did on {day2} and {day1} combined. On {day1} he exercised for {t1} minutes. On {day2} he exercised for {t2} minutes. How many minutes does he have to exercise on {day3} to reach his goal?",
+      "generated_answer": "Let's think step by step. On {day1}, {name} exercised for {t1} minutes. On {day2}, {name} exercised for {t2} minutes. The total time exercised on {day1} and {day2} combined is <<t1 + t2>>. On {day3}, {name} wants to exercise for {mult} times the combined time, which is <<mult * (t1 + t2)>>. The final answer is <<mult * (t1 + t2)>>."
+    },
+    {
+      "question": "A {occupation} works for {w} weeks every month and for {d} days every week. If he gets paid {cur}{p} every day, how much does he earn if he works for a year?",
+      "generated_answer": "Let's think step by step. The {occupation} works for {d} days every week and {w} weeks every month. Therefore, in a year, which has 12 months, the {occupation} works for <<d * w * 12>> days. If the {occupation} gets paid {cur}{p} every day, the total earnings for a year are <<p * d * w * 12>>. The final answer is <<p * d * w * 12>>."
+    },
+    {
+      "question": "{name} is feeding his livestock {food}. Each {animal1} needs {n1} {unit}, and each {animal2} needs {n2} {unit} less than twice the amount each {animal1} needs. If there are {k1} {animal1}s and {k2} {animal2}s, how many {unit} of {food} does {name} need?",
+      "generated_answer": "Let's think step by step. Each {animal2} needs <<2 * n1 - n2>> {unit}. The total {unit} needed for {animal1}s is <<k1 * n1>>. The total {unit} needed for {animal2}s is <<k2 * (2 * n1 - n2)>>. The total {unit} needed is <<k1 * n1 + k2 * (2 * n1 - n2)>>. The final answer is <<k1 * n1 + k2 * (2 * n1 - n2)>>."
+    },
+    {
+      "question": "There are {total} {grade}-graders at {school_name} School. {num_girls} of them are girls. On {day}, {absent_girls} {grade}-grade girls and {absent_boys} {grade}-grade bys were absent. How many {grade} grade boys were at {school_name} School on {day}?",
+      "generated_answer": "Let's think step by step. The total number of {grade}-graders is {total}. The number of girls is {num_girls}. Therefore, the number of boys is {total} - {num_girls}. On {day}, {absent_girls} girls and {absent_boys} boys were absent. The number of boys present is ({total} - {num_girls}) - {absent_boys}. The final answer is <<total - num_girls - absent_boys>>."
+    },
+    {
+      "question": "The vending maches sell {item1} for {price1} cents and {item2} for {price2} cents. {name} spent {total} and got {n1} bags of {item1} and had {p}% of his money left in change. How many {item2} did he buy?",
+      "generated_answer": "Let's think step by step. {name} spent {total} and had {p}% of his money left, which means he spent <<total * (100 - p) / 100>>. He bought {n1} bags of {item1} for <<n1 *price1>>. The remaining money spent on {item2} is <<total * (100 - p) / 100 - n1 *price1>>. The number of {item2} bought is <<(total * (100 - p) / 100 - n1 *price1) /price2>>. The final answer is <<(total * (100 - p) / 100 - n1 *price1) /price2>>."
+    },
+    {
+      "question": "At the beginning of the {event}, there were {m} {group1} and {w} {group2}. After {t}, {frac} of the total number of people left. How many {group2} are left if {m_left} {group1} stayed at the {event}?",
+      "generated_answer": "Let's think step by step. Initially, there were {m} {group1} and {w} {group2}, making a total of <<m + w>> people. After {t}, {frac} of the total number of people left, which means (1 - {frac}) stayed. The total number of people who stayed is <<(m + w) * (1 - frac)>>. Given that {m_left} {group1} stayed, the number of {group2} that stayed can be found by subtracting {m_left} from the total number of people who stayed, which is <<(m + w) * (1 - frac) - m_left>>. The final answer is <<(m + w) * (1 - frac) - m_left>>."
+    },
+    {
+      "question": "If {name1} and {name2} have {total} {unit} of fence between them, and they agree to split it with {name2} getting {diff} {unit} more than {name1}, how much is left over for {name1}?",
+      "generated_answer": "Let's think step by step. Let's denote the amount of fence {name1} gets as {x}. Then {name2} gets {x + diff}. The total amount of fence is {total}, so we have the equation {x} + {x + diff} = {total}. Simplifying, we get <<2 * 1 + diff   * 1  * 1  * 1  * 1  * 1  * 1  * 1  * 1  * 1  * 1  * 1  * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1   * 1"
+    },
+    {
+      "question": "The biggest waterslide at {park_name} is {l1} {unit} long, and people slide down at {s1} {unit}/minute. The second biggest waterslide is {l2} {unit} long, but steeper, so people slide down at {s2} {unit}/minute. How much longer does it take to ride the biggest slide compared to the second biggest slide?",
+      "generated_answer": "Let's think step by step. The time to ride the biggest slide is <<l1 / s1>> minutes. The time to ride the second biggest slide is <<l2 / s2>> minutes. The difference in time is <<l1 / s1 - l2 / s2>>. The final answer is <<l1 / s1 - l2 / s2>>."
+    },
+    {
+      "question": "{name} can run {mult_run} faster than she can walk, but she can skip at a rate of speed that is {frac_skip} as fast as she can run. If she can skip at {skip_speed} miles per hour, how many miles can she travel in {total_time} hours if she spends {frac_run} of the time running and {frac_walk} of the time walking?",
+      "generated_answer": "Let's think step by step. First, we need to find the speed at which she can run. Since she can skip at a rate of <<frac_skip>> as fast as she can run, and she can skip at <<skip_speed>> miles per hour, she can run at <<skip_speed / frac_skip>> miles per hour. \n\nNext, we calculate the time spent running and walking. She spends <<frac_run>> of the total time running, so the time spent running is <<total_time * frac_run>> hours. Similarly, she spends <<frac_walk>> of the total time walking, so the time spent walking is <<total_time * frac_walk>> hours.\n\nThe distance she can travel while running is the running speed multiplied by the time spent running, which is <<skip_speed / frac_skip * total_time * frac_run>>. The distance she can travel while walking is the walking speed (which is the running speed divided by <<mult_run>> since she can run <<mult_run>> faster than she can walk) multiplied by the time spent walking, which is <<(skip_speed / frac_skip) / mult_run * total_time * frac_walk>>.\n\nThe total distance she can travel is the sum of the distance traveled while running and the distance traveled while walking, which is <<skip_speed / frac_skip * total_time * frac_run + (skip_speed / frac_skip) / mult_run * total_time * frac_walk>>. \n\nThe final answer is <<skip_speed / frac_skip * total_time * frac_run + (skip_speed / frac_skip) / mult_run * total_time * frac_walk>>."
+    },
+    {
+      "question": "{name1} has {mult1} as many {platform} friends as {name2}. {name3} has {mult2} as many friends on {platform} as {name2}. If {name1} has {n} friends on {platform}, how many {platform} friends does {name3} have?",
+      "generated_answer": "Let's think step by step. {name1} has {n} {platform} friends, and this is {mult1} times the number of {platform} friends {name2} has. So, {name2} has <<n / mult1>> {platform} friends. {name3} has {mult2} times the number of {platform} friends {name2} has, so {name3} has <<mult2 * (n / mult1)>> {platform} friends. The final answer is <<mult2 * (n / mult1)>>."
+    },
+    {
+      "question": "At {name}'s house, there are {mult} as many {food1}s as {food2}s. He has a total of {n} {food2}s in his house. {name} bought {m} more {food2}s at the store and {k} fewer {food1}s than the number of {food2}s. Find the combined total of the number of {food1}s and {food2}s {name} has in the house?",
+      "generated_answer": "Let's think step by step. Initially, {name} has {n} {food2}s. He buys {m} more {food2}s, so the total number of {food2}s becomes <<n + m>>. The number of {food1}s is {mult} times the number of {food2}s, so initially, {name} has <<mult * n>> {food1}s. After buying fewer {food1}s, the number of {food1}s becomes <<mult * n - k>>. The combined total of the number of {food1}s and {food2}s is <<mult * n - k + n + m>>. The final answer is <<mult * n - k + n + m>>."
+    },
+    {
+      "question": "{name}'s {parent} said that she had {budget} budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of {activity1}, have {tokens} in {activity2} tokens, and get to ride the {activity3} {times}. A round of {activity1} is {cost1}. The {activity3} cost {cost2} a ride. How many friends can she invite?",
+      "generated_answer": "Let's think step by step. The total cost for one friend to play one round of {activity1}, have {tokens} in {activity2} tokens, and get to ride the {activity3} {times} is <<cost1 + tokens + times * cost2>>. The total budget is {budget}. The number of friends {name} can invite is <<budget // (cost1 + tokens + times * cost2)>>. The final answer is <<budget // (cost1 + tokens + times * cost2)>>."
+    }
+  ]
+}

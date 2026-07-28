@@ -1,0 +1,56 @@
+{
+  "created_utc": "2026-06-29T10:35:35.022638+00:00",
+  "credential_name_scan": {
+    "hits": [],
+    "terms": [
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY",
+      "AWS_SESSION_TOKEN",
+      "AWS_BEARER_TOKEN_BEDROCK",
+      "OPENAI_API_KEY",
+      "ANTHROPIC_API_KEY",
+      "BEDROCK",
+      "sk-",
+      "SECRET_PLACEHOLDER"
+    ]
+  },
+  "failure_type": "vllm_engine_kv_cache_initialization_failed",
+  "h": "H51",
+  "interpretation": "The production alias-cleaning patch passed tests, but held-out re-eval did not run because vLLM failed to initialize KV cache at max_model_len=16384. This is an infrastructure failure, not a measurement of the patch.",
+  "key_log_lines": [
+    "(EngineCore pid=3281339) ERROR 06-29 10:30:27 [core.py:1108] ValueError: To serve at least one request with the models's max seq len (16384), (0.61 GiB KV cache is needed, which is larger than the available KV cache memory (0.08 GiB). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "(EngineCore pid=3281339) ValueError: To serve at least one request with the models's max seq len (16384), (0.61 GiB KV cache is needed, which is larger than the available KV cache memory (0.08 GiB). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "(EngineCore pid=3283996) ERROR 06-29 10:31:20 [core.py:1108] ValueError: To serve at least one request with the models's max seq len (16384), (0.61 GiB KV cache is needed, which is larger than the available KV cache memory (0.08 GiB). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "(EngineCore pid=3283996) ValueError: To serve at least one request with the models's max seq len (16384), (0.61 GiB KV cache is needed, which is larger than the available KV cache memory (0.08 GiB). Try increasing `gpu_memory_utilization` or decreasing `max_model_len` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "Retrying vLLM evaluator startup with lower gpu_memory_utilization=0.45",
+    "(EngineCore pid=3286389) ERROR 06-29 10:32:02 [core.py:1108] ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "(EngineCore pid=3286389) ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "(EngineCore pid=3289013) ERROR 06-29 10:32:53 [core.py:1108] ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "(EngineCore pid=3289013) ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "Retrying vLLM evaluator startup with lower gpu_memory_utilization=0.40",
+    "(EngineCore pid=3291191) ERROR 06-29 10:33:35 [core.py:1108] ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "(EngineCore pid=3291191) ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "(EngineCore pid=3293646) ERROR 06-29 10:34:26 [core.py:1108] ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "(EngineCore pid=3293646) ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+    "Evaluation failed: Engine core initialization failed. See root cause above. Failed core proc(s): {}"
+  ],
+  "log_path": "/tmp/csd_h51_logs/h51_spider9b_alias_postprocess_20260629.log",
+  "next_safe_action": "Preregister a local no-billing H52 retry that changes only eval runtime max_model_len downward, after checking prompt/token lengths and GPU state.",
+  "observed_retries": [
+    "0.5",
+    "0.5",
+    "0.45",
+    "0.45",
+    "0.4",
+    "0.4"
+  ],
+  "output_json": "outputs/generated/h51_spider9b_alias_postprocess_heldout_20260629/h51_reeval.json",
+  "output_json_exists": false,
+  "pid": "3280011",
+  "status": "failed_before_measurement",
+  "tests": {
+    "focused_alias_test": "1 passed in 0.03s",
+    "nearby_spider_tests_legacy_delimiter_mode": "4 passed in 0.03s",
+    "py_compile": "passed"
+  }
+}

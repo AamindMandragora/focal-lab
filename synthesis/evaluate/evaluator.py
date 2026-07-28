@@ -179,6 +179,7 @@ def _resolve_eval_pool_loader():
         )
         return None
 
+
 # Pathological-strategy guard: stop after this many timed-out examples. Also
 # used post-hoc by _posthoc_early_stop to replay the same decision over a
 # pool-merged, full (non-early-stopped) batch of results.
@@ -1770,6 +1771,18 @@ class Evaluator:
                     torch.cuda.empty_cache()
             except Exception:
                 pass
+
+    def split_provenance(self, bar_split_name: str | None = None) -> dict:
+        """The split-provenance dict every output JSON embeds (one shape, one place)."""
+        from synthesis.split_provenance import build_split_provenance
+
+        return build_split_provenance(
+            gsm_split_file=self.gsm_split_file,
+            gsm_split_name=self.gsm_split_name if self.gsm_split_file is not None else None,
+            spider_split_file=self.spider_split_file,
+            spider_split_name=self.spider_split_name if self.spider_split_file is not None else None,
+            bar_split_name=bar_split_name,
+        )
 
     def _read_split_manifest(self, split_file: str | Path) -> dict:
         """Load a benchmark split manifest from a filesystem path."""

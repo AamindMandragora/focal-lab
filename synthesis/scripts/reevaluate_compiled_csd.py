@@ -3,12 +3,49 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 from pathlib import Path
 from typing import Any
 
 from synthesis.evaluate.baseline_store import save_minimal_baseline_json
 from synthesis.evaluate.evaluator import Evaluator
+from synthesis.run_constants import SPLIT_FILE_BY_DATASET
+
+
+def build_reevaluation_provenance(args: argparse.Namespace, compiled: Path) -> dict[str, Any]:
+    return {
+        "cell_id": args.provenance_cell_id,
+        "manifest_commit": args.provenance_manifest_commit,
+        "dataset": args.dataset,
+        "eval_model": args.eval_model,
+        "compiled_csd_path": str(compiled.resolve()),
+        "compiled_csd_sha256": hashlib.sha256(compiled.read_bytes()).hexdigest(),
+        "sample_size": args.sample_size,
+        "max_steps": args.max_steps,
+        "step_token_budget": args.step_token_budget,
+        "smiles_class": args.smiles_classes,
+    }
+
+
+def babysitter_smoke_split_fallback(output_json: Path | None) -> str | None:
+    """Return 'train' only for zero-acc babysitter smoke invocations.
+
+    Bootstrap for incident spider-qwen25-1p5b:2:telemetry:1784857356: the live
+    babysitter watcher builds this command without a split-name flag, and its
+    smoke.py fix cannot take effect until a smoke passes and merges. The smoke
+    is a train-side sanity gate by contract (test is reserved for final
+    numbers — scripts/runtime/zero_acc_babysitter/AGENTS.md), and it is
+    identified by its babysitter-owned report path. Every other invocation
+    still hard-fails without an explicit split side.
+    """
+    if (
+        output_json is not None
+        and output_json.name == "smoke_report.json"
+        and "zero_acc_babysitter" in output_json.as_posix()
+    ):
+        return "train"
+    return None
 
 
 def _resolve_device(device: str, backend: str) -> str:
@@ -18,6 +55,22 @@ def _resolve_device(device: str, backend: str) -> str:
 
 
 def main() -> None:
+    _seed = os.environ.get("CSD_PARITY_SEED", "").strip()
+    if _seed:
+        import random as _random
+        _random.seed(int(_seed))
+        try:
+            import numpy as _np
+            _np.random.seed(int(_seed))
+        except Exception:
+            pass
+        try:
+            import torch as _torch
+            _torch.manual_seed(int(_seed))
+            if _torch.cuda.is_available():
+                _torch.cuda.manual_seed_all(int(_seed))
+        except Exception:
+            pass
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "compiled_generated_csd",
@@ -39,10 +92,21 @@ def main() -> None:
         help="vLLM tensor parallel size (default: 1; capped by VAS_MAX_CUDA_DEVICES)",
     )
     p.add_argument("--vllm-max-model-len", type=int, default=16384)
-    p.add_argument("--gsm-split-file", type=str, default=None)
-    p.add_argument("--gsm-split-name", choices=["train", "eval"], default="eval")
-    p.add_argument("--spider-split-file", type=str, default=None)
-    p.add_argument("--spider-split-name", choices=["train", "test", "eval"], default="eval")
+    # Split FILE defaults to the one canonical split per dataset (see
+    # SPLIT_FILE_BY_DATASET in synthesis/run_constants.py), but stays an
+    # optional override: synthesis/scripts/sharded_eval_core.py invokes this
+    # script once per parallel worker, each pointed at its own temporary
+    # shard file (a slice of the canonical split) rather than the whole
+    # thing, so the flag can't be removed without breaking sharded re-eval.
+    # Split NAME (which side of that file) stays a required flag — this
+    # script is used to score both the train side (sanity re-checks) and the
+    # test/held-out side (final numbers), so silently defaulting to one side
+    # is how the 2026-07-17 bar/eval split mixup happened. Spider's held-out
+    # side is 'test'; the 'eval' alias was removed.
+    p.add_argument("--gsm-split-file", type=Path, default=None)
+    p.add_argument("--spider-split-file", type=Path, default=None)
+    p.add_argument("--gsm-split-name", choices=["train", "test"], default=None)
+    p.add_argument("--spider-split-name", choices=["train", "test"], default=None)
     p.add_argument("--smiles-classes", type=str, default=None)
     p.add_argument("--max-seconds-per-example", type=float, default=None)
     p.add_argument(
@@ -52,7 +116,29 @@ def main() -> None:
         "(required for base / non-instruction-tuned completion models).",
     )
     p.add_argument("--output-json", type=Path, default=None)
+    p.add_argument("--provenance-cell-id")
+    p.add_argument("--provenance-manifest-commit")
     args = p.parse_args()
+    if bool(args.provenance_cell_id) != bool(args.provenance_manifest_commit):
+        p.error(
+            "--provenance-cell-id and --provenance-manifest-commit must be given together"
+        )
+
+    gsm_split_file = args.gsm_split_file or SPLIT_FILE_BY_DATASET["gsm_symbolic"]
+    spider_split_file = args.spider_split_file or SPLIT_FILE_BY_DATASET["spider"]
+
+    if args.dataset == "gsm_symbolic" and args.gsm_split_name is None:
+        args.gsm_split_name = babysitter_smoke_split_fallback(args.output_json)
+        if args.gsm_split_name is None:
+            p.error("--gsm-split-name is required for --dataset gsm_symbolic "
+                    "(no default side — see synthesis/split_provenance.py)")
+        print("[reevaluate] --gsm-split-name defaulted to 'train' (babysitter smoke)")
+    if args.dataset == "spider" and args.spider_split_name is None:
+        args.spider_split_name = babysitter_smoke_split_fallback(args.output_json)
+        if args.spider_split_name is None:
+            p.error("--spider-split-name is required for --dataset spider "
+                    "(no default side — see synthesis/split_provenance.py)")
+        print("[reevaluate] --spider-split-name defaulted to 'train' (babysitter smoke)")
 
     if os.environ.get("VLLM_WORKER_MULTIPROC_METHOD") is None:
         os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
@@ -77,11 +163,11 @@ def main() -> None:
         vllm_enforce_eager=True,
         max_seconds_per_example=args.max_seconds_per_example,
     )
-    if args.gsm_split_file:
-        evaluator_kwargs["gsm_split_file"] = args.gsm_split_file
+    if args.dataset == "gsm_symbolic":
+        evaluator_kwargs["gsm_split_file"] = str(gsm_split_file)
         evaluator_kwargs["gsm_split_name"] = args.gsm_split_name
-    if args.spider_split_file:
-        evaluator_kwargs["spider_split_file"] = args.spider_split_file
+    if args.dataset == "spider":
+        evaluator_kwargs["spider_split_file"] = str(spider_split_file)
         evaluator_kwargs["spider_split_name"] = args.spider_split_name
     if args.smiles_classes:
         evaluator_kwargs["smiles_classes"] = args.smiles_classes
@@ -103,7 +189,18 @@ def main() -> None:
     syn = sum(1 for s in res.sample_outputs if s.get("is_syntax_valid"))
     print(f"per_example_syntax_pass: {syn} / {len(res.sample_outputs)}")
     if args.output_json is not None:
-        save_minimal_baseline_json(res, args.output_json)
+        # Embed which split file/side this re-eval ran on, so the JSON is
+        # self-describing (split-mismatch incident 2026-07-17).
+        save_minimal_baseline_json(
+            res,
+            args.output_json,
+            eval_split=ev.split_provenance(),
+            metadata=(
+                {"reevaluation_provenance": build_reevaluation_provenance(args, compiled)}
+                if args.provenance_cell_id
+                else None
+            ),
+        )
         print(f"wrote_json: {args.output_json}")
 
 

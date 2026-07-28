@@ -1,0 +1,141 @@
+{
+  "accuracy": 0.32,
+  "syntax_rate": 0.84,
+  "metrics": {
+    "num_examples": 25,
+    "total_generation_seconds": 3615.7895,
+    "mean_generation_seconds_per_example": 144.631581,
+    "examples_with_generation_timing": 25,
+    "run_wall_time_seconds": 3634.2904,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 75,
+    "eval_end_index": 100
+  },
+  "answers": [
+    {
+      "question": "What are airlines that have some flight departing from airport 'AHD'?",
+      "generated_answer": "SELECT DISTINCT airline FROM flights JOIN airports AS f ON flights.destairport = airports.airportcode WHERE flights.sourceairport = 'AHD'",
+      "generation_seconds": 32.102879
+    },
+    {
+      "question": "Which airlines have a flight with source airport AHD?",
+      "generated_answer": "SELECT DISTINCT airline FROM flights, airports WHERE flights.sourceairport = 'AHD' AND flights.destairport = airports.airportcode",
+      "generation_seconds": 102.71787
+    },
+    {
+      "question": "Find all airlines that have flights from airport 'CVO' but not from 'APG'.",
+      "generated_answer": "SELECT airline FROM flights WHERE sourceairport = 'CVO' AND airline NOT IN (SELECT airline FROM flights WHERE sourceairport = 'APG')",
+      "generation_seconds": 139.933604
+    },
+    {
+      "question": "Which airlines have at least 10 flights?",
+      "generated_answer": "select airline from flights group by airline having count(*) >= 10",
+      "generation_seconds": 99.779132
+    },
+    {
+      "question": "Find all airlines that have fewer than 200 flights.",
+      "generated_answer": "SELECT airline FROM flights JOIN airports ON flights.destairport = airports.airportcode GROUP BY airline HAVING COUNT(*) < 200",
+      "generation_seconds": 258.007584
+    },
+    {
+      "question": "Which airlines have less than 200 flights?",
+      "generated_answer": "select airline from flights group by airline having count(flightno) < 200",
+      "generation_seconds": 47.357473
+    },
+    {
+      "question": "Find the cities that have more than one employee under age 30.",
+      "generated_answer": "SELECT DISTINCT city FROM employee JOIN hiring ON employee.employee_id = hiring.employee_id WHERE employee.age < 30 GROUP BY city HAVING COUNT(*) > 1",
+      "generation_seconds": 64.089063
+    },
+    {
+      "question": "What are the manager name and district of the shop that sells the largest number of products?",
+      "generated_answer": "SELECT shopName, district FROM shop WHERE number_products = (SELECT MAX(number_products) FROM shop)",
+      "generation_seconds": 53.002324
+    },
+    {
+      "question": "find the name of employee who was awarded the most times in the evaluation.",
+      "generated_answer": "SELECT name FROM employee e INNER JOIN evaluation eval ON e.employee_id = eval.employee_id ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 14.125322
+    },
+    {
+      "question": "What are the names of the employees who never received any evaluation?",
+      "generated_answer": "SELECT name FROM employee WHERE employee_id NOT IN (SELECT employee_id FROM evaluation)",
+      "generation_seconds": 18.949872
+    },
+    {
+      "question": "Which shops run with no employees? Find the shop names",
+      "generated_answer": "SELECT name FROM shop WHERE name IN (SELECT name FROM shop WHERE NOT EXISTS (SELECT 1 FROM hiring WHERE hiring.shop_id = shop.shop_id))",
+      "generation_seconds": 34.220112
+    },
+    {
+      "question": "Find the number of employees hired in each shop; show the shop name as well.",
+      "generated_answer": "",
+      "generation_seconds": 516.089335
+    },
+    {
+      "question": "Which district has both stores with less than 3000 products and stores with more than 10000 products?",
+      "generated_answer": "SELECT distinct District FROM Shop Join Hiring, Shop WHERE District IN (SELECT District FROM Shop Join Hiring WHERE Number_Products < 3000)  OR District IN (SELECT District FROM Shop Join Hiring WHERE Number_Products > 10000)",
+      "generation_seconds": 144.41792
+    },
+    {
+      "question": "Count the number of distinct store locations.",
+      "generated_answer": "select count(*) as location_count from shop group by shop.location having count(*) > 1",
+      "generation_seconds": 36.106338
+    },
+    {
+      "question": "List document IDs, document names, and document descriptions for all documents.",
+      "generated_answer": "SELECT d.document_id, d.document_name, d.document_description FROM documents d",
+      "generation_seconds": 26.238529
+    },
+    {
+      "question": "What are all different template ids used for documents, and how many times were each of them used?",
+      "generated_answer": "SELECT documents.template_id, COUNT(*), COUNT(*) FROM documents GROUP BY documents.template_id",
+      "generation_seconds": 388.957495
+    },
+    {
+      "question": "What is the id and type code for the template used by the most documents?",
+      "generated_answer": "",
+      "generation_seconds": 618.924756
+    },
+    {
+      "question": "How many templates do we have?",
+      "generated_answer": "SELECT COUNT(*) FROM templates",
+      "generation_seconds": 6.287677
+    },
+    {
+      "question": "What are the ids, version numbers, and type codes for each template?",
+      "generated_answer": "SELECT template_id, version_number, template_type_code FROM templates",
+      "generation_seconds": 162.821541
+    },
+    {
+      "question": "What are the ids of templates with template type code PP or PPT?",
+      "generated_answer": "SELECT DISTINCT template_id FROM templates WHERE template_type_code IN ('PP', 'PPT')",
+      "generation_seconds": 22.208221
+    },
+    {
+      "question": "Count the number of templates of the type CV.",
+      "generated_answer": "SELECT COUNT(*) FROM templates WHERE template_type_code = 'CV'",
+      "generation_seconds": 71.810275
+    },
+    {
+      "question": "Return the version numbers and template type codes of templates with a version number greater than 5.",
+      "generated_answer": "SELECT version_number, template_type_code FROM templates WHERE version_number > 5",
+      "generation_seconds": 37.6903
+    },
+    {
+      "question": "Which template type code has most number of templates?",
+      "generated_answer": "select template_type_code from templates group by template_type_code order by count(*) desc limit 1",
+      "generation_seconds": 41.802121
+    },
+    {
+      "question": "Return the type code of the template type that the most templates belong to.",
+      "generated_answer": "",
+      "generation_seconds": 323.797922
+    },
+    {
+      "question": "Show all template type codes with less than three templates.",
+      "generated_answer": "",
+      "generation_seconds": 354.351867
+    }
+  ]
+}

@@ -31,6 +31,7 @@ def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
 
 
 def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
+    """Match CARS ``expression_only`` prompt (legacy freeze / fair compare)."""
     base_prompt = example.get("prompt", "")
     return (
         base_prompt.rstrip()
@@ -73,12 +74,15 @@ def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str,
     cache_key = ("smiles", class_name, grammar_text)
     parser_factory = evaluator._dynamic_parser_factory_cache.get(cache_key)
     if parser_factory is None:
+        # CARS uses llguidance bitmasks; Syncode DFA rejects multi-atom BPE tokens
+        # like ``CC`` at the empty prefix (legacy first token). Default ON for SMILES.
         parser_factory = create_lark_dafny_parser(
             grammar_text,
             env["VerifiedDecoderAgent"],
             env["_dafny"],
             start="start",
             tokenizer=env["tokenizer"],
+            accept_mask_backend="llguidance",
         )
         evaluator._dynamic_parser_factory_cache[cache_key] = parser_factory
     return parser_factory(env["lm"]._Tokens)
@@ -155,14 +159,14 @@ def accuracy_applicable(aux: dict[str, Any] | None) -> bool:
 def get_generation_runner():
     from synthesis.evaluate.benchmarks.smiles.generation import run_crane_csd
 
-    # SMILES has no visible delimiters (see starts_inside_constrained), so
-    # generation must start already inside the constrained region -- there is
-    # no leading `<<` to wait for.
-    def _runner(*args, **kwargs):
+    # CARS/GCD/IterGen SMILES surfaces are grammar-constrained from token 0
+    # (raw molecule string; no visible << >>), so generation must start already
+    # inside the constrained region -- there is no leading `<<` to wait for.
+    def _token0_runner(*args, **kwargs):
         kwargs.setdefault("start_inside_constrained", True)
         return run_crane_csd(*args, **kwargs)
 
-    return _runner
+    return _token0_runner
 
 
 def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):

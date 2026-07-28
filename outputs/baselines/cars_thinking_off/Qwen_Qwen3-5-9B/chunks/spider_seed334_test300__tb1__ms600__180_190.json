@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.6,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 200.1065,
+    "mean_generation_seconds_per_example": 20.01065,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 218.8345,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 180,
+    "eval_end_index": 190
+  },
+  "answers": [
+    {
+      "question": "For each language, list the number of TV Channels that use it.",
+      "generated_answer": "SELECT country AS language, COUNT(*) AS channel_count FROM tv_channel GROUP BY country",
+      "generation_seconds": 37.547439
+    },
+    {
+      "question": "List the title of all  Cartoons showed on TV Channel with series name \"Sky Radio\".",
+      "generated_answer": "SELECT TITLE FROM CARTOON WHERE CHANNEL IN (SELECT ID FROM TV_CHANNEL WHERE SERIES_NAME = 'Sky Radio')",
+      "generation_seconds": 11.718675
+    },
+    {
+      "question": "What is the maximum and minimum share for the TV series?",
+      "generated_answer": "SELECT MAX(share) AS max_share, MIN(share) AS min_share FROM tv_series",
+      "generation_seconds": 20.355495
+    },
+    {
+      "question": "What is the air date of TV series with Episode \"A Love of a Lifetime\"?",
+      "generated_answer": "SELECT air_date FROM tv_series WHERE episode = 'A Love of a Lifetime'",
+      "generation_seconds": 7.36446
+    },
+    {
+      "question": "List the Episode of all  TV series showed on TV Channel with series name \"Sky Radio\".",
+      "generated_answer": "SELECT episode FROM tv_series WHERE channel = (SELECT id FROM tv_channel WHERE series_name = 'Sky Radio')",
+      "generation_seconds": 19.026277
+    },
+    {
+      "question": "Find the number of cartoons directed by each of the listed directors.",
+      "generated_answer": "SELECT directed_by, COUNT(*) as num_cartoons FROM cartoon GROUP BY directed_by",
+      "generation_seconds": 18.735011
+    },
+    {
+      "question": "which countries' tv channels are playing some cartoon written by Todd Casey?",
+      "generated_answer": "select country from tv_channel where id in (select channel from cartoon where written_by = 'Todd Casey')",
+      "generation_seconds": 67.275538
+    },
+    {
+      "question": "What are the countries that are not playing cartoons written by Todd Casey?",
+      "generated_answer": "SELECT DISTINCT country FROM tv_channel WHERE id NOT IN (SELECT DISTINCT c.channel FROM cartoon c WHERE c.written_by = 'Todd Casey')",
+      "generation_seconds": 13.476341
+    },
+    {
+      "question": "Count the number of poker players.",
+      "generated_answer": "SELECT COUNT(*) FROM poker_player",
+      "generation_seconds": 1.473241
+    },
+    {
+      "question": "What are the earnings of poker players, ordered descending by value?",
+      "generated_answer": "SELECT earnings FROM poker_player ORDER BY earnings DESC",
+      "generation_seconds": 3.134021
+    }
+  ]
+}

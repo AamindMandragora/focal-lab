@@ -1,0 +1,947 @@
+{
+  "summary": {
+    "groups": 48,
+    "selected_positive": 10,
+    "selected_evaluator_correct": 4,
+    "selected_sympy_equiv": 10,
+    "solvable_groups": 10,
+    "picked_positive_when_available": 10,
+    "per_probe_evaluator_correct": {
+      "H2": 2,
+      "H4": 0,
+      "H10": 3
+    },
+    "per_probe_positive": {
+      "H2": 4,
+      "H4": 2,
+      "H10": 8
+    },
+    "union_positive_groups": 10,
+    "picked_positive_when_available_rate": 1.0,
+    "selected_positive_rate": 0.20833333333333334
+  },
+  "selected": [
+    {
+      "report": "H4",
+      "idx": 1,
+      "actual": "target+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1",
+      "expected": "int((sides-target)/sides * 100) - 25",
+      "score": 0.8533333333333335,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H4",
+      "idx": 2,
+      "actual": "n - n1 - 3 * n2",
+      "expected": "int(n - (n_1 + n_2) - (2 * n_2))",
+      "score": 0.8266666666666667,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 3,
+      "actual": "n + k_2*n + k_3*n + 0*k_3*n + 0*k_3*n + 0*k_3*n + 0*k_3*n + 0*k_3*n + 0*k_3*n + 0*k_3*n + 0",
+      "expected": "n + (k_2 * n + k_3 * n) + (k_3 * n // 2) + (k_3 * n // 8)",
+      "score": 0.8255555555555556,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 4,
+      "actual": "12 * x * k",
+      "expected": "x * k * (12//n)",
+      "score": 0.9440000000000002,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 5,
+      "actual": "2",
+      "expected": "int(n * frac_1 * frac_2)",
+      "score": 0.8500000000000001,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 6,
+      "actual": "t * 1/1 * 1/1 + (total - t) * 1/1 * 1/2 + 1/1 + 1/2 + 1/1 + 1/2 + 1/1 + 1/2 + 1/1",
+      "expected": "int((frac1 * t) + frac2*(total-t))",
+      "score": 0.8366666666666667,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 7,
+      "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+      "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+      "score": 0.9440000000000002,
+      "positive": true,
+      "is_correct": false,
+      "sympy_equiv": true
+    },
+    {
+      "report": "H4",
+      "idx": 8,
+      "actual": "(k1 + k2) / (n1 + n2) * 100",
+      "expected": "int(100 * (k1+k2) / (n1+n2))",
+      "score": 0.9353846153846155,
+      "positive": true,
+      "is_correct": false,
+      "sympy_equiv": true
+    },
+    {
+      "report": "H2",
+      "idx": 9,
+      "actual": "n1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+      "expected": "int(n1*c1 + n2*c2 + c3)",
+      "score": 0.857777777777778,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 10,
+      "actual": "(total - n2) + n1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1",
+      "expected": "total + n2 - n1",
+      "score": 0.847777777777778,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 11,
+      "actual": "n1 + n2 + n3 + n4 * (count / 2) + n5 * (count / 2)",
+      "expected": "count*(n1+n2+n3+n4+n5)",
+      "score": 0.8800000000000001,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H4",
+      "idx": 12,
+      "actual": "(total - spent) / cal*1000000000000000000000000000000000000000000000000000000",
+      "expected": "size//n * (total-spent) // (cal)",
+      "score": 0.8211111111111111,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 13,
+      "actual": "total - (total * frac + daily * period * 7)",
+      "expected": "total - (total * frac + daily * period * 7)",
+      "score": 0.9353846153846155,
+      "positive": true,
+      "is_correct": true,
+      "sympy_equiv": true
+    },
+    {
+      "report": "H10",
+      "idx": 14,
+      "actual": "(initial_amount - quantity * unit_price) / 1000000000000000000000000000000000000000000000000000",
+      "expected": "int(initial_amount - quantity * unit_price)",
+      "score": 0.8011111111111111,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 16,
+      "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+      "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+      "score": 0.9236363636363638,
+      "positive": true,
+      "is_correct": true,
+      "sympy_equiv": true
+    },
+    {
+      "report": "H2",
+      "idx": 17,
+      "actual": "n / (x * (1 + mult))",
+      "expected": "n // (x + x*mult)",
+      "score": 0.9490909090909092,
+      "positive": true,
+      "is_correct": false,
+      "sympy_equiv": true
+    },
+    {
+      "report": "H10",
+      "idx": 18,
+      "actual": "(n * t / h * 60) * 100",
+      "expected": "int(100 * (n/d) * t / (h * 60))",
+      "score": 0.9490909090909092,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 19,
+      "actual": "total - n1 - mult+1-1",
+      "expected": "total - n1 - mult * n1",
+      "score": 0.9066666666666667,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H4",
+      "idx": 20,
+      "actual": "7 * usage * price",
+      "expected": "(price + price * percent / 100) * 7 * usage + extra_price",
+      "score": 0.9440000000000002,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 21,
+      "actual": "n + mult * n",
+      "expected": "n * (mult + 1)",
+      "score": 0.9440000000000002,
+      "positive": true,
+      "is_correct": true,
+      "sympy_equiv": true
+    },
+    {
+      "report": "H4",
+      "idx": 22,
+      "actual": "length / (plant_width + space) * cost / 100000000000000000000000000000000000000000000000000",
+      "expected": "int((length / space - owned) * cost)",
+      "score": 0.7801010101010102,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 23,
+      "actual": "n1 * total + n2 / t",
+      "expected": "total // n1 + (total // n2) * t",
+      "score": 0.9500000000000002,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 24,
+      "actual": "f * f * (n_first * a + p * n_first * a / 100) * r",
+      "expected": "int(((n-1)*a + (n-1)*a + (n-1)*a*p/100) * f * r)",
+      "score": 0.8321052631578949,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 25,
+      "actual": "n - m * p1 - k * p2",
+      "expected": "n * int(bill) - (m * p1 + k * p2)",
+      "score": 0.937777777777778,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 26,
+      "actual": "n1 * (frac1 + mult1) / 1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1",
+      "expected": "int(n1 * frac1 + n2 * mult1)",
+      "score": 0.7844444444444445,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 27,
+      "actual": "n * (mult1 + mult2) * days",
+      "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+      "score": 0.9188888888888891,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 28,
+      "actual": "n1 * frac1 + n2 * frac2 - spill + 0/0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18",
+      "expected": "int(n2 * frac2 + (n1 - spill) * frac1)",
+      "score": 0.8555555555555556,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 29,
+      "actual": "(n1 * (100 + p)) / 50+100+100+100+100+100+100+100+100+100+100+100+100",
+      "expected": "2 * (n1 + (p/100 * n1))",
+      "score": 0.8500000000000001,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H4",
+      "idx": 30,
+      "actual": "n * m / k",
+      "expected": "(n*m)//k",
+      "score": 1,
+      "positive": true,
+      "is_correct": false,
+      "sympy_equiv": true
+    },
+    {
+      "report": "H4",
+      "idx": 31,
+      "actual": "n1 * l * p * t / 60",
+      "expected": "((n1 - n2) * l * p * t) // 60",
+      "score": 0.887777777777778,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 32,
+      "actual": "multiple * relative_age - orbit_period",
+      "expected": "multiple * relative_age - orbit_period",
+      "score": 1,
+      "positive": true,
+      "is_correct": true,
+      "sympy_equiv": true
+    },
+    {
+      "report": "H2",
+      "idx": 33,
+      "actual": "n1 + n2 + n3 + (p1 * (n1 + n2 + n3)) + (p2 * (n1 + n2 + n3)) + (p3 * (n1 + n2 + n3)) + (p1 * n1)",
+      "expected": "n1*p1 + n2*p2 + n3*p3",
+      "score": 0.8200000000000001,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 34,
+      "actual": "(w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3)",
+      "expected": "int((w1 + w2 + (n-2)*w3) * price)",
+      "score": 0.7855555555555556,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H4",
+      "idx": 35,
+      "actual": "n - frac/10000000000000000000000000000000000000000000000000000000000",
+      "expected": "n - int(n * frac)",
+      "score": 0.8311111111111111,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H4",
+      "idx": 36,
+      "actual": "(n1 + n2) * t * frac / 60*100*100*100*100*100*100*100*100*100*100*100*100",
+      "expected": "((n1 + n2) * t * d + 2 * (n1 + n2) * t * d * frac) // 60",
+      "score": 0.7955555555555556,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 37,
+      "actual": "n1 + n2 / n1 + n1 + n2 / n2",
+      "expected": "int(n1 * frac) + n2",
+      "score": 0.8600000000000001,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H4",
+      "idx": 38,
+      "actual": "total - 2 * n",
+      "expected": "total - 2*n - m",
+      "score": 1,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 39,
+      "actual": "total - n1 - n2 - n1 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2",
+      "expected": "total - (n1 + n2)",
+      "score": 0.81,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 40,
+      "actual": "n * p * (1 + r1/100) * (1 - r2/100)",
+      "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+      "score": 0.8468421052631581,
+      "positive": true,
+      "is_correct": false,
+      "sympy_equiv": true
+    },
+    {
+      "report": "H10",
+      "idx": 41,
+      "actual": "p1 + (p2 + p1) + p3/frac + p4 - d/100/100/100/100/100/100/100/100/100/100/10",
+      "expected": "p1 + (p1 + p2) + (p3 * frac) + (p4 - d)",
+      "score": 0.8422222222222222,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 42,
+      "actual": "(end_time - start_time) - 1 * multiplier + (end_time - start_time) - 1 * multiplier + (end_time - start_time) - 1 * multiplier + (end_time - start_time) - 1 * multiplier + (end_time - start_time) - 1",
+      "expected": "first_hour_cost + (end_time - start_time - free_hours - 1) * first_hour_cost * multiplier",
+      "score": 0.7055555555555557,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H4",
+      "idx": 43,
+      "actual": "frac2 * frac1 * mult1 * n1/100000000000000000000000000000000000000000000000000",
+      "expected": "int(n1 * frac1 * mult1 * frac2)",
+      "score": 0.7077777777777778,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H4",
+      "idx": 44,
+      "actual": "d * n",
+      "expected": "d * (n + mult * t1) - d * t1",
+      "score": 1,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 45,
+      "actual": "frac - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/1",
+      "expected": "int(n * (p1/100) * (p2/100) * frac)",
+      "score": 0.8444444444444446,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H4",
+      "idx": 46,
+      "actual": "n1 + mult + n2 + n3",
+      "expected": "n1 + n1 * mult + n2 + n3",
+      "score": 0.9200000000000002,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 47,
+      "actual": "n * (mult + 1) * 7/7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7",
+      "expected": "(n + n * mult) * 7",
+      "score": 0.848888888888889,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H2",
+      "idx": 48,
+      "actual": "n0 * (1 + r) - 1 / (1 + r) - 1 + n0 * (1 + r) - 1 / (1 + r) - 1 + n0 * (1 + r) - 1 + n0 * (1 + r)",
+      "expected": "n0 * (r + 1)**d",
+      "score": 0.768888888888889,
+      "positive": false,
+      "is_correct": false,
+      "sympy_equiv": false
+    },
+    {
+      "report": "H10",
+      "idx": 49,
+      "actual": "(n1 * d1 + n2 * d2) / 12",
+      "expected": "(n1*d1 + n2*d2) // 12",
+      "score": 0.9745454545454546,
+      "positive": true,
+      "is_correct": false,
+      "sympy_equiv": true
+    }
+  ],
+  "solvable": [
+    {
+      "idx": 7,
+      "candidates": [
+        {
+          "report": "H2",
+          "idx": 7,
+          "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+          "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+          "score": 0.9440000000000002,
+          "positive": true,
+          "is_correct": false,
+          "sympy_equiv": true
+        },
+        {
+          "report": "H10",
+          "idx": 7,
+          "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+          "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+          "score": 0.9440000000000002,
+          "positive": true,
+          "is_correct": false,
+          "sympy_equiv": true
+        }
+      ],
+      "best": {
+        "report": "H2",
+        "idx": 7,
+        "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+        "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+        "score": 0.9440000000000002,
+        "positive": true,
+        "is_correct": false,
+        "sympy_equiv": true
+      }
+    },
+    {
+      "idx": 8,
+      "candidates": [
+        {
+          "report": "H2",
+          "idx": 8,
+          "actual": "100 * ((n1 * k1) + (n2 * k2)) / (n1 + n2) + 0000000000000000000000000000000000",
+          "expected": "int(100 * (k1+k2) / (n1+n2))",
+          "score": 0.6800000000000002,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H4",
+          "idx": 8,
+          "actual": "(k1 + k2) / (n1 + n2) * 100",
+          "expected": "int(100 * (k1+k2) / (n1+n2))",
+          "score": 0.9353846153846155,
+          "positive": true,
+          "is_correct": false,
+          "sympy_equiv": true
+        },
+        {
+          "report": "H10",
+          "idx": 8,
+          "actual": "(k1 + k2) / (n1 + n2) * 100/100*100/100*100/100*100/100*100/100*100/10",
+          "expected": "int(100 * (k1+k2) / (n1+n2))",
+          "score": 0.848888888888889,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        }
+      ],
+      "best": {
+        "report": "H4",
+        "idx": 8,
+        "actual": "(k1 + k2) / (n1 + n2) * 100",
+        "expected": "int(100 * (k1+k2) / (n1+n2))",
+        "score": 0.9353846153846155,
+        "positive": true,
+        "is_correct": false,
+        "sympy_equiv": true
+      }
+    },
+    {
+      "idx": 13,
+      "candidates": [
+        {
+          "report": "H2",
+          "idx": 13,
+          "actual": "total - frac * total + daily * period * 7+10000000000000000000000000000000000000000000000000",
+          "expected": "total - (total * frac + daily * period * 7)",
+          "score": 0.7182905982905985,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H4",
+          "idx": 13,
+          "actual": "total * (1 - frac) - daily * period * 7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period",
+          "expected": "total - (total * frac + daily * period * 7)",
+          "score": 0.7022222222222223,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H10",
+          "idx": 13,
+          "actual": "total - (total * frac + daily * period * 7)",
+          "expected": "total - (total * frac + daily * period * 7)",
+          "score": 0.9353846153846155,
+          "positive": true,
+          "is_correct": true,
+          "sympy_equiv": true
+        }
+      ],
+      "best": {
+        "report": "H10",
+        "idx": 13,
+        "actual": "total - (total * frac + daily * period * 7)",
+        "expected": "total - (total * frac + daily * period * 7)",
+        "score": 0.9353846153846155,
+        "positive": true,
+        "is_correct": true,
+        "sympy_equiv": true
+      }
+    },
+    {
+      "idx": 16,
+      "candidates": [
+        {
+          "report": "H2",
+          "idx": 16,
+          "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+          "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+          "score": 0.9236363636363638,
+          "positive": true,
+          "is_correct": true,
+          "sympy_equiv": true
+        },
+        {
+          "report": "H4",
+          "idx": 16,
+          "actual": "n1 * p1 + n2 * p2 + n3 * p3+100000000000000000000000000000000000000000000",
+          "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+          "score": 0.7394017094017096,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H10",
+          "idx": 16,
+          "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+          "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+          "score": 0.9236363636363638,
+          "positive": true,
+          "is_correct": true,
+          "sympy_equiv": true
+        }
+      ],
+      "best": {
+        "report": "H2",
+        "idx": 16,
+        "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+        "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+        "score": 0.9236363636363638,
+        "positive": true,
+        "is_correct": true,
+        "sympy_equiv": true
+      }
+    },
+    {
+      "idx": 17,
+      "candidates": [
+        {
+          "report": "H2",
+          "idx": 17,
+          "actual": "n / (x * (1 + mult))",
+          "expected": "n // (x + x*mult)",
+          "score": 0.9490909090909092,
+          "positive": true,
+          "is_correct": false,
+          "sympy_equiv": true
+        },
+        {
+          "report": "H4",
+          "idx": 17,
+          "actual": "n / (x + mult) / 100000000000000000000000000000000000000000000000000000",
+          "expected": "n // (x + x*mult)",
+          "score": 0.7966666666666669,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H10",
+          "idx": 17,
+          "actual": "n / (x * (1 + mult))",
+          "expected": "n // (x + x*mult)",
+          "score": 0.9490909090909092,
+          "positive": true,
+          "is_correct": false,
+          "sympy_equiv": true
+        }
+      ],
+      "best": {
+        "report": "H2",
+        "idx": 17,
+        "actual": "n / (x * (1 + mult))",
+        "expected": "n // (x + x*mult)",
+        "score": 0.9490909090909092,
+        "positive": true,
+        "is_correct": false,
+        "sympy_equiv": true
+      }
+    },
+    {
+      "idx": 21,
+      "candidates": [
+        {
+          "report": "H2",
+          "idx": 21,
+          "actual": "n * (1 + mult) / 1 + n * mult / 1 - n * mult / 1 + n + mult * n - n - n + mult * n - n - n + mult * n - n - n + mult * n - n - n + mult * n",
+          "expected": "n * (mult + 1)",
+          "score": 0.7722222222222224,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H4",
+          "idx": 21,
+          "actual": "n + mult+10000000000000000000000000000000000000000000000000000000000",
+          "expected": "n * (mult + 1)",
+          "score": 0.7751111111111111,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H10",
+          "idx": 21,
+          "actual": "n + mult * n",
+          "expected": "n * (mult + 1)",
+          "score": 0.9440000000000002,
+          "positive": true,
+          "is_correct": true,
+          "sympy_equiv": true
+        }
+      ],
+      "best": {
+        "report": "H10",
+        "idx": 21,
+        "actual": "n + mult * n",
+        "expected": "n * (mult + 1)",
+        "score": 0.9440000000000002,
+        "positive": true,
+        "is_correct": true,
+        "sympy_equiv": true
+      }
+    },
+    {
+      "idx": 30,
+      "candidates": [
+        {
+          "report": "H2",
+          "idx": 30,
+          "actual": "n * m / k - int(n * m / k) / k + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1",
+          "expected": "(n*m)//k",
+          "score": 0.7722222222222224,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H4",
+          "idx": 30,
+          "actual": "n * m / k",
+          "expected": "(n*m)//k",
+          "score": 1,
+          "positive": true,
+          "is_correct": false,
+          "sympy_equiv": true
+        },
+        {
+          "report": "H10",
+          "idx": 30,
+          "actual": "n * m / k",
+          "expected": "(n*m)//k",
+          "score": 1,
+          "positive": true,
+          "is_correct": false,
+          "sympy_equiv": true
+        }
+      ],
+      "best": {
+        "report": "H4",
+        "idx": 30,
+        "actual": "n * m / k",
+        "expected": "(n*m)//k",
+        "score": 1,
+        "positive": true,
+        "is_correct": false,
+        "sympy_equiv": true
+      }
+    },
+    {
+      "idx": 32,
+      "candidates": [
+        {
+          "report": "H2",
+          "idx": 32,
+          "actual": "multiple * relative_age - orbit_period",
+          "expected": "multiple * relative_age - orbit_period",
+          "score": 1,
+          "positive": true,
+          "is_correct": true,
+          "sympy_equiv": true
+        },
+        {
+          "report": "H4",
+          "idx": 32,
+          "actual": "multiple - orbit_period*1000000000000000000000000000000000000000000000000000000000",
+          "expected": "multiple * relative_age - orbit_period",
+          "score": 0.8155555555555556,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H10",
+          "idx": 32,
+          "actual": "15000000000000000000000000000000000000000000000000000000000000",
+          "expected": "multiple * relative_age - orbit_period",
+          "score": 0.6877777777777778,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        }
+      ],
+      "best": {
+        "report": "H2",
+        "idx": 32,
+        "actual": "multiple * relative_age - orbit_period",
+        "expected": "multiple * relative_age - orbit_period",
+        "score": 1,
+        "positive": true,
+        "is_correct": true,
+        "sympy_equiv": true
+      }
+    },
+    {
+      "idx": 40,
+      "candidates": [
+        {
+          "report": "H2",
+          "idx": 40,
+          "actual": "n * (1 + r1/100) * (1 - r2/100) * (n * (1 + r1/100) * (1 - r2/100))",
+          "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+          "score": 0.8022222222222222,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H4",
+          "idx": 40,
+          "actual": "r1 - r2 - r1*r2/10000 + 10000/1000000 + 10000/1000000 + 10000/1000000",
+          "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+          "score": 0.8260000000000001,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H10",
+          "idx": 40,
+          "actual": "n * p * (1 + r1/100) * (1 - r2/100)",
+          "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+          "score": 0.8468421052631581,
+          "positive": true,
+          "is_correct": false,
+          "sympy_equiv": true
+        }
+      ],
+      "best": {
+        "report": "H10",
+        "idx": 40,
+        "actual": "n * p * (1 + r1/100) * (1 - r2/100)",
+        "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+        "score": 0.8468421052631581,
+        "positive": true,
+        "is_correct": false,
+        "sympy_equiv": true
+      }
+    },
+    {
+      "idx": 49,
+      "candidates": [
+        {
+          "report": "H2",
+          "idx": 49,
+          "actual": "(((n1 * d1) + (n2 * d2)) / 12) / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12",
+          "expected": "(n1*d1 + n2*d2) // 12",
+          "score": 0.837777777777778,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H4",
+          "idx": 49,
+          "actual": "(n1 * d1 + n2 * d2 + n2 * d3) // 12/12*12*12*12*12*12*12*12*12*12*12*12*12",
+          "expected": "(n1*d1 + n2*d2) // 12",
+          "score": 0.8444444444444446,
+          "positive": false,
+          "is_correct": false,
+          "sympy_equiv": false
+        },
+        {
+          "report": "H10",
+          "idx": 49,
+          "actual": "(n1 * d1 + n2 * d2) / 12",
+          "expected": "(n1*d1 + n2*d2) // 12",
+          "score": 0.9745454545454546,
+          "positive": true,
+          "is_correct": false,
+          "sympy_equiv": true
+        }
+      ],
+      "best": {
+        "report": "H10",
+        "idx": 49,
+        "actual": "(n1 * d1 + n2 * d2) / 12",
+        "expected": "(n1*d1 + n2*d2) // 12",
+        "score": 0.9745454545454546,
+        "positive": true,
+        "is_correct": false,
+        "sympy_equiv": true
+      }
+    }
+  ]
+}

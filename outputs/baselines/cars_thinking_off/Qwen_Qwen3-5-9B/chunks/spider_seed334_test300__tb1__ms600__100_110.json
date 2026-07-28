@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.3,
+  "syntax_rate": 0.9,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 1160.5254,
+    "mean_generation_seconds_per_example": 116.052542,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 1182.5387,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 100,
+    "eval_end_index": 110
+  },
+  "answers": [
+    {
+      "question": "What the smallest version number and its template type code?",
+      "generated_answer": "SELECT templates.version_number, ref_template_types.template_type_code FROM templates JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code WHERE templates.version_number = (SELECT MIN(version_number) FROM templates)",
+      "generation_seconds": 65.409593
+    },
+    {
+      "question": "Return the lowest version number, along with its corresponding template type code.",
+      "generated_answer": "SELECT MIN(t.version_number) AS lowest_version, t.template_type_code FROM templates t JOIN ref_template_types rt ON t.template_type_code = rt.template_type_code GROUP BY t.template_type_code having t.version_number = (SELECT MIN(v.version_number) FROM templates v WHERE v.template_type_code = t.template_type_code)",
+      "generation_seconds": 199.600464
+    },
+    {
+      "question": "What are the different template type codes, and how many documents use each type?",
+      "generated_answer": "SELECT rt.template_type_code, rt.template_type_description, doc_count FROM ref_template_types rt LEFT JOIN templates t ON rt.template_type_code = t.template_type_code LEFT JOIN documents d ON t.template_id = d.template_id GROUP BY rt.template_type_code, rt.template_type_description HAVING COUNT(d.document_id) > 0",
+      "generation_seconds": 16.272631
+    },
+    {
+      "question": "What is the template type descriptions for template type code \"AD\".",
+      "generated_answer": "SELECT template_type_description FROM ref_template_types WHERE template_type_code = 'AD'",
+      "generation_seconds": 35.389954
+    },
+    {
+      "question": "How many paragraphs in total?",
+      "generated_answer": "SELECT COUNT(*) FROM paragraphs",
+      "generation_seconds": 4.451823
+    },
+    {
+      "question": "Show paragraph details for paragraph with text 'Korea ' .",
+      "generated_answer": "SELECT p.* FROM paragraphs p WHERE p.paragraph_text = 'Korea '",
+      "generation_seconds": 69.273514
+    },
+    {
+      "question": "What are the ids and texts of paragraphs in the document titled 'Welcome to NY'?",
+      "generated_answer": "Select paragraph_id, paragraph_text from paragraphs where document_id = (Select document_id from documents where document_name = 'Welcome to NY')",
+      "generation_seconds": 179.158265
+    },
+    {
+      "question": "Show all document ids and the number of paragraphs in each document. Order by document id.",
+      "generated_answer": "",
+      "generation_seconds": 296.087898
+    },
+    {
+      "question": "Return the different document ids along with the number of paragraphs corresponding to each, ordered by id.",
+      "generated_answer": "SELECT d.document_id, COUNT(p.paragraph_id) AS paragraph_count FROM documents d INNER JOIN paragraphs p ON d.document_id = p.document_id GROUP BY d.document_id ORDER BY d.document_id",
+      "generation_seconds": 7.407131
+    },
+    {
+      "question": "What are the ids and names of each document, as well as the number of paragraphs in each?",
+      "generated_answer": "SELECT d.document_id, d.document_name FROM documents d LEFT JOIN (SELECT document_id, COUNT(*) as paragraph_count FROM paragraphs GROUP BY document_id) p ON d.document_id = p.document_id",
+      "generation_seconds": 287.47415
+    }
+  ]
+}

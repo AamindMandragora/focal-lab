@@ -1,0 +1,32 @@
+{
+  "artifact": "outputs/generated/h57_gsm2b_structured_candidate_launch_shape_20260629/h57_summary.json",
+  "changed_files": [
+    "synthesis/evaluate/candidate_report_adapter.py",
+    "synthesis/evaluate/test_candidate_report_adapter.py"
+  ],
+  "checks": {
+    "artifact": "outputs/generated/h57_gsm2b_structured_candidate_launch_shape_20260629/structured_candidate_artifact.json",
+    "candidate_count": 2,
+    "gold_field_name_hits": [],
+    "has_sample_indices": true,
+    "has_scorer_metadata": true,
+    "has_source_ids": true,
+    "paid_credential_key_name_hits": [],
+    "passed": true,
+    "selection_uses_gold": false,
+    "sha256": "df6307e69145262c3e7b2c775e50b288f60075b6ca6f723a4fe07b03a4fb28c9"
+  },
+  "focused_green": "4 passed in 0.04s",
+  "interpretation": {
+    "launch_shape_patch_ready_for_cpu_dry_run": true,
+    "needs_safe_gpu_smoke_next": true,
+    "selection_facing_records_exclude_gold": true
+  },
+  "nearby_green": "29 passed in 0.20s",
+  "no_billed_credentials": true,
+  "no_gpu_calls": true,
+  "no_model_calls": true,
+  "py_compile": "passed for candidate_consensus.py, candidate_consensus_replay.py, candidate_repeat_plan.py, parameterized_direct_eval.py, candidate_report_adapter.py, candidate_line_scorer.py",
+  "red_test": "/home/aadivyar/.local/bin/pytest synthesis/evaluate/test_candidate_report_adapter.py -q failed at collection with ImportError for structured_candidate_artifact_from_direct_eval_report",
+  "structured_candidate_artifact": "outputs/generated/h57_gsm2b_structured_candidate_launch_shape_20260629/structured_candidate_artifact.json"
+}

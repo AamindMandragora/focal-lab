@@ -1,0 +1,41 @@
+{
+  "accuracy": 0.0,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 3,
+    "total_generation_seconds": 22.5642,
+    "mean_generation_seconds_per_example": 7.521413,
+    "examples_with_generation_timing": 3,
+    "total_output_tokens": 106,
+    "mean_output_tokens_per_example": 35.3333,
+    "examples_with_token_counts": 3,
+    "evaluator_total_time_seconds": 1099.7299,
+    "evaluator_max_sample_time_seconds": 8.748
+  },
+  "answers": [
+    {
+      "question": "List all song names by singers above the average age.",
+      "generated_answer": "select song_name from singer join singer_in_concert on singer_singer_id = singer_id join concert on concert_id = concert_concert_id where age > (select avg ( age ) from singer)>>",
+      "num_tokens": 41,
+      "generation_seconds": 8.747952,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the ids of the students who do not own cats as pets?",
+      "generated_answer": "select stuid from student where stuid not in ( select stuid from has_pet join pets on has_pet_petid = pets_petid where pettype = 'cat' )>>",
+      "num_tokens": 37,
+      "generation_seconds": 6.019926,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the id of the pet owned by the student whose last name is 'Smith'?",
+      "generated_answer": "select has_pet_petid from student, has_pet where student_lname = 'smith' and student_stuid = has_pet_stuid>>",
+      "num_tokens": 28,
+      "generation_seconds": 7.796363,
+      "is_correct": false,
+      "is_syntax_valid": true
+    }
+  ]
+}

@@ -1,0 +1,2763 @@
+{
+  "source": "outputs/generated/h29_gsm2b_six_variant_consensus_probe_20260629/results/direct_eval_success.json",
+  "summary": {
+    "num_examples": 49,
+    "direct_accuracy": 0.061224489795918366,
+    "direct_correct_count": 3,
+    "syntax_rate": 0.8775510204081632,
+    "syntax_valid_count": 43,
+    "elapsed_seconds": 1504.1768171787262,
+    "median_valid_visible_span_length": 9,
+    "candidate_groups": 38,
+    "candidate_lines": 225,
+    "parser_compatible_candidate_lines": 125,
+    "candidate_union_positive": 3,
+    "candidate_union_positive_indices": [
+      17,
+      39,
+      49
+    ],
+    "model_consensus_positive": 3,
+    "model_consensus_positive_indices": [
+      17,
+      39,
+      49
+    ],
+    "agreement_selected_positive": 2,
+    "agreement_selected_positive_indices": [
+      17,
+      39
+    ],
+    "final_sympy_positive": 3,
+    "final_sympy_positive_indices": [
+      16,
+      17,
+      39
+    ],
+    "meets_h29_candidate_union_prediction": false,
+    "meets_h29_agreement_prediction": false,
+    "meets_crane_bar": false
+  },
+  "rows": [
+    {
+      "index": 1,
+      "expected": "int((sides-target)/sides * 100) - 25",
+      "actual": "4*(sides - target) / sides 2",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "4*(sides - target) / sides^2",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "4*(sides - target) / sides^2",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "4*(sides - target) / sides^2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "4*(sides - target) / sides^2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "4*(sides - target) / sides^2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "4*(sides - target) / sides^2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "4*(sides - target) / sides^2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "4*(sides - target) / sides^2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "expected": "int(n - (n_1 + n_2) - (2 * n_2))",
+      "actual": "0 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "g - n_1 - 3n_2",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 3,
+      "expected": "n + (k_2 * n + k_3 * n) + (k_3 * n // 2) + (k_3 * n // 8)",
+      "actual": "50000000000000000000000000000000000000000000000000000000000000",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": null,
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 4,
+      "expected": "x * k * (12//n)",
+      "actual": "n * k * x",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "{n * k * x}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{n * k * x}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{n * k * x}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{n * k * x}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{n * k * x}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n * k * x}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{n * k * x}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{n * k * x}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "expected": "int(n * frac_1 * frac_2)",
+      "actual": "1/n*n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "\\frac{1}{n^2}",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "\\frac{1}{n^2}",
+      "selected_positive": false,
+      "selected_cluster_size": 3,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "\\frac{1}{n^2}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac1n**2'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 11))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 2,
+          "expr": "\\frac{1}{n} \\times \\frac{1}{n}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac1n \\\\times \\\\frac1n'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 23))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 3,
+          "expr": "\\frac{1}{n} \\times \\frac{1}{n}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac1n \\\\times \\\\frac1n'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 23))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 4,
+          "expr": "\\frac{1}{n^2}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac1n**2'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 11))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 5,
+          "expr": "\\frac{1}{n} \\times \\frac{1}{n}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac1n \\\\times \\\\frac1n'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 23))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 6,
+          "expr": "\\frac{1}{n^2}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac1n**2'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 11))",
+          "positive": false,
+          "score": 0.5800000000000001
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "expected": "int((frac1 * t) + frac2*(total-t))",
+      "actual": "2*total - t / 1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "\\frac{2\\text{total} - t}{\\text{currency}}",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "\\frac{2\\text{total} - t}{\\text{currency}}",
+      "selected_positive": false,
+      "selected_cluster_size": 3,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "\\frac{2\\text{total} - t}{\\text{currency}}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac2\\\\texttotal - t\\\\textcurrency'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 34))",
+          "positive": false,
+          "score": 0.6800000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "\\frac{t + 2(\\text{total} - t)}{\\text{currency}}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fract + 2(\\\\texttotal - t)\\\\textcurrency'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 40))",
+          "positive": false,
+          "score": 0.6300000000000001
+        },
+        {
+          "slot": 3,
+          "expr": "\\frac{2\\text{total} - t}{\\text{currency}}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac2\\\\texttotal - t\\\\textcurrency'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 34))",
+          "positive": false,
+          "score": 0.6800000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "\\frac{t}{\\text{currency}} + \\frac{2(\\text{total} - t)}{\\text{currency}}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fract\\\\textcurrency + \\\\frac2(\\\\texttotal - t)\\\\textcurrency'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 58))",
+          "positive": false,
+          "score": 0.6400000000000001
+        },
+        {
+          "slot": 5,
+          "expr": "\\frac{2\\text{total} - t}{\\text{currency}}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac2\\\\texttotal - t\\\\textcurrency'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 34))",
+          "positive": false,
+          "score": 0.6800000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "\\frac{t + 2\\text{total} - 2t}{\\text{currency}}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fract + 2\\\\texttotal - 2t\\\\textcurrency'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 39))",
+          "positive": false,
+          "score": 0.6300000000000001
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+      "actual": "n - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "{n} - {n1} * {w1} - {n2} * {w2} - {n3} * {w3}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{n} - {n1} * {w1} - {n2} * {w2} - {n3} * {w3}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{n} - {n1} * {w1} - {n2} * {w2} - {n3} * {w3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{n} - ({n1} * {w1} + {n2} * {w2} + {n3} * {w3})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{n} - {n1} * {w1} - {n2} * {w2} - {n3} * {w3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n} - {n1} * {w1} - {n2} * {w2} - {n3} * {w3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{n} - {n1} * {w1} - {n2} * {w2} - {n3} * {w3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{n} - {n1} * {w1} - {n2} * {w2} - {n3} * {w3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "expected": "int(100 * (k1+k2) / (n1+n2))",
+      "actual": "100 / (n1 + n2)",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 9,
+      "candidate_parse_ok": 3,
+      "candidate_union_positive": false,
+      "consensus_expr": null,
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "((k1 + k2) * 100) / (n1 + n2)",
+      "selected_positive": false,
+      "selected_cluster_size": 2,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "Direct substitution of the sum of spots and sum of puppies into the percentage formula.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'Direct substitution of the sum of spots and sum of puppies into the percentage formula.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.6009090909090911
+        },
+        {
+          "slot": 2,
+          "expr": "Multiplying the total spots by 100 and dividing by the total puppies.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'Multiplying the total spots by 100 and dividing by the total puppies.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.6150000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "Writing the fraction of spots over total puppies and multiplying by 100.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'Writing the fraction of spots over total puppies and multiplying by 100.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.6077272727272729
+        },
+        {
+          "slot": 4,
+          "expr": "Using the variable names directly in the expression.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'Using the variable names directly in the expression.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.596904761904762
+        },
+        {
+          "slot": 5,
+          "expr": "Simplifying the fraction representation.",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8
+        },
+        {
+          "slot": 6,
+          "expr": "Another variation of the fraction.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'Another variation of the fraction.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.6600000000000001
+        },
+        {
+          "slot": 1,
+          "expr": "((k1 + k2) * 100) / (n1 + n2)",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "((k1 + k2) / (n1 + n2)) * 100",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "((k1 + k2) * 100) / (n1 + n2)$ (Wait, this is same as 1. Let's change the order of operations slightly or the grouping).",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse \"((k1 + k2) * 100) / (n1 + n2)$ (Wait, this is same as 1. Let's change the order of operations slightly or the grouping).\"' failed, because of exception being raised:\nTokenError: ('unterminated string literal (detected at line 1)', (1, 61))",
+          "positive": false,
+          "score": 0.5286842105263159
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "expected": "int(n1*c1 + n2*c2 + c3)",
+      "actual": "n1 * c1 * c1 + n2 * c2 * c2 + c3 * c3 + n1 * c1 * c2 + n2 * c2 * c3 + c3 * c1 + n1 * c1 * c3 + n2 * c2",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "{n1} * {cur} * {c1} + {n2} * {cur} * {c2} + {cur} * {c3}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{cur} * ({n1} * {c1} + {n2} * {c2} + {c3})",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{n1} * {cur} * {c1} + {n2} * {cur} * {c2} + {cur} * {c3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8880000000000001
+        },
+        {
+          "slot": 2,
+          "expr": "{cur} * ({n1} * {c1} + {n2} * {c2} + {c3})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{cur} * ({n1} * {c1} + {n2} * {c2}) + {cur} * {c3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n1} * {cur} * {c1} + {n2} * {cur} * {c2} + {cur} * {c3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8880000000000001
+        },
+        {
+          "slot": 5,
+          "expr": "{cur} * ({n1} * {c1} + {n2} * {c2} + {c3})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{n1} * {cur} * {c1} + {n2} * {cur} * {c2} + {cur} * {c3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8880000000000001
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "expected": "total + n2 - n1",
+      "actual": "Let's think step by step.\n1.  **Initial State**: {name} had a package of {obj} (let's call the count",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": false,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "(Total - n1 + n2) // 2",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "(Total - n1 + n2) / 2",
+      "selected_positive": false,
+      "selected_cluster_size": 3,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "(Total - n1 + n2) // 2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9053333333333335
+        },
+        {
+          "slot": 2,
+          "expr": "(Total - n1 + n2) / 2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9333333333333336
+        },
+        {
+          "slot": 3,
+          "expr": "(Total - n1 + n2) // 2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9053333333333335
+        },
+        {
+          "slot": 4,
+          "expr": "(Total - n1 + n2) / 2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9333333333333336
+        },
+        {
+          "slot": 5,
+          "expr": "(Total - n1 + n2) // 2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9053333333333335
+        },
+        {
+          "slot": 6,
+          "expr": "(Total - n1 + n2) / 2",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9333333333333336
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "expected": "count*(n1+n2+n3+n4+n5)",
+      "actual": "2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 1,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": null,
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "{count} * ({n1} + {n2} + {n3}) + {count} /",
+      "selected_positive": false,
+      "selected_cluster_size": 1,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{count} * ({n1} + {n2} + {n3}) + {count} /",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'count * (n1 + n2 + n3) + count /'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.78
+        }
+      ]
+    },
+    {
+      "index": 12,
+      "expected": "size//n * (total-spent) // (cal)",
+      "actual": "(total - spent) * n / cal",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 1,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "(total - spent) * n / cal",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "(total - spent) * n / cal, Candidate 2: (total - spent) * n / cal, Candidate 3: (total - spent) * n / cal, Candidate 4: (total - spent) * n / cal, Candidate 5: (total - spent) * n / cal, Candidate 6: (total - spent) * n / cal.",
+      "selected_positive": false,
+      "selected_cluster_size": 1,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "(total - spent) * n / cal, Candidate 2: (total - spent) * n / cal, Candidate 3: (total - spent) * n / cal, Candidate 4: (total - spent) * n / cal, Candidate 5: (total - spent) * n / cal, Candidate 6: (total - spent) * n / cal.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '(total - spent) * n / cal, Candidate 2: (total - spent) * n / cal, Candidate 3: (total - spent) * n / cal, Candidate 4: (total - spent) * n / cal, Candidate 5: (total - spent) * n / cal, Candidate 6: (total - spent) * n / cal.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.4
+        }
+      ]
+    },
+    {
+      "index": 13,
+      "expected": "total - (total * frac + daily * period * 7)",
+      "actual": "total - frac - daily * period * 7",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "total - frac - daily * period * 7",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "total - frac - daily * period * 7",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "total - frac - daily * period * 7",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "(total - frac) - daily * period * 7",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "total - frac - daily * (period * 7)",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "total - frac - daily * period * 7",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "total - frac - daily * period * 7",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "total - frac - daily * period * 7",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        }
+      ]
+    },
+    {
+      "index": 14,
+      "expected": "int(initial_amount - quantity * unit_price)",
+      "actual": "Let's think step by step.\n1.  **Initial Amount**: {name} starts with {cur}{initial_amount}.\n2.  **Co",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": false,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        },
+        {
+          "slot": 2,
+          "expr": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        },
+        {
+          "slot": 3,
+          "expr": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        },
+        {
+          "slot": 4,
+          "expr": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        },
+        {
+          "slot": 5,
+          "expr": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        },
+        {
+          "slot": 6,
+          "expr": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        }
+      ]
+    },
+    {
+      "index": 15,
+      "expected": "total - (total * fraction + current)",
+      "actual": "Let's think step by step.\n1. The total cost of the event is given as `{cur}{total}`.\n2. The organiza",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": false,
+      "final_sympy_positive": false,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "{cur}{total} * (1 - {fraction})",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 16,
+      "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+      "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+      "final_evaluator_correct": true,
+      "final_syntax_valid": true,
+      "final_sympy_positive": true,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "n_1 \\times p_1 + n_2 \\times p_2 + n_3 \\times p_3",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 17,
+      "expected": "n // (x + x*mult)",
+      "actual": "n // (x * (1 + mult))",
+      "final_evaluator_correct": true,
+      "final_syntax_valid": true,
+      "final_sympy_positive": true,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": true,
+      "consensus_expr": "{n} // ({x} * (1 + {mult}))",
+      "consensus_parse_ok": true,
+      "consensus_positive": true,
+      "selected_expr": "{n} // ({x} * (1 + {mult}))",
+      "selected_positive": true,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{n} // ({x} * (1 + {mult}))",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{n} // ({x} + {mult} * {x})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{n} // ({x} * (1 + {mult}))",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n} // ({x} * (1 + {mult}))",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{n} // ({x} + {mult} * {x})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{n} // ({x} * (1 + {mult}))",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 0.9720000000000002
+        }
+      ]
+    },
+    {
+      "index": 18,
+      "expected": "int(100 * (n/d) * t / (h * 60))",
+      "actual": "5 * n * t / 3 * h",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "\\frac{5 \\times n \\times t}{3 \\times h}",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "\\frac{5 \\times n \\times t}{3 \\times h}",
+      "selected_positive": false,
+      "selected_cluster_size": 2,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "\\frac{5 \\times n \\times t}{3 \\times h}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac5 \\\\times n \\\\times t3 \\\\times h'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 35))",
+          "positive": false,
+          "score": 0.6600000000000001
+        },
+        {
+          "slot": 2,
+          "expr": "\\frac{n \\times t \\times 100}{60 \\times h}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn \\\\times t \\\\times 10060 \\\\times h'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 38))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 3,
+          "expr": "\\frac{n \\times t}{60 \\times h} \\times 100",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn \\\\times t60 \\\\times h \\\\times 100'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 38))",
+          "positive": false,
+          "score": 0.6300000000000001
+        },
+        {
+          "slot": 4,
+          "expr": "\\frac{n \\times t}{h} \\times \\frac{100}{60}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn \\\\times th \\\\times \\\\frac10060'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 35))",
+          "positive": false,
+          "score": 0.48000000000000004
+        },
+        {
+          "slot": 5,
+          "expr": "\\frac{n \\times t \\times 10}{6 \\times h}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn \\\\times t \\\\times 106 \\\\times h'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 36))",
+          "positive": false,
+          "score": 0.6800000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "\\frac{5 \\times n \\times t}{3 \\times h}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac5 \\\\times n \\\\times t3 \\\\times h'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 35))",
+          "positive": false,
+          "score": 0.6600000000000001
+        }
+      ]
+    },
+    {
+      "index": 19,
+      "expected": "total - n1 - mult * n1",
+      "actual": "total - n1 - mult 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "{total} - {n1} - {mult}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{total} - {n1} - {mult}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{total} - {n1} - {mult}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{total} - {n1} - {mult}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{total} - {n1} - {mult}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{total} - {n1} - {mult}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{total} - {n1} - {mult}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{total} - {n1} - {mult}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        }
+      ]
+    },
+    {
+      "index": 20,
+      "expected": "(price + price * percent / 100) * 7 * usage + extra_price",
+      "actual": "Let's think step by step.\n1. Calculate the cost of the normal brand: The price per unit is `{cur}{pr",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": false,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "{cur}{price} * 7 * {usage} + {cur}{extra_price}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{cur}{price} * 7 * {usage} + {cur}{extra_price}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{cur}{price} * 7 * {usage} + {cur}{extra_price}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        },
+        {
+          "slot": 2,
+          "expr": "{cur}{price} * 7 * {usage} + {cur}{extra_price}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        },
+        {
+          "slot": 3,
+          "expr": "{cur}{price} * 7 * {usage} + {cur}{extra_price}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        },
+        {
+          "slot": 4,
+          "expr": "{cur}{price} * 7 * {usage} + {cur}{extra_price}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        },
+        {
+          "slot": 5,
+          "expr": "{cur}{price} * 7 * {usage} + {cur}{extra_price}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        },
+        {
+          "slot": 6,
+          "expr": "{cur}{price} * 7 * {usage} + {cur}{extra_price}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8666666666666667
+        }
+      ]
+    },
+    {
+      "index": 21,
+      "expected": "n * (mult + 1)",
+      "actual": "n + mult * n\n7\n- n + mult * n\n- n * (1 + mult)\n- n * (1 + mult)\n\n*   n + mult * n\n*   n * (1 + mult)\n*   n * (1 + mult)",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 1,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": null,
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "",
+      "selected_positive": false,
+      "selected_cluster_size": 1,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "",
+          "parse_ok": false,
+          "parse_error": "empty",
+          "positive": false,
+          "score": 0.78
+        }
+      ]
+    },
+    {
+      "index": 22,
+      "expected": "int((length / space - owned) * cost)",
+      "actual": "(space + owned * plant_width) * cost",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "(space + owned * plant_width) * cost",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "(space + owned * plant_width) * cost",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "(space + owned * plant_width) * cost",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "(space + owned * plant_width) * cost",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "(space + owned * plant_width) * cost",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "(space + owned * plant_width) * cost",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "(space + owned * plant_width) * cost",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "(space + owned * plant_width) * cost",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        }
+      ]
+    },
+    {
+      "index": 23,
+      "expected": "total // n1 + (total // n2) * t",
+      "actual": "total / n1 + (total * t) / n2 - total / n1 - (total * t) / n2 + total / n1 + (total * t) / n2 - total / n1 - (total * t) / n2 + total / n1",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "{total} / {n1} + {total} / {n2} * {t}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{total} / {n1} + {total} / {n2} * {t}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{total} / {n1} + {total} / {n2} * {t}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{total} / {n1} + ({total} * {t}) / {n2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{total} / {n1} + {total} / {n2} * {t}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{total} / {n1} + {total} / {n2} * {t}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{total} / {n1} + {total} / {n2} * {t}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{total} / {n1} + {total} / {n2} * {t}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9720000000000002
+        }
+      ]
+    },
+    {
+      "index": 24,
+      "expected": "int(((n-1)*a + (n-1)*a + (n-1)*a*p/100) * f * r)",
+      "actual": "n_first * a * f * r * (2 + p/100)",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "n_{first} \\times a \\times f \\times r \\times (2 + p/100)",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "n_{first} \\times a \\times f \\times r \\times (2 + p/100)",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "n_{first} \\times a \\times f \\times r \\times (2 + p/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_first \\\\times a \\\\times f \\\\times r \\\\times (2 + p/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 54))",
+          "positive": false,
+          "score": 0.7666666666666668
+        },
+        {
+          "slot": 2,
+          "expr": "n_{first} \\times a \\times f \\times r \\times (2 + p/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_first \\\\times a \\\\times f \\\\times r \\\\times (2 + p/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 54))",
+          "positive": false,
+          "score": 0.7666666666666668
+        },
+        {
+          "slot": 3,
+          "expr": "n_{first} \\times a \\times f \\times r \\times (2 + p/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_first \\\\times a \\\\times f \\\\times r \\\\times (2 + p/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 54))",
+          "positive": false,
+          "score": 0.7666666666666668
+        },
+        {
+          "slot": 4,
+          "expr": "n_{first} \\times a \\times f \\times r \\times (2 + p/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_first \\\\times a \\\\times f \\\\times r \\\\times (2 + p/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 54))",
+          "positive": false,
+          "score": 0.7666666666666668
+        },
+        {
+          "slot": 5,
+          "expr": "n_{first} \\times a \\times f \\times r \\times (2 + p/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_first \\\\times a \\\\times f \\\\times r \\\\times (2 + p/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 54))",
+          "positive": false,
+          "score": 0.7666666666666668
+        },
+        {
+          "slot": 6,
+          "expr": "n_{first} \\times a \\times f \\times r \\times (2 + p/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_first \\\\times a \\\\times f \\\\times r \\\\times (2 + p/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 54))",
+          "positive": false,
+          "score": 0.7666666666666668
+        }
+      ]
+    },
+    {
+      "index": 25,
+      "expected": "n * int(bill) - (m * p1 + k * p2)",
+      "actual": "n - (m * (p1)) - (k * (p2))",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "{n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9200000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{n} - {m} * {cur}{p1} - {k} * {cur}{p2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9200000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9200000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n} - {m} * {cur}{p1} - {k} * {cur}{p2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9200000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{n} - {m} * {cur}{p1} - {k} * {cur}{p2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9200000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9200000000000002
+        }
+      ]
+    },
+    {
+      "index": 26,
+      "expected": "int(n1 * frac1 + n2 * mult1)",
+      "actual": "1+n211111111111111111111111111111111111111111111111111111111111",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": null,
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 27,
+      "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+      "actual": "n * (mult1 + mult2) * days",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "{n} * ({mult1} + {mult2}) * {days}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{n} * ({mult1} + {mult2}) * {days}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{n} * ({mult1} + {mult2}) * {days}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{n} * ({mult1} + {mult2}) * {days}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{n} * ({mult1} + {mult2}) * {days}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n} * ({mult1} + {mult2}) * {days}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{n} * ({mult1} + {mult2}) * {days}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{n} * ({mult1} + {mult2}) * {days}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        }
+      ]
+    },
+    {
+      "index": 28,
+      "expected": "int(n2 * frac2 + (n1 - spill) * frac1)",
+      "actual": "frac12*n1 + 2/3*n2*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "\\frac{n_1}{2} + \\frac{2n_2}{3}",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "\\frac{n_1}{2} + \\frac{2n_2}{3}",
+      "selected_positive": false,
+      "selected_cluster_size": 3,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "\\frac{n_1}{2} + \\frac{2n_2}{3}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn_12 + \\\\frac2n_23'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 23))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 2,
+          "expr": "\\frac{3n_1 + 4n_2}{6}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac3n_1 + 4n_26'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 18))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 3,
+          "expr": "\\frac{n_1}{2} + \\frac{2n_2}{3}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn_12 + \\\\frac2n_23'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 23))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 4,
+          "expr": "\\frac{3n_1 + 4n_2}{6}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac3n_1 + 4n_26'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 18))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 5,
+          "expr": "\\frac{n_1}{2} + \\frac{2n_2}{3}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn_12 + \\\\frac2n_23'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 23))",
+          "positive": false,
+          "score": 0.5800000000000001
+        },
+        {
+          "slot": 6,
+          "expr": "\\frac{3n_1 + 4n_2}{6}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\frac3n_1 + 4n_26'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 18))",
+          "positive": false,
+          "score": 0.5800000000000001
+        }
+      ]
+    },
+    {
+      "index": 29,
+      "expected": "2 * (n1 + (p/100 * n1))",
+      "actual": "100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/10",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 10,
+      "candidate_parse_ok": 9,
+      "candidate_union_positive": false,
+      "consensus_expr": null,
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "{n1} + {c1} + {c2} + {p/100 * c1}",
+      "selected_positive": false,
+      "selected_cluster_size": 5,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{n1} + {c1} + {c2} + {c2} = {n1} + {c1} + {c2} + {p/100 * c1}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n1 + c1 + c2 + c2 = n1 + c1 + c2 + p/100 * c1'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.7100000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{n1} + {c1} + 2 * ({p/100 * c1})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{n1} + {c1} + {c2} + {p/100 * c1}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n1} + {c1} + {c2} + {c2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{n1} + {c1} + {c2} + {p/100 * c1}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{n1} + {c1} + {c2} + {c2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 1,
+          "expr": "{n1} + {c1} + {c2} + {p/100 * c1}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{n1} + {c1} + {c2} + {p/100 * c1}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{n1} + {c1} + {c2} + {p/100 * c1}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n1} + {c1} + {c2} + {p/100 * c",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9600000000000002
+        }
+      ]
+    },
+    {
+      "index": 30,
+      "expected": "(n*m)//k",
+      "actual": "n * m / k",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "n \\times m / k",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "n \\times m / k",
+      "selected_positive": false,
+      "selected_cluster_size": 2,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "n \\times m / k",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times m / k'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 15))",
+          "positive": false,
+          "score": 0.7300000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "(n \\times m) / k",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '(n \\\\times m) / k'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 17))",
+          "positive": false,
+          "score": 0.7300000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "n \\times (m / k)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times (m / k)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 17))",
+          "positive": false,
+          "score": 0.7300000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "n \\times m / k",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times m / k'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 15))",
+          "positive": false,
+          "score": 0.7300000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "(n \\times m) / k",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '(n \\\\times m) / k'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 17))",
+          "positive": false,
+          "score": 0.7300000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "n \\times (m / k)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times (m / k)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 17))",
+          "positive": false,
+          "score": 0.7300000000000002
+        }
+      ]
+    },
+    {
+      "index": 31,
+      "expected": "((n1 - n2) * l * p * t) // 60",
+      "actual": "n1 * l * t / (60 * p) / 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 12,
+      "candidate_parse_ok": 1,
+      "candidate_union_positive": false,
+      "consensus_expr": "n_1 \\cdot l \\cdot t / (60 \\cdot p)",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "n_1 \\cdot l \\cdot t / (60 \\cdot p)",
+      "selected_positive": false,
+      "selected_cluster_size": 3,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "Direct calculation of pages per person, then total pages, then time.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'Direct calculation of pages per person, then total pages, then time.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.5861111111111112
+        },
+        {
+          "slot": 2,
+          "expr": "Calculate total letters, divide by pages per letter, then multiply by time per page, then convert to hours.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'Calculate total letters, divide by pages per letter, then multiply by time per page, then convert to hours.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.53
+        },
+        {
+          "slot": 3,
+          "expr": "Combine all variables into a single fraction.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'Combine all variables into a single fraction.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.6085714285714288
+        },
+        {
+          "slot": 4,
+          "expr": "Simplify the fraction by dividing numerator and denominator by common factors if any (though here we just keep the structure).",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.8
+        },
+        {
+          "slot": 5,
+          "expr": "Focus on the rate of writing (pages per minute) and multiply by total minutes.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'Focus on the rate of writing (pages per minute) and multiply by total minutes.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.5821428571428573
+        },
+        {
+          "slot": 6,
+          "expr": "Focus on the rate of writing (hours per minute) and multiply by total minutes.",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'Focus on the rate of writing (hours per minute) and multiply by total minutes.'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.5821428571428573
+        },
+        {
+          "slot": 1,
+          "expr": "n_1 \\cdot l / p \\cdot t / 60",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_1 \\\\cdot l / p \\\\cdot t / 60'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 29))",
+          "positive": false,
+          "score": 0.7000000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "n_1 \\cdot l \\cdot t / (p \\cdot 60)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_1 \\\\cdot l \\\\cdot t / (p \\\\cdot 60)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 35))",
+          "positive": false,
+          "score": 0.7000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "n_1 \\cdot l \\cdot t / (60 \\cdot p)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_1 \\\\cdot l \\\\cdot t / (60 \\\\cdot p)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 35))",
+          "positive": false,
+          "score": 0.7000000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "n_1 \\cdot l \\cdot t / (p \\cdot 60)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_1 \\\\cdot l \\\\cdot t / (p \\\\cdot 60)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 35))",
+          "positive": false,
+          "score": 0.7000000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "n_1 \\cdot l \\cdot t / (60 \\cdot p)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_1 \\\\cdot l \\\\cdot t / (60 \\\\cdot p)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 35))",
+          "positive": false,
+          "score": 0.7000000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "n_1 \\cdot l \\cdot t / (60 \\cdot p)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_1 \\\\cdot l \\\\cdot t / (60 \\\\cdot p)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 35))",
+          "positive": false,
+          "score": 0.7000000000000002
+        }
+      ]
+    },
+    {
+      "index": 32,
+      "expected": "multiple * relative_age - orbit_period",
+      "actual": "Let's think step by step.\n1. The relative age of the comet is $r$.\n2. The relative saw the comet whe",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": false,
+      "final_sympy_positive": false,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": null,
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 33,
+      "expected": "n1*p1 + n2*p2 + n3*p3",
+      "actual": "(n1 * p1 * p1) + (n2 * p2 * p2) + (n3 * p3 * p3) + (n1 * p1 * p1) + (n2 * p2 * p2)",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "({n1} * {cur}{p1}) + ({n2} * {cur}{p2}) + ({n3} * {cur}{p3})",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 34,
+      "expected": "int((w1 + w2 + (n-2)*w3) * price)",
+      "actual": "(w1 + w2 + w3) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3))",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "(w_1 + w_2 + w_3) * (cur * price)",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 35,
+      "expected": "n - int(n * frac)",
+      "actual": "n * (1 - frac) / 100000000000000000000000000000000000000000000000000000",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": false,
+      "consensus_expr": "{n} * (1 - {frac})",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{n} - {frac} * {n}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{n} - {frac} * {n}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{n} * (1 - {frac})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{n} - {frac} * {n}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n} * (1 - {frac})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{n} - {frac} * {n}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{n} * (1 - {frac})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        }
+      ]
+    },
+    {
+      "index": 36,
+      "expected": "((n1 + n2) * t * d + 2 * (n1 + n2) * t * d * frac) // 60",
+      "actual": "frac*n2*t*d - (n1+n2)/7*(n1+n2)*t*d/60",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "\\frac{n_2 \\cdot t \\cdot d - \\frac{n_1 + n_2}{7} \\cdot (n_1 + n_2) \\cdot t \\cdot d}{60}",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "\\frac{n_2 \\cdot t \\cdot d - \\frac{n_1 + n_2}{7} \\cdot (n_1 + n_2) \\cdot t \\cdot d}{60}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "\\frac{n_2 \\cdot t \\cdot d - \\frac{n_1 + n_2}{7} \\cdot (n_1 + n_2) \\cdot t \\cdot d}{60}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn_2 \\\\cdot t \\\\cdot d - \\\\fracn_1 + n_27 \\\\cdot (n_1 + n_2) \\\\cdot t \\\\cdot d60'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 79))",
+          "positive": false,
+          "score": 0.49944444444444447
+        },
+        {
+          "slot": 2,
+          "expr": "\\frac{n_2 \\cdot t \\cdot d - \\frac{n_1 + n_2}{7} \\cdot (n_1 + n_2) \\cdot t \\cdot d}{60}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn_2 \\\\cdot t \\\\cdot d - \\\\fracn_1 + n_27 \\\\cdot (n_1 + n_2) \\\\cdot t \\\\cdot d60'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 79))",
+          "positive": false,
+          "score": 0.49944444444444447
+        },
+        {
+          "slot": 3,
+          "expr": "\\frac{n_2 \\cdot t \\cdot d - \\frac{n_1 + n_2}{7} \\cdot (n_1 + n_2) \\cdot t \\cdot d}{60}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn_2 \\\\cdot t \\\\cdot d - \\\\fracn_1 + n_27 \\\\cdot (n_1 + n_2) \\\\cdot t \\\\cdot d60'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 79))",
+          "positive": false,
+          "score": 0.49944444444444447
+        },
+        {
+          "slot": 4,
+          "expr": "\\frac{n_2 \\cdot t \\cdot d - \\frac{n_1 + n_2}{7} \\cdot (n_1 + n_2) \\cdot t \\cdot d}{60}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn_2 \\\\cdot t \\\\cdot d - \\\\fracn_1 + n_27 \\\\cdot (n_1 + n_2) \\\\cdot t \\\\cdot d60'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 79))",
+          "positive": false,
+          "score": 0.49944444444444447
+        },
+        {
+          "slot": 5,
+          "expr": "\\frac{n_2 \\cdot t \\cdot d - \\frac{n_1 + n_2}{7} \\cdot (n_1 + n_2) \\cdot t \\cdot d}{60}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn_2 \\\\cdot t \\\\cdot d - \\\\fracn_1 + n_27 \\\\cdot (n_1 + n_2) \\\\cdot t \\\\cdot d60'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 79))",
+          "positive": false,
+          "score": 0.49944444444444447
+        },
+        {
+          "slot": 6,
+          "expr": "\\frac{n_2 \\cdot t \\cdot d - \\frac{n_1 + n_2}{7} \\cdot (n_1 + n_2) \\cdot t \\cdot d}{60}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '\\\\fracn_2 \\\\cdot t \\\\cdot d - \\\\fracn_1 + n_27 \\\\cdot (n_1 + n_2) \\\\cdot t \\\\cdot d60'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 79))",
+          "positive": false,
+          "score": 0.49944444444444447
+        }
+      ]
+    },
+    {
+      "index": 37,
+      "expected": "int(n1 * frac) + n2",
+      "actual": "n2 + n1 / n1 * n2",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "\\frac{n_2 + n_1}{n_1 n_2}",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 38,
+      "expected": "total - 2*n - m",
+      "actual": "total - 2*n - m 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "{total} - {2n} - {m}",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "{total} - {2n} - {m}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{total} - {2n} - {m}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'total - 2n - m'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.78
+        },
+        {
+          "slot": 2,
+          "expr": "{total} - {2n} - {m}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'total - 2n - m'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.78
+        },
+        {
+          "slot": 3,
+          "expr": "{total} - {2n} - {m}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'total - 2n - m'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.78
+        },
+        {
+          "slot": 4,
+          "expr": "{total} - {2n} - {m}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'total - 2n - m'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.78
+        },
+        {
+          "slot": 5,
+          "expr": "{total} - {2n} - {m}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'total - 2n - m'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.78
+        },
+        {
+          "slot": 6,
+          "expr": "{total} - {2n} - {m}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'total - 2n - m'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.78
+        }
+      ]
+    },
+    {
+      "index": 39,
+      "expected": "total - (n1 + n2)",
+      "actual": "total - n1 - n2",
+      "final_evaluator_correct": true,
+      "final_syntax_valid": true,
+      "final_sympy_positive": true,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": true,
+      "consensus_expr": "{total} - {n1} - {n2}",
+      "consensus_parse_ok": true,
+      "consensus_positive": true,
+      "selected_expr": "{total} - {n1} - {n2}",
+      "selected_positive": true,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{total} - {n1} - {n2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "{total} - {n1} - {n2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{total} - {n1} - {n2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{total} - {n1} - {n2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{total} - {n1} - {n2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{total} - {n1} - {n2}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 1.0000000000000002
+        }
+      ]
+    },
+    {
+      "index": 40,
+      "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+      "actual": "n * (1 + r1/100) * (1 - r2/100) * p * (1 + r1/100) * (1 - r2/100) * n * (1 + r1/100)",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times cur \\\\times p \\\\times (1 + r1/100) \\\\times (1 - r2/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 62))",
+          "positive": false,
+          "score": 0.6500000000000001
+        },
+        {
+          "slot": 2,
+          "expr": "n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times cur \\\\times p \\\\times (1 + r1/100) \\\\times (1 - r2/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 62))",
+          "positive": false,
+          "score": 0.6500000000000001
+        },
+        {
+          "slot": 3,
+          "expr": "n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times cur \\\\times p \\\\times (1 + r1/100) \\\\times (1 - r2/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 62))",
+          "positive": false,
+          "score": 0.6500000000000001
+        },
+        {
+          "slot": 4,
+          "expr": "n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times cur \\\\times p \\\\times (1 + r1/100) \\\\times (1 - r2/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 62))",
+          "positive": false,
+          "score": 0.6500000000000001
+        },
+        {
+          "slot": 5,
+          "expr": "n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times cur \\\\times p \\\\times (1 + r1/100) \\\\times (1 - r2/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 62))",
+          "positive": false,
+          "score": 0.6500000000000001
+        },
+        {
+          "slot": 6,
+          "expr": "n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times cur \\\\times p \\\\times (1 + r1/100) \\\\times (1 - r2/100)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 62))",
+          "positive": false,
+          "score": 0.6500000000000001
+        }
+      ]
+    },
+    {
+      "index": 41,
+      "expected": "p1 + (p1 + p2) + (p3 * frac) + (p4 - d)",
+      "actual": "p4* d / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 1",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": null,
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 42,
+      "expected": "first_hour_cost + (end_time - start_time - free_hours - 1) * first_hour_cost * multiplier",
+      "actual": "Let's think step by step.\n1. Calculate the total number of hours worked: The duration is from {start",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": false,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "{cur}${first_hour_cost} + ({end_time} - {start_time} - 1) * {multiplier} * {first_hour_cost}",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "{cur}${first_hour_cost} + ({end_time} - {start_time} - 1) * {multiplier} * {first_hour_cost}",
+      "selected_positive": false,
+      "selected_cluster_size": 5,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{cur}${first_hour_cost} + ({end_time} - {start_time} - 1) * {multiplier} * {first_hour_cost}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'cur$first_hour_cost + (end_time - start_time - 1) * multiplier * first_hour_cost'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.7216666666666667
+        },
+        {
+          "slot": 2,
+          "expr": "{cur}${first_hour_cost} + ({end_time} - {start_time} - 1) * {first_hour_cost} * {multiplier}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'cur$first_hour_cost + (end_time - start_time - 1) * first_hour_cost * multiplier'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.7216666666666667
+        },
+        {
+          "slot": 3,
+          "expr": "{cur}${first_hour_cost} + ({end_time} - {start_time} - 1) * {multiplier} * {first_hour_cost}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'cur$first_hour_cost + (end_time - start_time - 1) * multiplier * first_hour_cost'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.7216666666666667
+        },
+        {
+          "slot": 4,
+          "expr": "{cur}${first_hour_cost} + ({end_time} - {start_time} - 1) * {multiplier} * {first_hour_cost}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'cur$first_hour_cost + (end_time - start_time - 1) * multiplier * first_hour_cost'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.7216666666666667
+        },
+        {
+          "slot": 5,
+          "expr": "{cur}${first_hour_cost} + ({end_time} - {start_time} - 1) * {multiplier} * {first_hour_cost}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'cur$first_hour_cost + (end_time - start_time - 1) * multiplier * first_hour_cost'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.7216666666666667
+        },
+        {
+          "slot": 6,
+          "expr": "{cur}${first_hour_cost} + ({end_time} - {start_time} - 1) * {multiplier} * {first_hour_cost}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'cur$first_hour_cost + (end_time - start_time - 1) * multiplier * first_hour_cost'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.7216666666666667
+        }
+      ]
+    },
+    {
+      "index": 43,
+      "expected": "int(n1 * frac1 * mult1 * frac2)",
+      "actual": "frac2 * mult1 * frac1 * n1 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 1,
+      "candidate_parse_ok": 1,
+      "candidate_union_positive": false,
+      "consensus_expr": "{frac2} * {mult1} * {frac1} * {n1}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{frac2} * {mult1} * {frac1} * {n1}",
+      "selected_positive": false,
+      "selected_cluster_size": 1,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{frac2} * {mult1} * {frac1} * {n1}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 0.9580000000000002
+        }
+      ]
+    },
+    {
+      "index": 44,
+      "expected": "d * (n + mult * t1) - d * t1",
+      "actual": "mult + n - t1",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 0,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "{mult} + {n} - {t1}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": null,
+      "selected_positive": false,
+      "selected_cluster_size": 0,
+      "candidates": []
+    },
+    {
+      "index": 45,
+      "expected": "int(n * (p1/100) * (p2/100) * frac)",
+      "actual": "n * p1 / 100 * p2 / 100 * 1 / 100",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{1}{100}",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{1}{100}",
+      "selected_positive": false,
+      "selected_cluster_size": 6,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{1}{100}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times \\\\fracp1100 \\\\times \\\\fracp2100 \\\\times \\\\frac1100'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 55))",
+          "positive": false,
+          "score": 0.6050000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{1}{100}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times \\\\fracp1100 \\\\times \\\\fracp2100 \\\\times \\\\frac1100'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 55))",
+          "positive": false,
+          "score": 0.6050000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{1}{100}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times \\\\fracp1100 \\\\times \\\\fracp2100 \\\\times \\\\frac1100'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 55))",
+          "positive": false,
+          "score": 0.6050000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{1}{100}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times \\\\fracp1100 \\\\times \\\\fracp2100 \\\\times \\\\frac1100'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 55))",
+          "positive": false,
+          "score": 0.6050000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{1}{100}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times \\\\fracp1100 \\\\times \\\\fracp2100 \\\\times \\\\frac1100'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 55))",
+          "positive": false,
+          "score": 0.6050000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{1}{100}",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n \\\\times \\\\fracp1100 \\\\times \\\\fracp2100 \\\\times \\\\frac1100'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 55))",
+          "positive": false,
+          "score": 0.6050000000000002
+        }
+      ]
+    },
+    {
+      "index": 46,
+      "expected": "n1 + n1 * mult + n2 + n3",
+      "actual": "n1 + mult + n2 + n3 1",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 12,
+      "candidate_parse_ok": 9,
+      "candidate_union_positive": false,
+      "consensus_expr": "{n1} + {mult} + {n2} + {n3}",
+      "consensus_parse_ok": true,
+      "consensus_positive": false,
+      "selected_expr": "{n1} + {mult} + {n2} + {n3}",
+      "selected_positive": false,
+      "selected_cluster_size": 9,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "{n1} + {mult} + {n2} + {n3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "({n1} + {n2} + {n3}) + {mult}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{n1} + {mult} + ({n2} + {n3})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n1} + {mult} + {n2} + {n3} (Same as 1)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n1 + mult + n2 + n3 (Same as 1)'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.7133333333333334
+        },
+        {
+          "slot": 5,
+          "expr": "{n1} + {mult} + {n2} + {n3} (Same as 1)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n1 + mult + n2 + n3 (Same as 1)'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.7133333333333334
+        },
+        {
+          "slot": 6,
+          "expr": "{n1} + {mult} + {n2} + {n3} (Same as 1)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n1 + mult + n2 + n3 (Same as 1)'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.7133333333333334
+        },
+        {
+          "slot": 1,
+          "expr": "{n1} + {mult} + {n2} + {n3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "({n1} + {n2} + {n3}) + {mult}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "{n1} + {mult} + ({n2} + {n3})",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "{n1} + {mult} + {n2} + {n3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "{n1} + {mult} + {n2} + {n3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "{n1} + {mult} + {n2} + {n3}",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        }
+      ]
+    },
+    {
+      "index": 47,
+      "expected": "(n + n * mult) * 7",
+      "actual": "7 + 7*mult*n",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": "Candidates 2, 3, 4, and 6 are identical. Candidate 1 is also identical to 2, 3, 4, and 6. All valid derivations lead to the same expression. The simplest form without parentheses around the sum is $7n + 7multn$.",
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "7n(1 + mult)",
+      "selected_positive": false,
+      "selected_cluster_size": 2,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "7n(1 + mult)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '7n(1 + mult)'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.78
+        },
+        {
+          "slot": 2,
+          "expr": "7n + 7multn",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '7n + 7multn'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.6800000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "7 \\times (mult \\times n + n)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '7 \\\\times (mult \\\\times n + n)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 29))",
+          "positive": false,
+          "score": 0.7133333333333334
+        },
+        {
+          "slot": 4,
+          "expr": "7 \\times (n + mult \\times n)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '7 \\\\times (n + mult \\\\times n)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 29))",
+          "positive": false,
+          "score": 0.7133333333333334
+        },
+        {
+          "slot": 5,
+          "expr": "7n(1 + mult)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '7n(1 + mult)'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.78
+        },
+        {
+          "slot": 6,
+          "expr": "7n + 7multn",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse '7n + 7multn'' failed, because of exception being raised:\nSyntaxError: invalid syntax (<string>, line 1)",
+          "positive": false,
+          "score": 0.6800000000000002
+        }
+      ]
+    },
+    {
+      "index": 48,
+      "expected": "n0 * (r + 1)**d",
+      "actual": "-1111111111111111111111111111111111111111111111111111111111111",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 4,
+      "candidate_parse_ok": 0,
+      "candidate_union_positive": false,
+      "consensus_expr": null,
+      "consensus_parse_ok": false,
+      "consensus_positive": false,
+      "selected_expr": "n_0 \\times (1 + r)^d$ (Direct formula)",
+      "selected_positive": false,
+      "selected_cluster_size": 1,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "n_0 \\times (1 + r)^d$ (Direct formula)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_0 \\\\times (1 + r)**d$ (Direct formula)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 40))",
+          "positive": false,
+          "score": 0.6466666666666667
+        },
+        {
+          "slot": 2,
+          "expr": "n_0 + n_0 \\times r + n_0 \\times r \\times r + \\dots$ (Summation logic, though hard to write compactly without dots, maybe just the first few terms? No, must be exact).",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_0 + n_0 \\\\times r + n_0 \\\\times r \\\\times r + \\\\dots$ (Summation logic, though hard to write compactly without dots, maybe just the first few terms? No, must be exact).'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 167))",
+          "positive": false,
+          "score": 0.3190909090909091
+        },
+        {
+          "slot": 3,
+          "expr": "n_0 \\frac{1 - r^d}{1 - r}$ (Sum formula)",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_0 \\\\frac1 - r**d1 - r$ (Sum formula)'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 38))",
+          "positive": false,
+          "score": 0.6133333333333335
+        },
+        {
+          "slot": 4,
+          "expr": "n_0 + n_0 r + n_0 r^2 + \\dots + n_0 r^{d",
+          "parse_ok": false,
+          "parse_error": "SympifyError: Sympify of expression 'could not parse 'n_0 + n_0 r + n_0 r**2 + \\\\dots + n_0 r**d'' failed, because of exception being raised:\nTokenError: ('unexpected character after line continuation character', (1, 42))",
+          "positive": false,
+          "score": 0.54
+        }
+      ]
+    },
+    {
+      "index": 49,
+      "expected": "(n1*d1 + n2*d2) // 12",
+      "actual": "n1 * d1 + n2 * d2 - 12 * 12 / 12 + 12 * 12 / 12 + 12 * 12 / 12 + 12 * 12 / 12 + 12",
+      "final_evaluator_correct": false,
+      "final_syntax_valid": true,
+      "final_sympy_positive": false,
+      "candidate_count": 6,
+      "candidate_parse_ok": 6,
+      "candidate_union_positive": true,
+      "consensus_expr": "(({n1} * {d1}) + ({n2} * {d2})) // 12",
+      "consensus_parse_ok": true,
+      "consensus_positive": true,
+      "selected_expr": "({n1} * {d1} + {n2} * {d2}) / 12",
+      "selected_positive": false,
+      "selected_cluster_size": 3,
+      "candidates": [
+        {
+          "slot": 1,
+          "expr": "(({n1} * {d1}) + ({n2} * {d2})) // 12",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 2,
+          "expr": "({n1} * {d1} + {n2} * {d2}) / 12",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 3,
+          "expr": "({n1} * {d1} + {n2} * {d2}) // 12",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 0.9720000000000002
+        },
+        {
+          "slot": 4,
+          "expr": "({n1} * {d1} + {n2} * {d2}) / 12",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 5,
+          "expr": "(({n1} * {d1}) + ({n2} * {d2})) / 12",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": false,
+          "score": 1.0000000000000002
+        },
+        {
+          "slot": 6,
+          "expr": "(({n1} * {d1}) + ({n2} * {d2})) // 12",
+          "parse_ok": true,
+          "parse_error": null,
+          "positive": true,
+          "score": 0.9720000000000002
+        }
+      ]
+    }
+  ]
+}

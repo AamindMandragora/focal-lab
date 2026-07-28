@@ -1,0 +1,4 @@
+Structured verification analysis:
+1. Decreases failure at F.dfy:12
+   Message: msg
+   Remediation: the decreases clause requires the loop measure to strictly decrease each iteration — the step counter must strictly increase on every loop path. A path that does not increment it breaks termination; ensure every loop path either increments the counter or exits.

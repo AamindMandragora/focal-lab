@@ -1,0 +1,33 @@
+[
+  {
+    "cell_id": "gsm-qwen25-14b",
+    "base_replay_attempt": 55,
+    "last_clean_attempt": 55,
+    "total_cap": 80,
+    "memory_reservation_mib": 34000,
+    "source_log": "/home/aadivyar/csd-generation/logs/paid_synth_warmfix_gsm14b_0714_r2.log",
+    "history_file": "/home/aadivyar/csd-generation/.context/claude_code_resume_0715/gsm14b_before55.json",
+    "seed_file": "/home/aadivyar/csd-generation/.context/claude_code_resume_0715/gsm14b_attempt55.dfy",
+    "output_name": "warmfix_gsm14b_0714_r2",
+    "log_file": "/home/aadivyar/csd-generation/logs/paid_synth_warmfix_gsm14b_0714_r2.log",
+    "lock_file": "/home/aadivyar/csd-generation/.context/http429_resume_locks/gsm14b.lock",
+    "terminal_state_file": "/home/aadivyar/csd-generation/.context/claude_recovery_gsm14b_0715/terminal/gsm-qwen25-14b.json",
+    "launcher_manifest": "/home/aadivyar/csd-generation/saved-results/2026-07-15-gsm14b-claude-durable-manifest.json",
+    "checkpoint_root": "/home/aadivyar/csd-generation/.context/claude_recovery_gsm14b_0715",
+    "task": "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.",
+    "dataset": "gsm_symbolic",
+    "eval_model": "Qwen/Qwen2.5-14B-Instruct",
+    "train_sample_size": 49,
+    "min_accuracy": 0.5918,
+    "min_syntax_rate": 0.9,
+    "gpu_mem_util": 0.81,
+    "eval_max_steps": 900,
+    "eval_max_seconds": 600,
+    "train_split_file": "environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json",
+    "train_split_name": "train",
+    "heldout_sample_size": 49,
+    "heldout_split_file": "/home/aadivyar/csd-generation/environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json",
+    "heldout_split_name": "eval",
+    "heldout_output_json": "/home/aadivyar/csd-generation/outputs/controlled_comparison/gsm_14B/metadecode_paid0708_infraretry_kvfix_0711.json"
+  }
+]

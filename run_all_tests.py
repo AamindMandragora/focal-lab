@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -63,6 +64,7 @@ OOM_RE = re.compile(
 # the whole matrix run so the user is forced to notice and fix the credit issue
 # instead of letting every metadecode cell silently fail with empty output.
 QUOTA_RE = re.compile(
+    r"\[claude-author-access\]|"
     r"insufficient_quota|"
     r"RateLimitError|rate_limit_error|"
     r"credit balance is too low|"
@@ -166,15 +168,8 @@ class Config:
     eval_max_steps_gsm: str
     eval_max_steps_smiles: str
     eval_max_seconds_per_example: str
-    eval_min_examples_before_threshold_stop: str
     accuracy_win_margin: float
     synthesis_max_tokens: str
-    restart_after_stuck_iters: str
-    helper_selection_policy: str
-    refinement_beam_size: str
-    anthropic_thinking: str
-    anthropic_effort: str
-    anthropic_thinking_display: str
     vllm_gpu_memory_utilization: str
     vllm_tensor_parallel_size: int
     dafny_path: str
@@ -439,9 +434,6 @@ class Runner:
         target_accuracy_path: str | None = None,
         target_syntax_strategy: str | None = None,
         target_syntax_path: str | None = None,
-        beam_size: str | None = None,
-        mask_flag: str | None = None,
-        helper_policy: str | None = None,
     ) -> dict:
         return {
             "phase": phase,
@@ -471,21 +463,11 @@ class Runner:
             },
             "runtime_controls": {
                 "eval_max_seconds_per_example": maybe_float(self.config.eval_max_seconds_per_example),
-                "eval_min_examples_before_threshold_stop": maybe_int(
-                    self.config.eval_min_examples_before_threshold_stop
-                ),
                 "vllm_gpu_memory_utilization": maybe_float(self.config.vllm_gpu_memory_utilization),
                 "vllm_tensor_parallel_size": self.config.vllm_tensor_parallel_size,
             },
             "synthesis_controls": {
                 "max_tokens": maybe_int(self.config.synthesis_max_tokens),
-                "restart_after_stuck_iters": maybe_int(self.config.restart_after_stuck_iters),
-                "adaptive_helper_mask": mask_flag != "--no-adaptive-helper-mask",
-                "helper_selection_policy": helper_policy or self.config.helper_selection_policy,
-                "refinement_beam_size": maybe_int(beam_size or self.config.refinement_beam_size),
-                "anthropic_thinking": self.config.anthropic_thinking,
-                "anthropic_effort": self.config.anthropic_effort,
-                "anthropic_thinking_display": self.config.anthropic_thinking_display,
             },
             "splits": {
                 benchmark: self.split_metadata_for(benchmark, "eval"),
@@ -683,12 +665,18 @@ class Runner:
                 )
             return "anthropic", anthropic_opus47
         if profile == "sonnet4.6":
-            if self.env.get("CSD_SONNET46_BACKEND", "").strip().lower() == "bedrock":
-                raise ValueError(
-                    "Bedrock generation profiles are disabled for the experimental matrix."
-                )
+            warnings.warn(
+                "generation profile 'sonnet4.6' now uses Claude Code Max; "
+                "use 'anthropic-sonnet4.6' for the direct Anthropic API",
+                FutureWarning,
+                stacklevel=2,
+            )
+            return "claude", "claude-sonnet-4-6"
+        if profile == "claude-sonnet4.6":
+            return "claude", "claude-sonnet-4-6"
+        if profile == "anthropic-sonnet4.6":
             return "anthropic", anthropic_sonnet46
-        if profile == "bedrock-sonnet4.6":
+        if profile in {"claude-bedrock-sonnet4.6", "bedrock-sonnet4.6"}:
             raise ValueError(
                 "Bedrock generation profiles are disabled for the experimental matrix."
             )
@@ -1100,12 +1088,8 @@ class Runner:
             backend,
             "--eval-model",
             eval_model,
-            "--eval-backend",
-            self.config.eval_backend,
             "--max-iterations",
             synth_iter,
-            "--output-name",
-            run_name,
             "--min-accuracy",
             f"{required_accuracy:.12g}",
             "--min-syntax-rate",
@@ -1118,35 +1102,11 @@ class Runner:
             token_budget,
             "--eval-max-seconds-per-example",
             self.config.eval_max_seconds_per_example,
-            "--eval-min-examples-before-threshold-stop",
-            self.config.eval_min_examples_before_threshold_stop,
             "--max-tokens",
             self.config.synthesis_max_tokens,
-            "--restart-after-stuck-iters",
-            self.config.restart_after_stuck_iters,
-            "--vllm-gpu-memory-utilization",
-            self.config.vllm_gpu_memory_utilization,
             "--device",
             self.config.device,
-            "--output-dir",
-            str(self.config.generated_output_dir),
-            "--adaptive-helper-mask",
-            "--helper-selection-policy",
-            self.config.helper_selection_policy,
-            "--refinement-beam-size",
-            self.config.refinement_beam_size,
         ]
-        if backend in ("anthropic", "bedrock"):
-            cmd += [
-                "--anthropic-thinking",
-                self.config.anthropic_thinking,
-                "--anthropic-effort",
-                self.config.anthropic_effort,
-                "--anthropic-thinking-display",
-                self.config.anthropic_thinking_display,
-            ]
-        self.add_vllm_parallel_flags(cmd)
-        self.add_generation_split_flags(cmd, benchmark)
         if benchmark == "smiles":
             cmd += [
                 "--smiles-samples-per-class",
@@ -1436,12 +1396,8 @@ class Runner:
             generation_model,
             "--eval-model",
             eval_model,
-            "--eval-backend",
-            self.config.eval_backend,
             "--max-iterations",
             self.config.synth_iters[-1],
-            "--output-name",
-            run_name,
             "--min-accuracy",
             f"{required_accuracy:.12g}",
             "--min-syntax-rate",
@@ -1454,26 +1410,11 @@ class Runner:
             token_budget,
             "--eval-max-seconds-per-example",
             self.config.eval_max_seconds_per_example,
-            "--eval-min-examples-before-threshold-stop",
-            self.config.eval_min_examples_before_threshold_stop,
             "--max-tokens",
             self.config.synthesis_max_tokens,
-            "--restart-after-stuck-iters",
-            self.config.restart_after_stuck_iters,
-            "--vllm-gpu-memory-utilization",
-            self.config.vllm_gpu_memory_utilization,
             "--device",
             self.config.device,
-            "--output-dir",
-            str(self.config.generated_output_dir),
-            "--refinement-beam-size",
-            beam_size,
-            mask_flag,
-            "--helper-selection-policy",
-            policy,
         ]
-        self.add_vllm_parallel_flags(cmd)
-        self.add_generation_split_flags(cmd, benchmark)
         if benchmark == "smiles":
             cmd += [
                 "--smiles-samples-per-class",
@@ -1511,9 +1452,6 @@ class Runner:
                 target_accuracy_path=_target_path,
                 target_syntax_strategy=target_syntax_strategy,
                 target_syntax_path=_target_syntax_path,
-                beam_size=beam_size,
-                mask_flag=mask_flag,
-                helper_policy=policy,
             ),
         )
 
@@ -1685,12 +1623,6 @@ def make_parser() -> argparse.ArgumentParser:
         "Wired through to synthesis.run_synthesis. Default: 90.",
     )
     parser.add_argument(
-        "--eval-min-examples-before-threshold-stop",
-        default="15",
-        help="Minimum number of evaluated examples before threshold-impossible "
-        "early stops can fire during synthesis. Default: 15.",
-    )
-    parser.add_argument(
         "--accuracy-win-margin",
         type=float,
         default=float(os.environ.get("CSD_ACCURACY_WIN_MARGIN", "0.0")),
@@ -1703,40 +1635,6 @@ def make_parser() -> argparse.ArgumentParser:
         dest="synthesis_max_tokens",
         default=os.environ.get("CSD_SYNTHESIS_MAX_TOKENS", "32768"),
         help="Author-model token budget for each MetaDecode synthesis attempt (default: 32768).",
-    )
-    parser.add_argument(
-        "--restart-after-stuck-iters",
-        default="0",
-        help="Forwarded to synthesis.run_synthesis; 0 disables restart mode (default: 0).",
-    )
-    parser.add_argument(
-        "--helper-selection-policy",
-        choices=["bandit"],
-        default="bandit",
-        help="Forwarded to synthesis.run_synthesis for adaptive helper masking (default: bandit).",
-    )
-    parser.add_argument(
-        "--refinement-beam-size",
-        default="2",
-        help="Forwarded to synthesis.run_synthesis for refinement candidate count (default: 2).",
-    )
-    parser.add_argument(
-        "--anthropic-thinking",
-        choices=["auto", "off", "adaptive", "enabled"],
-        default="auto",
-        help="Forwarded for Anthropic MetaDecode author profiles (default: auto).",
-    )
-    parser.add_argument(
-        "--anthropic-effort",
-        choices=["low", "medium", "high", "xhigh", "max"],
-        default="xhigh",
-        help="Forwarded for Anthropic adaptive thinking (default: xhigh).",
-    )
-    parser.add_argument(
-        "--anthropic-thinking-display",
-        choices=["omitted", "summarized"],
-        default="summarized",
-        help="Forwarded for Anthropic thinking summaries (default: summarized).",
     )
     parser.add_argument(
         "--gsm-split-file",
@@ -1877,15 +1775,8 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         eval_max_steps_gsm=str(args.eval_max_steps_gsm),
         eval_max_steps_smiles=str(args.eval_max_steps_smiles),
         eval_max_seconds_per_example=str(args.eval_max_seconds_per_example),
-        eval_min_examples_before_threshold_stop=str(args.eval_min_examples_before_threshold_stop),
         accuracy_win_margin=float(args.accuracy_win_margin),
         synthesis_max_tokens=str(args.synthesis_max_tokens),
-        restart_after_stuck_iters=str(args.restart_after_stuck_iters),
-        helper_selection_policy=str(args.helper_selection_policy),
-        refinement_beam_size=str(args.refinement_beam_size),
-        anthropic_thinking=str(args.anthropic_thinking),
-        anthropic_effort=str(args.anthropic_effort),
-        anthropic_thinking_display=str(args.anthropic_thinking_display),
         vllm_gpu_memory_utilization=str(args.vllm_gpu_memory_utilization),
         vllm_tensor_parallel_size=resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size),
         dafny_path=dafny_path,

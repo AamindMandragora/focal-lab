@@ -1,0 +1,109 @@
+{
+  "accuracies": {
+    "h40_t0": 0.061224489795918366,
+    "h41_t1": 0.04081632653061224,
+    "h42_t2": 0.061224489795918366
+  },
+  "correct_indices": {
+    "h40_t0": [
+      16,
+      17,
+      39
+    ],
+    "h41_t1": [
+      16,
+      17
+    ],
+    "h42_t2": [
+      16,
+      17,
+      47
+    ]
+  },
+  "correct_union": [
+    16,
+    17,
+    39,
+    47
+  ],
+  "correct_union_count": 4,
+  "description": "H40/H41/H42 GSM-2B temperature sweep overlap and correct-set union diagnostic; CPU-only artifact comparison, no model/GPU/API call.",
+  "diagnostic_id": "H44",
+  "h42_new_correct_count": 1,
+  "h42_new_correct_indices": [
+    47
+  ],
+  "inputs": {
+    "h40_t0": "outputs/generated/h37_gsm2b_repeat_probe_20260629_t0/results/direct_eval_success.json",
+    "h41_t1": "outputs/generated/h37_gsm2b_repeat_probe_20260629_t1/results/direct_eval_success.json",
+    "h42_t2": "outputs/generated/h37_gsm2b_repeat_probe_20260629_t2/results/direct_eval_success.json"
+  },
+  "num_examples": 49,
+  "output_names": {
+    "h40_t0": "h37_gsm2b_repeat_probe_20260629_t0",
+    "h41_t1": "h37_gsm2b_repeat_probe_20260629_t1",
+    "h42_t2": "h37_gsm2b_repeat_probe_20260629_t2"
+  },
+  "pairwise_overlap": {
+    "h40_t0_vs_h41_t1": {
+      "a": "h40_t0",
+      "actual_exact_matches": 28,
+      "b": "h41_t1",
+      "failure_location_exact_matches": 45,
+      "full_output_exact_matches": 27,
+      "helper_shape_exact_matches": 41,
+      "scored_output_exact_matches": 27,
+      "token_count_delta_max": 56,
+      "token_count_delta_median": 0,
+      "token_count_delta_min": -19,
+      "token_count_delta_zero_count": 35
+    },
+    "h40_t0_vs_h42_t2": {
+      "a": "h40_t0",
+      "actual_exact_matches": 23,
+      "b": "h42_t2",
+      "failure_location_exact_matches": 46,
+      "full_output_exact_matches": 22,
+      "helper_shape_exact_matches": 38,
+      "scored_output_exact_matches": 22,
+      "token_count_delta_max": 63,
+      "token_count_delta_median": 0,
+      "token_count_delta_min": -52,
+      "token_count_delta_zero_count": 29
+    },
+    "h41_t1_vs_h42_t2": {
+      "a": "h41_t1",
+      "actual_exact_matches": 21,
+      "b": "h42_t2",
+      "failure_location_exact_matches": 44,
+      "full_output_exact_matches": 19,
+      "helper_shape_exact_matches": 38,
+      "scored_output_exact_matches": 19,
+      "token_count_delta_max": 63,
+      "token_count_delta_median": 0,
+      "token_count_delta_min": -54,
+      "token_count_delta_zero_count": 27
+    }
+  },
+  "prediction_result": {
+    "any_pair_actual_overlap_high": true,
+    "correct_union_small": true,
+    "h42_new_correct_small": true,
+    "overall": true
+  },
+  "prediction_thresholds": {
+    "true_if_any_pair_actual_overlap_gte": 25,
+    "true_if_correct_union_lte": 4,
+    "true_if_h42_new_correct_lte": 1
+  },
+  "source_ids": {
+    "h40_t0": "h37_gsm2b_t0",
+    "h41_t1": "h37_gsm2b_t1",
+    "h42_t2": "h37_gsm2b_t2"
+  },
+  "syntax_rates": {
+    "h40_t0": 0.8775510204081632,
+    "h41_t1": 0.8775510204081632,
+    "h42_t2": 0.8979591836734694
+  }
+}

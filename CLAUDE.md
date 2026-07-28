@@ -29,7 +29,7 @@ This applies to ALL prompts: `INITIAL_GENERATION_PROMPT`, `EVALUATION_FAILURE_RE
 
 The synthesis objective is to find a CSD strategy that **outperforms CRANE** on the evaluation dataset. Always establish CRANE's baseline accuracy/format/syntax on the same model and sample before declaring a synthesized strategy successful. A synthesized CSD only counts as a result if it beats CRANE on accuracy while maintaining comparable format and syntax rates.
 
-To measure CRANE baseline: run the evaluator on a strategy body of just `generated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken); cost := helpers.cost;`.
+To measure CRANE baseline: run the evaluator on a strategy body of just `generated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, validTokenGroups, eosToken); cost := helpers.cost;`.
 
 ## GPU Assignment
 - Use GPUs 1 and 2 (`CUDA_VISIBLE_DEVICES=1,2`) — GPU 0 and 3 are often occupied by others.

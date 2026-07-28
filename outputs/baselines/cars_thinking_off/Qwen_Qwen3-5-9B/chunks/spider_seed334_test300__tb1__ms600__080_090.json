@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.3,
+  "syntax_rate": 0.9,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 925.113,
+    "mean_generation_seconds_per_example": 92.511302,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 948.5189,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 80,
+    "eval_end_index": 90
+  },
+  "answers": [
+    {
+      "question": "Which airlines have less than 200 flights?",
+      "generated_answer": "SELECT airline FROM flights GROUP BY airline HAVING COUNT(*) < 200",
+      "generation_seconds": 8.34333
+    },
+    {
+      "question": "Find the cities that have more than one employee under age 30.",
+      "generated_answer": "SELECT city FROM employee GROUP BY city HAVING COUNT(*) > 1 AND AVG(age) < 30",
+      "generation_seconds": 3.922579
+    },
+    {
+      "question": "What are the manager name and district of the shop that sells the largest number of products?",
+      "generated_answer": "select s.manager_name, s.district from shop s where s.number_products = (select max(number_products) from shop)",
+      "generation_seconds": 257.428523
+    },
+    {
+      "question": "find the name of employee who was awarded the most times in the evaluation.",
+      "generated_answer": "select e.name from employee e join evaluation ev on e.employee_id = ev.employee_id group by e.employee_id, e.name order by count(ev.year_awarded) desc limit 1",
+      "generation_seconds": 52.96732
+    },
+    {
+      "question": "What are the names of the employees who never received any evaluation?",
+      "generated_answer": "Select E.name From employee E Left Join evaluation EV On E.employee_id = EV.employee_id Where EV.employee_id is Null",
+      "generation_seconds": 23.708418
+    },
+    {
+      "question": "Which shops run with no employees? Find the shop names",
+      "generated_answer": "SELECT s.name FROM shop s WHERE NOT EXISTS (SELECT 1 FROM hiring h WHERE h.shop_id = s.shop_id)",
+      "generation_seconds": 83.332345
+    },
+    {
+      "question": "Find the number of employees hired in each shop; show the shop name as well.",
+      "generated_answer": "",
+      "generation_seconds": 412.051301
+    },
+    {
+      "question": "Which district has both stores with less than 3000 products and stores with more than 10000 products?",
+      "generated_answer": "SELECT district FROM shop WHERE number_products < 3000 AND NOT IN (SELECT district FROM shop WHERE number_products > 10000)",
+      "generation_seconds": 33.50365
+    },
+    {
+      "question": "Count the number of distinct store locations.",
+      "generated_answer": "Select count(distinct location) from shop",
+      "generation_seconds": 4.84678
+    },
+    {
+      "question": "List document IDs, document names, and document descriptions for all documents.",
+      "generated_answer": "SELECT document_id, document_name, document_description FROM documents",
+      "generation_seconds": 45.008771
+    }
+  ]
+}

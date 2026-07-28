@@ -1,0 +1,38 @@
+{
+  "accuracy": 0.0,
+  "syntax_rate": 0.3333333333333333,
+  "metrics": {
+    "num_examples": 3,
+    "total_generation_seconds": 10.21,
+    "mean_generation_seconds_per_example": 3.403349,
+    "examples_with_generation_timing": 3,
+    "total_output_tokens": 341,
+    "mean_output_tokens_per_example": 113.6667,
+    "examples_with_token_counts": 3,
+    "evaluator_total_time_seconds": 41.217,
+    "evaluator_max_sample_time_seconds": 5.6121
+  },
+  "num_correct": 0,
+  "num_examples": 3,
+  "contains_delimiters": true,
+  "answers": [
+    {
+      "question": "{n} saw a {x}-foot {big_fish} with {k} {y}-inch remoras attached to it. What percentage of the {big_fish}'s body length is the combined length of the remoras?",
+      "generated_answer": "(x * k * y / x * k * y) * 100",
+      "num_tokens": 172,
+      "generation_seconds": 5.612075
+    },
+    {
+      "question": "A fog bank rolls in from the ocean to cover a city. It takes {t} minutes to cover every {d} miles of the city. If the city is {y} miles across from the oceanfront to the opposite inland edge, how many",
+      "generated_answer": "y / d * t",
+      "num_tokens": 68,
+      "generation_seconds": 1.676926
+    },
+    {
+      "question": "{name} is rolling a {sides} die. How much more likely is it (expressed as a percentage) that he rolls a number greater than {target} than that he rolls two even numbers in a row?",
+      "generated_answer": "probability(<=target) * 100",
+      "num_tokens": 101,
+      "generation_seconds": 2.921046
+    }
+  ]
+}

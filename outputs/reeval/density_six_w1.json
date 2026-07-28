@@ -1,0 +1,81 @@
+{
+  "accuracy": 0.125,
+  "syntax_rate": 0.75,
+  "metrics": {
+    "num_examples": 8,
+    "total_generation_seconds": 20.5206,
+    "mean_generation_seconds_per_example": 2.565074,
+    "examples_with_generation_timing": 8,
+    "total_output_tokens": 672,
+    "mean_output_tokens_per_example": 84.0,
+    "examples_with_token_counts": 8,
+    "evaluator_total_time_seconds": 59.0969,
+    "evaluator_max_sample_time_seconds": 4.5357
+  },
+  "answers": [
+    {
+      "question": "{name} went to buy some school supplies. He bought {n1} {obj1} which cost {cur} {c1} each, {n2} {obj2} which cost {cur} {c2} each, and a rim of bond paper which cost {cur} {c3}. How much did {name} sp",
+      "generated_answer": "Let's think step by step. <<name * n1 * cur>> + <<name * n2 * cur>> + <<name * 1 * cur * c3>>. The final answer is <<name * (n1 * cur + n2 * cur + c3)>>.",
+      "num_tokens": 59,
+      "generation_seconds": 2.421221,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} was preparing for a {event} at her house, where she intended to serve {food}. She noticed that she was out of plastic {obj}, so she bought a new package of {obj}. Later, her husband also bought",
+      "generated_answer": "Let's think step by step. Initially, she had <<total - n2>>. Her husband added <<n1>> to her, making the total <<total - n2 + n1>>. At the end, she had <<total - n2>> again. The difference is <<n1 - n2>>. The package was <<n1 - n2>>. The final answer is <<n1 - n2>>.",
+      "num_tokens": 89,
+      "generation_seconds": 2.55689,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} is knitting winter wear for her {count} grandchildren. They're {children}, so they're all the same size. She wants to make a {c1}, {c2}, {c3}, {c4}, and {c5} for each of them. It takes {n1} ske",
+      "generated_answer": "Let's think step by step. Initially, she wants to make 5 garments, and it takes <<n1 * c1 + n2 * c2 + n3 * c3 + n4 * (c4 + c4) + n5 * (c5 + c5)>> skeins of wool. The final answer is <<n1 * c1 + n2 * c2 + n3 * c3 + n4 * (c4 + c4) + n5 * (c5 + c5)>>.",
+      "num_tokens": 110,
+      "generation_seconds": 3.300663,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "According to its nutritional info, a bag of {food} has {cal} calories per serving. If a {size} {unit} bag has {n} servings, how many {unit} can you eat if your daily calorie target is {total} and you ",
+      "generated_answer": "Let's think step by step. The number of calories in a unit {size} bag is <<cal / n>>. You can eat <<total / spent - 1>> units respectively. The final answer is <<total / spent - 1>>.",
+      "num_tokens": 52,
+      "generation_seconds": 1.598602,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "A {facility} has a capacity of {total} {item}s with {frac} occupied. Due to the {event}, {daily} patients are admitted into the {facility} each day. Calculate the total number of unoccupied {item}s in",
+      "generated_answer": "Let's think step by step. Initially, the facility had {total} {item}s. Since {frac} of these were occupied, the unoccupied capacity is <<total * (1 - frac)>>. Due to {event}, {daily} patients are admitted into the facility each day. After each {period} weeks (where {period} are weeks), the total number of patients admissible is <<day * weekly >> where {day} is {period} weeks each day and {weekly} is {d} weeks. Therefore, the number of unoccupied units after {period} weeks is <<total * (1 - frac) - daily * weekly * {period}}. The final answer is <<total * (1 - frac) - daily * weekly * {period}}}",
+      "num_tokens": 158,
+      "generation_seconds": 4.535661,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "{name} has {cur}{initial_amount} and wants to buy {quantity} {item}s from a bin at the {store_type} store. Each {item} costs {cur}{unit_price}. How much money does {name} have left after paying for th",
+      "generated_answer": "Let's think step by step. Initially, {name} had <<{cur}{initial_amount}}. The total cost of {quantity} {item}s is <<quantity * {cur}{unit_price}}. After the purchase, the remaining money is <<{cur}{initial_amount} - quantity * {cur}{unit_price}}. The final answer is <<{cur}{initial_amount} - quantity * {cur}{unit_price}}}",
+      "num_tokens": 87,
+      "generation_seconds": 2.533551,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "{name} is raising money for a {event}. He has applied for help from the {organization}, which has decided to cover {fraction} of the cost of the {event}. How much money is {name} missing if he has {cu",
+      "generated_answer": "Let's think step by step. First, calculate the amount the organization will cover: <<frac * current>>. Next, calculate the remaining amount that needs to be raised: <<cur - (current + total - frac * current)>>. The final answer is <<cur - (current + total - frac * current)>>.",
+      "num_tokens": 65,
+      "generation_seconds": 1.90717,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} went to the {shop} and bought various types of {item}. She bought {n1} dozen {item1} which cost ${p1} per dozen, {n2} dozen {item2} which cost ${p2} per dozen, and {n3} dozen {item3} for ${p3} ",
+      "generated_answer": "Let's think step by step. \n\nInitially, the total cost would be ${ p1*n1 + p2*n2 + p3*n3 }. The final answer is << p1*n1 + p2*n2 + p3*n3 >>.",
+      "num_tokens": 52,
+      "generation_seconds": 1.666832,
+      "is_correct": true,
+      "is_syntax_valid": true
+    }
+  ]
+}

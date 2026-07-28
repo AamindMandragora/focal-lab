@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.5,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 2448.8763,
+    "mean_generation_seconds_per_example": 244.887629,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 2481.6857,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 30,
+    "eval_end_index": 40
+  },
+  "answers": [
+    {
+      "question": "Which distinct car models are the produced after 1980?",
+      "generated_answer": "SELECT DISTINCT model FROM car_names WHERE id IN (SELECT id FROM cars_data WHERE year > 1980)",
+      "generation_seconds": 248.456476
+    },
+    {
+      "question": "How many car makers are there in each continents? List the continent name and the count.",
+      "generated_answer": "SELECT c continent_name FROM continents c",
+      "generation_seconds": 490.775565
+    },
+    {
+      "question": "Which of the countries has the most car makers? List the country name.",
+      "generated_answer": "SELECT countryname FROM countries WHERE countryid IN (SELECT country FROM car_makers GROUP BY country ORDER BY COUNT(*) DESC LIMIT 1)",
+      "generation_seconds": 301.941796
+    },
+    {
+      "question": "What are all the makers and models?",
+      "generated_answer": "SELECT cm.make, cm.model FROM model_list cm",
+      "generation_seconds": 239.542429
+    },
+    {
+      "question": "What are the names and ids of all countries with at least one car maker?",
+      "generated_answer": "SELECT countryid, countryname FROM countries WHERE countryid IN (SELECT country FROM car_makers)",
+      "generation_seconds": 147.792421
+    },
+    {
+      "question": "What is the number of the cars with horsepower more than 150?",
+      "generated_answer": "SELECT COUNT(*) FROM cars_data WHERE horsepower > 150",
+      "generation_seconds": 31.621544
+    },
+    {
+      "question": "What is the average weight and year for each year?",
+      "generated_answer": "SELECT AVG(weight), year FROM cars_data GROUP BY year",
+      "generation_seconds": 187.157671
+    },
+    {
+      "question": "Which countries in europe have at least 3 car manufacturers?",
+      "generated_answer": "SELECT COUNT(DISTINCT cm.id) AS manufacturer_count FROM car_makers cm JOIN countries c ON cm.country = c.countryid WHERE c.continent = 'Europe' GROUP BY c.countryid HAVING COUNT(DISTINCT cm.id) >= 3",
+      "generation_seconds": 227.180348
+    },
+    {
+      "question": "What is the maximum horsepower and the make of the car models with 3 cylinders?",
+      "generated_answer": "SELECT MAX(horsepower), make FROM cars_data INNER JOIN car_names ON (car_names.makeid = cars_data.id) WHERE cylinders = 3 GROUP BY make",
+      "generation_seconds": 461.948408
+    },
+    {
+      "question": "What is the average horsepower of the cars before 1980?",
+      "generated_answer": "select avg(horsepower) from cars_data where year < 1980",
+      "generation_seconds": 112.459627
+    }
+  ]
+}

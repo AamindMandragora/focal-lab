@@ -1,0 +1,328 @@
+{
+  "success": true,
+  "accuracy": 0.3333333333333333,
+  "contains_delimiters": true,
+  "syntax_rate": 0.6666666666666666,
+  "num_examples": 3,
+  "num_correct": 1,
+  "total_time_seconds": 18.851091384887695,
+  "accuracy_denominator": 3,
+  "max_sample_time_seconds": 8.050301551818848,
+  "task_guidance": [
+    "Solve step by step using template variable names (no curly braces). At the very end, write the COMPLETE arithmetic expression inside << >>. The expression must include ALL relevant variables and operators (e.g., <<n1 * p1 + n2 * p2 + n3 * p3>> or <<total - n1 - mult * n1>>). Write the FULL expression, not just one variable name."
+  ],
+  "sample_outputs": [
+    {
+      "question": "{name} picks {n1} {fruit} on {d1}. Then he picks {n2} {fruit} on {d2}. On {d3}, he picks {mult} the number of {fruit} he did on {d1}. How many {fruit} does {name} have?",
+      "question_full": "{name} picks {n1} {fruit} on {d1}. Then he picks {n2} {fruit} on {d2}. On {d3}, he picks {mult} the number of {fruit} he did on {d1}. How many {fruit} does {name} have?",
+      "expected": "n1 + n2 + mult * n1",
+      "actual": "n1 + n2 + mult * n1",
+      "full_output": "Let's think step by step.\n1. On day 1, {name} picks {n1} {fruit}.\n2. On day 2, {name} picks {n2} {fruit}.\n3. On day 3, {name} picks {mult} times the number of fruit he did on day 1. This means he picks {mult} * {n1} {fruit}.\n4. The total number of {fruit} is the sum of the fruit picked on each day: {n1} + {n2} + ({mult} * {n1}).\n5. The expression combines these terms: {n1} + {n2} + {mult} * {n1}.\n\nThe final answer is <<n1 + n2 + mult * n1>>",
+      "scored_output": "Let's think step by step.\n1. On day 1, {name} picks {n1} {fruit}.\n2. On day 2, {name} picks {n2} {fruit}.\n3. On day 3, {name} picks {mult} times the number of fruit he did on day 1. This means he picks {mult} * {n1} {fruit}.\n4. The total number of {fruit} is the sum of the fruit picked on each day: {n1} + {n2} + ({mult} * {n1}).\n5. The expression combines these terms: {n1} + {n2} + {mult} * {n1}.\n\nThe final answer is <<n1 + n2 + mult * n1>>",
+      "answer_source": "last_visible_span",
+      "has_extracted_answer": true,
+      "is_correct": true,
+      "accuracy_applicable": true,
+      "contains_delimiters": true,
+      "visible_delimiters": true,
+      "used_constrained_chunk": true,
+      "uses_hidden_chunks": false,
+      "is_syntax_valid": true,
+      "syntax_rate": 1.0,
+      "num_visible_spans": 1,
+      "num_valid_visible_spans": 1,
+      "visible_span_token_lengths": [
+        7
+      ],
+      "valid_visible_span_token_lengths": [
+        7
+      ],
+      "token_count": 171,
+      "hit_max_steps": false,
+      "time_seconds": 5.939537286758423,
+      "runtime_budget_exceeded": false,
+      "helper_trace": [
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 0,
+          "cost_after": 60,
+          "generated_len": 60,
+          "stopped_on_open": false,
+          "stopped_on_eos": false,
+          "steps_used": 60,
+          "detail": "chunk steps=60, hit_open=False, hit_eos=False, generated_len=60"
+        },
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 60,
+          "cost_after": 120,
+          "generated_len": 120,
+          "stopped_on_open": false,
+          "stopped_on_eos": false,
+          "steps_used": 60,
+          "detail": "chunk steps=60, hit_open=False, hit_eos=False, generated_len=120"
+        },
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 120,
+          "cost_after": 159,
+          "generated_len": 160,
+          "stopped_on_open": true,
+          "stopped_on_eos": false,
+          "steps_used": 39,
+          "detail": "chunk steps=39, hit_open=True, hit_eos=False, generated_len=160"
+        },
+        {
+          "helper": "EnterObservedConstrainedSpan",
+          "cost_before": 159,
+          "cost_after": 159,
+          "generated_len": 160,
+          "detail": "entered observed span, generated_len=160"
+        },
+        {
+          "helper": "ConstrainedSymbol",
+          "cost_before": 159,
+          "cost_after": 172,
+          "current_len": 10,
+          "generated_len": null,
+          "hit_eos": true,
+          "steps_used": 13,
+          "detail": "symbol steps=13, hit_eos=True, current_len=10, generated_len=None"
+        },
+        {
+          "helper": "ConstrainedSymbolInGenerated",
+          "cost_before": 159,
+          "cost_after": 172,
+          "current_len": 10,
+          "generated_len": 170,
+          "hit_eos": true,
+          "steps_used": 13,
+          "detail": "symbol steps=13, hit_eos=True, current_len=10, generated_len=170"
+        },
+        {
+          "helper": "CloseConstrainedSpan",
+          "cost_before": 172,
+          "cost_after": 173,
+          "generated_len": 171,
+          "detail": "closed span, generated_len=171"
+        },
+        {
+          "helper": "AppendTaskGuidance",
+          "detail": "Solve step by step using template variable names (no curly braces). At the very end, write the COMPLETE arithmetic expression inside << >>. The expression must include ALL relevant variables and operators (e.g., <<n1 * p1 + n2 * p2 + n3 * p3>> or <<total - n1 - mult * n1>>). Write the FULL expression, not just one variable name."
+        }
+      ],
+      "task_guidance": "Solve step by step using template variable names (no curly braces). At the very end, write the COMPLETE arithmetic expression inside << >>. The expression must include ALL relevant variables and operators (e.g., <<n1 * p1 + n2 * p2 + n3 * p3>> or <<total - n1 - mult * n1>>). Write the FULL expression, not just one variable name.",
+      "smiles_eval": null,
+      "provenance_tags": [
+        "free_lm_generation",
+        "free_lm_chunking",
+        "observed_span_entry",
+        "symbol_or_chunk_acceptance"
+      ],
+      "answer_provenance": "last_visible_span_after_observed_entry",
+      "failure_location": "correct"
+    },
+    {
+      "question": "{name} went to their {place} to pick some {fruit} and found {frac} as many {insect1} as {insect2} in the {location}. If there were {n} {insect2}, calculate the total number of insects in the {location",
+      "question_full": "{name} went to their {place} to pick some {fruit} and found {frac} as many {insect1} as {insect2} in the {location}. If there were {n} {insect2}, calculate the total number of insects in the {location}.",
+      "expected": "n + int(n * frac)",
+      "actual": "n + n",
+      "full_output": "Let's think step by step.\n1. We are given the number of insects of type 2: $n$.\n2. The number of insects of type 1 is equal to the number of insects of type 2, which is $n$.\n3. The total number of insects in the location is the sum of the two types: $n + n = 2n$.\n4. The problem asks for the total number of insects.\n5. The relevant variables are $n$ (for insect2) and $n$ (for insect1).\n6. The arithmetic expression representing the total is $n + n$.\n\nThe complete arithmetic expression is:\n<<n + n>>",
+      "scored_output": "Let's think step by step.\n1. We are given the number of insects of type 2: $n$.\n2. The number of insects of type 1 is equal to the number of insects of type 2, which is $n$.\n3. The total number of insects in the location is the sum of the two types: $n + n = 2n$.\n4. The problem asks for the total number of insects.\n5. The relevant variables are $n$ (for insect2) and $n$ (for insect1).\n6. The arithmetic expression representing the total is $n + n$.\n\nThe complete arithmetic expression is:\n<<n + n>>",
+      "answer_source": "last_visible_span",
+      "has_extracted_answer": true,
+      "is_correct": false,
+      "accuracy_applicable": true,
+      "contains_delimiters": true,
+      "visible_delimiters": true,
+      "used_constrained_chunk": true,
+      "uses_hidden_chunks": false,
+      "is_syntax_valid": true,
+      "syntax_rate": 1.0,
+      "num_visible_spans": 1,
+      "num_valid_visible_spans": 1,
+      "visible_span_token_lengths": [
+        3
+      ],
+      "valid_visible_span_token_lengths": [
+        3
+      ],
+      "token_count": 146,
+      "hit_max_steps": false,
+      "time_seconds": 4.861252546310425,
+      "runtime_budget_exceeded": false,
+      "helper_trace": [
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 0,
+          "cost_after": 60,
+          "generated_len": 60,
+          "stopped_on_open": false,
+          "stopped_on_eos": false,
+          "steps_used": 60,
+          "detail": "chunk steps=60, hit_open=False, hit_eos=False, generated_len=60"
+        },
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 60,
+          "cost_after": 120,
+          "generated_len": 120,
+          "stopped_on_open": false,
+          "stopped_on_eos": false,
+          "steps_used": 60,
+          "detail": "chunk steps=60, hit_open=False, hit_eos=False, generated_len=120"
+        },
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 120,
+          "cost_after": 142,
+          "generated_len": 142,
+          "stopped_on_open": true,
+          "stopped_on_eos": false,
+          "steps_used": 22,
+          "detail": "chunk steps=22, hit_open=True, hit_eos=False, generated_len=142"
+        },
+        {
+          "helper": "EnterObservedConstrainedSpan",
+          "cost_before": 142,
+          "cost_after": 142,
+          "generated_len": 142,
+          "detail": "entered observed span, generated_len=142"
+        },
+        {
+          "helper": "ConstrainedSymbol",
+          "cost_before": 142,
+          "cost_after": 147,
+          "current_len": 3,
+          "generated_len": null,
+          "hit_eos": true,
+          "steps_used": 5,
+          "detail": "symbol steps=5, hit_eos=True, current_len=3, generated_len=None"
+        },
+        {
+          "helper": "ConstrainedSymbolInGenerated",
+          "cost_before": 142,
+          "cost_after": 147,
+          "current_len": 3,
+          "generated_len": 145,
+          "hit_eos": true,
+          "steps_used": 5,
+          "detail": "symbol steps=5, hit_eos=True, current_len=3, generated_len=145"
+        },
+        {
+          "helper": "CloseConstrainedSpan",
+          "cost_before": 147,
+          "cost_after": 148,
+          "generated_len": 146,
+          "detail": "closed span, generated_len=146"
+        },
+        {
+          "helper": "AppendTaskGuidance",
+          "detail": "Solve step by step using template variable names (no curly braces). At the very end, write the COMPLETE arithmetic expression inside << >>. The expression must include ALL relevant variables and operators (e.g., <<n1 * p1 + n2 * p2 + n3 * p3>> or <<total - n1 - mult * n1>>). Write the FULL expression, not just one variable name."
+        }
+      ],
+      "task_guidance": "Solve step by step using template variable names (no curly braces). At the very end, write the COMPLETE arithmetic expression inside << >>. The expression must include ALL relevant variables and operators (e.g., <<n1 * p1 + n2 * p2 + n3 * p3>> or <<total - n1 - mult * n1>>). Write the FULL expression, not just one variable name.",
+      "smiles_eval": null,
+      "provenance_tags": [
+        "free_lm_generation",
+        "free_lm_chunking",
+        "observed_span_entry",
+        "symbol_or_chunk_acceptance"
+      ],
+      "answer_provenance": "last_visible_span_after_observed_entry",
+      "failure_location": "syntax_valid_semantic_mismatch"
+    },
+    {
+      "question": "{name} has {n1} light {c1} spools of thread, {n2} dark {c1} spools of thread, {n3} light {c2} spools of thread, and {n4} dark {c2} spools of thread. What percent of the spools are {c1}?",
+      "question_full": "{name} has {n1} light {c1} spools of thread, {n2} dark {c1} spools of thread, {n3} light {c2} spools of thread, and {n4} dark {c2} spools of thread. What percent of the spools are {c1}?",
+      "expected": "int(100 * (n1 + n2) / (n1 + n2 + n3 + n4))",
+      "actual": "Let's think step by step.\n1.  **Identify the total number of spools**:\n    The total number of spool",
+      "full_output": "Let's think step by step.\n1.  **Identify the total number of spools**:\n    The total number of spools is the sum of light and dark spools.\n    Total = (light spools) + (dark spools)\n    Total = (n1 * c1) + (n2 * c1) + (n3 * c2) + (n4 * c2)\n    We can factor out c1 and c2: Total = c1 * (n1 + n2) + c2 * (n3 + n4).\n\n2.  **Identify the number of c1 spools**:\n    The number of c1 spools is the sum of light c1 spools and dark c1 spools.\n    Count(c1) = (n1 * c1) + (n2 * c1)\n    Count(c1) = c1 * (n1 + n2).\n\n3.  **Calculate the percentage**:\n    The percentage is calculated as: (Count(c1) / Total) * 100.\n    Percentage = [c1 * (n1 + n2)] / [c1 * (n",
+      "scored_output": "Let's think step by step.\n1.  **Identify the total number of spools**:\n    The total number of spools is the sum of light and dark spools.\n    Total = (light spools) + (dark spools)\n    Total = (n1 * c1) + (n2 * c1) + (n3 * c2) + (n4 * c2)\n    We can factor out c1 and c2: Total = c1 * (n1 + n2) + c2 * (n3 + n4).\n\n2.  **Identify the number of c1 spools**:\n    The number of c1 spools is the sum of light c1 spools and dark c1 spools.\n    Count(c1) = (n1 * c1) + (n2 * c1)\n    Count(c1) = c1 * (n1 + n2).\n\n3.  **Calculate the percentage**:\n    The percentage is calculated as: (Count(c1) / Total) * 100.\n    Percentage = [c1 * (n1 + n2)] / [c1 * (n",
+      "answer_source": "none",
+      "has_extracted_answer": false,
+      "is_correct": false,
+      "accuracy_applicable": true,
+      "contains_delimiters": false,
+      "visible_delimiters": false,
+      "used_constrained_chunk": false,
+      "uses_hidden_chunks": false,
+      "is_syntax_valid": false,
+      "syntax_rate": 0.0,
+      "num_visible_spans": 0,
+      "num_valid_visible_spans": 0,
+      "visible_span_token_lengths": [],
+      "valid_visible_span_token_lengths": [],
+      "token_count": 256,
+      "hit_max_steps": true,
+      "time_seconds": 8.050301551818848,
+      "runtime_budget_exceeded": false,
+      "helper_trace": [
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 0,
+          "cost_after": 60,
+          "generated_len": 60,
+          "stopped_on_open": false,
+          "stopped_on_eos": false,
+          "steps_used": 60,
+          "detail": "chunk steps=60, hit_open=False, hit_eos=False, generated_len=60"
+        },
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 60,
+          "cost_after": 120,
+          "generated_len": 120,
+          "stopped_on_open": false,
+          "stopped_on_eos": false,
+          "steps_used": 60,
+          "detail": "chunk steps=60, hit_open=False, hit_eos=False, generated_len=120"
+        },
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 120,
+          "cost_after": 180,
+          "generated_len": 180,
+          "stopped_on_open": false,
+          "stopped_on_eos": false,
+          "steps_used": 60,
+          "detail": "chunk steps=60, hit_open=False, hit_eos=False, generated_len=180"
+        },
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 180,
+          "cost_after": 240,
+          "generated_len": 240,
+          "stopped_on_open": false,
+          "stopped_on_eos": false,
+          "steps_used": 60,
+          "detail": "chunk steps=60, hit_open=False, hit_eos=False, generated_len=240"
+        },
+        {
+          "helper": "UnconstrainedChunk",
+          "cost_before": 240,
+          "cost_after": 256,
+          "generated_len": 256,
+          "stopped_on_open": false,
+          "stopped_on_eos": false,
+          "steps_used": 16,
+          "detail": "chunk steps=16, hit_open=False, hit_eos=False, generated_len=256"
+        },
+        {
+          "helper": "AppendTaskGuidance",
+          "detail": "Solve step by step using template variable names (no curly braces). At the very end, write the COMPLETE arithmetic expression inside << >>. The expression must include ALL relevant variables and operators (e.g., <<n1 * p1 + n2 * p2 + n3 * p3>> or <<total - n1 - mult * n1>>). Write the FULL expression, not just one variable name."
+        }
+      ],
+      "task_guidance": "Solve step by step using template variable names (no curly braces). At the very end, write the COMPLETE arithmetic expression inside << >>. The expression must include ALL relevant variables and operators (e.g., <<n1 * p1 + n2 * p2 + n3 * p3>> or <<total - n1 - mult * n1>>). Write the FULL expression, not just one variable name.",
+      "smiles_eval": null,
+      "provenance_tags": [
+        "free_lm_generation",
+        "free_lm_chunking",
+        "no_constrained_activity"
+      ],
+      "answer_provenance": "no_scored_answer",
+      "failure_location": "answer_extraction_or_completion"
+    }
+  ],
+  "aux_metrics": {}
+}

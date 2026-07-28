@@ -1,0 +1,376 @@
+{
+  "stage": "evaluation",
+  "success": true,
+  "accuracy": 1.0,
+  "syntax_rate": 1.0,
+  "num_examples": 1,
+  "elapsed_seconds": 103.82585906982422,
+  "compiled_module_path": "/home/aadivyar/csd-generation/outputs/generated/h18_spider9b_direct_eval_cachealias_smoke_20260629/python/h18_spider9b_direct_eval_cachealias_smoke_20260629/GeneratedCSD.py",
+  "sample_outputs": [
+    {
+      "question": "What are  the different countries with singers above age 20?",
+      "question_full": "What are  the different countries with singers above age 20?",
+      "expected": "select distinct country from singer where age > 20",
+      "actual": "SELECT DISTINCT country FROM singer WHERE age > 20",
+      "full_output": "SELECT DISTINCT country FROM singer WHERE age > 20>>",
+      "scored_output": "SELECT DISTINCT country FROM singer WHERE age > 20>>",
+      "answer_source": "raw_text_fallback",
+      "has_extracted_answer": true,
+      "is_correct": true,
+      "accuracy_applicable": true,
+      "contains_delimiters": true,
+      "visible_delimiters": false,
+      "used_constrained_chunk": true,
+      "uses_hidden_chunks": true,
+      "is_syntax_valid": true,
+      "syntax_rate": 1.0,
+      "num_visible_spans": 0,
+      "num_valid_visible_spans": 0,
+      "visible_span_token_lengths": [],
+      "valid_visible_span_token_lengths": [],
+      "token_count": 12,
+      "hit_max_steps": false,
+      "time_seconds": 8.174356937408447,
+      "runtime_budget_exceeded": false,
+      "helper_trace": [
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 0,
+          "detail": "forward_pass, prefix_len=0"
+        },
+        {
+          "helper": "IntersectTokenSets",
+          "cost_before": null,
+          "cost_after": null,
+          "detail": "<_dafny.Seq object at 0x7f5972c9bfb0>"
+        },
+        {
+          "helper": "PenalizeTokenLogits",
+          "cost_before": 0,
+          "cost_after": 0,
+          "tokens": [],
+          "amount": "0",
+          "detail": "tokens=[], amount=0"
+        },
+        {
+          "helper": "SafePenalizeTokenLogits",
+          "cost_before": 0,
+          "cost_after": 0,
+          "tokens": [],
+          "amount": "0",
+          "detail": "tokens=[], amount=0"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 0,
+          "detail": "mask_to_valid, prefix_len=0"
+        },
+        {
+          "helper": "SafePenalizedConstrainedStep",
+          "cost_before": 0,
+          "cost_after": 1,
+          "token": "<redacted>",
+          "detail": "token=<redacted>"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 1,
+          "detail": "forward_pass, prefix_len=1"
+        },
+        {
+          "helper": "IntersectTokenSets",
+          "cost_before": null,
+          "cost_after": null,
+          "detail": "<_dafny.Seq object at 0x7f59754c0080>"
+        },
+        {
+          "helper": "PenalizeTokenLogits",
+          "cost_before": 1,
+          "cost_after": 1,
+          "tokens": [],
+          "amount": "0",
+          "detail": "tokens=[], amount=0"
+        },
+        {
+          "helper": "SafePenalizeTokenLogits",
+          "cost_before": 1,
+          "cost_after": 1,
+          "tokens": [],
+          "amount": "0",
+          "detail": "tokens=[], amount=0"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 1,
+          "detail": "mask_to_valid, prefix_len=1"
+        },
+        {
+          "helper": "SafePenalizedConstrainedStep",
+          "cost_before": 1,
+          "cost_after": 2,
+          "token": "<redacted>",
+          "detail": "token=<redacted>"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 2,
+          "detail": "forward_pass, prefix_len=2"
+        },
+        {
+          "helper": "IntersectTokenSets",
+          "cost_before": null,
+          "cost_after": null,
+          "detail": "<_dafny.Seq object at 0x7f597541ea50>"
+        },
+        {
+          "helper": "PenalizeTokenLogits",
+          "cost_before": 2,
+          "cost_after": 2,
+          "tokens": [],
+          "amount": "0",
+          "detail": "tokens=[], amount=0"
+        },
+        {
+          "helper": "SafePenalizeTokenLogits",
+          "cost_before": 2,
+          "cost_after": 2,
+          "tokens": [],
+          "amount": "0",
+          "detail": "tokens=[], amount=0"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 2,
+          "detail": "mask_to_valid, prefix_len=2"
+        },
+        {
+          "helper": "SafePenalizedConstrainedStep",
+          "cost_before": 2,
+          "cost_after": 3,
+          "token": "<redacted>",
+          "detail": "token=<redacted>"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 3,
+          "detail": "forward_pass, prefix_len=3"
+        },
+        {
+          "helper": "IntersectTokenSets",
+          "cost_before": null,
+          "cost_after": null,
+          "detail": "<_dafny.Seq object at 0x7f59754c1190>"
+        },
+        {
+          "helper": "PenalizeTokenLogits",
+          "cost_before": 3,
+          "cost_after": 3,
+          "tokens": [],
+          "amount": "0",
+          "detail": "tokens=[], amount=0"
+        },
+        {
+          "helper": "SafePenalizeTokenLogits",
+          "cost_before": 3,
+          "cost_after": 3,
+          "tokens": [],
+          "amount": "0",
+          "detail": "tokens=[], amount=0"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 3,
+          "detail": "mask_to_valid, prefix_len=3"
+        },
+        {
+          "helper": "SafePenalizedConstrainedStep",
+          "cost_before": 3,
+          "cost_after": 4,
+          "token": "<redacted>",
+          "detail": "token=<redacted>"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 4,
+          "detail": "forward_pass, prefix_len=4"
+        },
+        {
+          "helper": "IntersectTokenSets",
+          "cost_before": null,
+          "cost_after": null,
+          "detail": "<_dafny.Seq object at 0x7f5972c3c530>"
+        },
+        {
+          "helper": "PenalizeTokenLogits",
+          "cost_before": 4,
+          "cost_after": 4,
+          "tokens": [],
+          "amount": "0",
+          "detail": "tokens=[], amount=0"
+        },
+        {
+          "helper": "SafePenalizeTokenLogits",
+          "cost_before": 4,
+          "cost_after": 4,
+          "tokens": [],
+          "amount": "0",
+          "detail": "tokens=[], amount=0"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 4,
+          "detail": "mask_to_valid, prefix_len=4"
+        },
+        {
+          "helper": "SafePenalizedConstrainedStep",
+          "cost_before": 4,
+          "cost_after": 5,
+          "token": "<redacted>",
+          "detail": "token=<redacted>"
+        },
+        {
+          "helper": "RolloutConstrainedWithPenalties",
+          "cost_before": 0,
+          "cost_after": 5,
+          "detail": "(<_dafny.Seq object at 0x7f5972c3e930>, 5, False)"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 5,
+          "detail": "forward_pass, prefix_len=5"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 5,
+          "detail": "mask_to_valid, prefix_len=5"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 6,
+          "detail": "forward_pass, prefix_len=6"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 6,
+          "detail": "mask_to_valid, prefix_len=6"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 7,
+          "detail": "forward_pass, prefix_len=7"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 7,
+          "detail": "mask_to_valid, prefix_len=7"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 8,
+          "detail": "forward_pass, prefix_len=8"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 8,
+          "detail": "mask_to_valid, prefix_len=8"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 9,
+          "detail": "forward_pass, prefix_len=9"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 9,
+          "detail": "mask_to_valid, prefix_len=9"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 10,
+          "detail": "forward_pass, prefix_len=10"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 10,
+          "detail": "mask_to_valid, prefix_len=10"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 11,
+          "detail": "forward_pass, prefix_len=11"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 11,
+          "detail": "mask_to_valid, prefix_len=11"
+        },
+        {
+          "helper": "CloseConstrainedSpan",
+          "cost_before": 12,
+          "cost_after": 13,
+          "generated_len": 12,
+          "detail": "closed span, generated_len=12"
+        },
+        {
+          "helper": "AppendTaskGuidance",
+          "detail": "Output exactly one SQL query as: SQL: <<query>> using ONLY the exact table and column names from the schema. Do NOT use table aliases. Write table.column or just column. Use INTERSECT for 'both' queries. Use UNION for 'or' queries. The query must be complete and correct."
+        }
+      ],
+      "task_guidance": "Output exactly one SQL query as: SQL: <<query>> using ONLY the exact table and column names from the schema. Do NOT use table aliases. Write table.column or just column. Use INTERSECT for 'both' queries. Use UNION for 'or' queries. The query must be complete and correct.",
+      "smiles_eval": null,
+      "provenance_tags": [
+        "safe_logit_step"
+      ],
+      "answer_provenance": "no_scored_answer",
+      "failure_location": "correct"
+    }
+  ]
+}

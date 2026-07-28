@@ -1,0 +1,73 @@
+{
+  "accuracy": 0.42857142857142855,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 7,
+    "total_generation_seconds": 3.4771,
+    "mean_generation_seconds_per_example": 0.496735,
+    "examples_with_generation_timing": 7,
+    "total_output_tokens": 85,
+    "mean_output_tokens_per_example": 12.1429,
+    "examples_with_token_counts": 7,
+    "evaluator_total_time_seconds": 36.461,
+    "evaluator_max_sample_time_seconds": 0.9558
+  },
+  "answers": [
+    {
+      "question": "What is the id of the pet owned by the student whose last name is 'Smith'?",
+      "generated_answer": "SELECT pets.petid FROM pets>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.955794,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "For students who have pets , how many pets does each student have ? list their ids instead of names .",
+      "generated_answer": "SELECT student.stuid, COUNT(pets.petid) AS num_pets, pets.petid AS pet_id FROM student>>",
+      "num_tokens": 25,
+      "generation_seconds": 0.905176,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the last name of the student who has a cat that is 3 years old?",
+      "generated_answer": "SELECT T2.lname FROM student>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.211647,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Find the average age of students who do not have any pet .",
+      "generated_answer": "SELECT AVG(age) FROM student>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.194641,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many countries does each continent have? List the continent id, continent name and the number of countries.",
+      "generated_answer": "SELECT continents.contid, continents.continent, COUNT(car_makers.countryid) AS num_countries FROM continents>>",
+      "num_tokens": 22,
+      "generation_seconds": 0.776386,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many countries are listed?",
+      "generated_answer": "SELECT COUNT(DISTINCT continent) FROM continents>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.289786,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many countries exist?",
+      "generated_answer": "SELECT count(*) FROM countries>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.143712,
+      "is_correct": true,
+      "is_syntax_valid": true
+    }
+  ]
+}

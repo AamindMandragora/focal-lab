@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.4,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 592.6657,
+    "mean_generation_seconds_per_example": 59.266567,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 611.7593,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 170,
+    "eval_end_index": 180
+  },
+  "answers": [
+    {
+      "question": "What is the earliest date of a transcript release, and what details can you tell me?",
+      "generated_answer": "SELECT MIN(transcripts.transcript_date) AS earliest_transcript_date FROM transcripts",
+      "generation_seconds": 98.222717
+    },
+    {
+      "question": "How many transcripts are released?",
+      "generated_answer": "SELECT COUNT(*) FROM transcripts",
+      "generation_seconds": 2.343817
+    },
+    {
+      "question": "What is the date and id of the transcript with the least number of results?",
+      "generated_answer": "SELECT transcript_date, transcript_id FROM transcripts ORDER BY COUNT(transcript_contents.transcript_id) ASC LIMIT 1",
+      "generation_seconds": 1.974544
+    },
+    {
+      "question": "What is the description for the section named h?",
+      "generated_answer": "SELECT section_description FROM sections WHERE section_name = 'h'",
+      "generation_seconds": 26.018901
+    },
+    {
+      "question": "What are the first names of the students who live in Haiti permanently or have the cell phone number 09700166582 ?",
+      "generated_answer": "SELECT DISTINCT s.middle_name AS first_name FROM students s LEFT JOIN addresses a ON s.permanent_address_id = a.address_id WHERE (a.country = 'Haiti' OR s.cell_mobile_number = '09700166582')",
+      "generation_seconds": 111.518234
+    },
+    {
+      "question": "What are the names of all cartoons directed by Ben Jones?",
+      "generated_answer": "SELECT title FROM cartoon WHERE directed_by = 'Ben Jones'",
+      "generation_seconds": 38.927474
+    },
+    {
+      "question": "list all cartoon titles and their directors ordered by their air date",
+      "generated_answer": "SELECT c.title, directed_by, original_air_date FROM cartoon c ORDER BY original_air_date",
+      "generation_seconds": 26.563823
+    },
+    {
+      "question": "What are the Package Options of the TV Channels whose series names are Sky Radio?",
+      "generated_answer": "SELECT DISTINCT package_option FROM tv_channel WHERE series_name = 'Sky Radio'",
+      "generation_seconds": 4.010035
+    },
+    {
+      "question": "List the language used least number of TV Channel. List language and number of TV Channel.",
+      "generated_answer": "SELECT language, COUNT(id) AS channel_count FROM tv_channel GROUP BY language HAVING COUNT(id) = MIN(COUNT(*))",
+      "generation_seconds": 55.966916
+    },
+    {
+      "question": "What are the languages used by the least number of TV Channels and how many channels use it?",
+      "generated_answer": "SELECT country, COUNT(*) as channel_count FROM tv_channel GROUP BY country ORDER BY channel_count ASC, country ASC LIMIT 1",
+      "generation_seconds": 227.119208
+    }
+  ]
+}

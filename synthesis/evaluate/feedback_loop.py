@@ -6,6 +6,7 @@ iterative refinement based on errors.
 """
 
 import json
+import logging
 import math
 import os
 import re
@@ -23,6 +24,44 @@ from ..generate.generator import StrategyGenerator
 from ..generate import prompts as generation_prompts
 from ..generate.rationale import extract_rationale
 from ..verify.verifier import DafnyVerifier, VerificationResult
+
+try:
+    from synthesis.prompt_rendering import render as _render_prompt
+    from synthesis.prompt_rendering.models.feedback_loop import (
+        ConstraintBypassedModel,
+        DelimiterMissDefaultModel,
+        DelimiterMissOpenNotClosedModel,
+        HintLinesModel,
+        SpanNotClosedModel,
+        TokenCapExhaustionModel,
+    )
+except ImportError:
+    from prompt_rendering import render as _render_prompt
+    from prompt_rendering.models.feedback_loop import (
+        ConstraintBypassedModel,
+        DelimiterMissDefaultModel,
+        DelimiterMissOpenNotClosedModel,
+        HintLinesModel,
+        SpanNotClosedModel,
+        TokenCapExhaustionModel,
+    )
+
+
+logger = logging.getLogger(__name__)
+
+
+def _write_json_atomic(path: Path, payload: object) -> None:
+    """Replace a JSON file only after its complete contents reach disk."""
+    temporary = path.with_name(f".{path.name}.{secrets.token_hex(8)}.tmp")
+    try:
+        with temporary.open("x", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:
@@ -62,36 +101,30 @@ def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sa
         )
         if n > 0 and n_open_not_closed >= 0.2 * n:
             # Root cause 2: spans opened but never closed.
-            return (
-                f"\n  ⚠ Delimiter check FAILED: none of the evaluated outputs "
-                f"contained a complete << >> span, but spans are required. "
-                f"{n_open_not_closed}/{n} outputs show that a `<<` span was "
-                f"opened but the strategy never produced the closing `>>` — the "
-                f"step budget ran out before the span was exited. This means `<<` "
-                f"IS being emitted, but the strategy does not successfully reach "
-                f"and emit `>>` for any example.\n"
-                f"    What to reconsider: this is a decoding-mechanism issue with "
-                f"how the strategy behaves *inside* a span — specifically, how it "
-                f"makes forward progress through the span content and how it "
-                f"recognizes that a span is complete and should be closed. The "
-                f"strategy needs a reliable path from span-open to span-close "
-                f"within the step budget. (General direction only — the specific "
-                f"mechanism is yours to design.)\n"
-            )
+            model = DelimiterMissOpenNotClosedModel(n_open_not_closed=n_open_not_closed, n=n)
+            return _render_prompt(model, "feedback_loop/delimiter_miss_open_not_closed.j2")
 
-    return (
-        "\n  ⚠ Delimiter check FAILED: none of the evaluated outputs contained a "
-        "<< >> span, but spans are required.\n"
-        "    Likely cause: the strategy opens spans by WAITING for the model to "
-        "emit \"<<\" (e.g. a `next == \"<<\"` trigger, or an unconstrained chunk "
-        "that stops on \"<<\"). A weak eval model may never emit \"<<\" on its "
-        "own, so the trigger never fires, no span opens, and \">>\" is never "
-        "reached.\n"
-        "    Fix to consider: FORCE the opening delimiter at span entry (append "
-        "\"<<\" directly via a forced-delimiter / direct-control helper) instead "
-        "of depending on the model to produce it, then force \">>\" at span exit. "
-        "This is a decoding-mechanism change, not task guidance.\n"
-    )
+    return _render_prompt(DelimiterMissDefaultModel(), "feedback_loop/delimiter_miss_default.j2")
+
+
+def _token_cap_exhaustion_hint(sample_outputs, max_steps) -> str:
+    """Causal diagnostic when most outputs ran all the way to the step cap.
+
+    Flag-gated (SynthesisPipeline token_cap_feedback, default ON). Without
+    this hint the author sees only counts ("Examples hitting max steps: X/N")
+    with no explanation of WHY that produces wrong/invalid answers. Fires when
+    >=50% of evaluated outputs hit max_steps. Names the mechanism (truncation
+    mid-generation; the grader scores the last complete span standing at
+    cutoff) and the decoding-level direction (terminate once the answer is
+    complete) — mechanism guidance only, no task content."""
+    if not sample_outputs:
+        return ""
+    n = len(sample_outputs)
+    n_capped = sum(1 for s in sample_outputs if s.get("hit_max_steps"))
+    if n_capped / n < 0.5:
+        return ""
+    model = TokenCapExhaustionModel(n_capped=n_capped, n=n, max_steps=max_steps)
+    return _render_prompt(model, "feedback_loop/token_cap_exhaustion.j2")
 
 
 def _span_not_closed_hint(require_delimiters: bool, sample_outputs) -> str:
@@ -123,18 +156,8 @@ def _span_not_closed_hint(require_delimiters: bool, sample_outputs) -> str:
     n_affected = max(n_unterminated, n_maxsteps_nodelim)
     if n_affected == 0 or n_affected < 0.1 * n:
         return ""
-    return (
-        f"\n  ⚠ Span-closure check: {n_affected}/{n} evaluated outputs opened a "
-        "`<<` span but never emitted the closing `>>` before the generation step "
-        "budget ran out. When a span never closes, the eval records no usable "
-        "answer for that example, so accuracy and syntax collapse toward zero even "
-        "though the model did start a span.\n"
-        "    What to reconsider: this is a decoding-mechanism issue with how the "
-        "strategy behaves *inside* a span — how it makes forward progress and how "
-        "it decides the span is finished — not the task or the prompt. Aim for a "
-        "strategy that reliably reaches and emits `>>` within the step budget. "
-        "(General direction only — the specific mechanism is yours to design.)\n"
-    )
+    model = SpanNotClosedModel(n_affected=n_affected, n=n)
+    return _render_prompt(model, "feedback_loop/span_not_closed.j2")
 
 
 def _constraint_bypassed_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:
@@ -174,23 +197,8 @@ def _constraint_bypassed_hint(require_delimiters: bool, contains_delimiters: boo
     n = len(sample_outputs)
     if n_bypassed < 0.2 * n or n_engaged >= 0.5 * n_rel:
         return ""
-    return (
-        f"\n  ⚠ Constraint-engagement check: {n_engaged}/{n_rel} of the outputs that "
-        f"show `<< >>` actually ran the strategy's constrained branch — the other "
-        f"{n_bypassed} produced the span content UNCONSTRAINED. The delimiters appear "
-        f"in the text, so the spans LOOK present, but the constraint did not shape what "
-        f"went inside them, leaving the span syntax at the raw model's mercy.\n"
-        f"    Likely cause: the strategy enters its constrained branch by WAITING for a "
-        f"specific span-open signal (e.g. a `next == \"<<\"` trigger) that rarely "
-        f"matches the model's actual output, so the constrained path is skipped even "
-        f"though `<<` still appears.\n"
-        f"    Fix to consider: FORCE span entry — append the opening `<<` directly via "
-        f"a forced-delimiter / direct-control helper and then drive the span content "
-        f"through the constrained branch, instead of depending on a reactive trigger to "
-        f"detect span entry. This is a decoding-mechanism change at span ENTRY, not "
-        f"task guidance. (General direction only — the specific mechanism is yours to "
-        f"design.)\n"
-    )
+    model = ConstraintBypassedModel(n_engaged=n_engaged, n_rel=n_rel, n_bypassed=n_bypassed)
+    return _render_prompt(model, "feedback_loop/constraint_bypassed.j2")
 
 
 def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> str:
@@ -251,7 +259,8 @@ def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> s
         return "..." + trimmed[-max_chars:]
 
     lines = [
-        f"\n  Delimiter syntax-failure breakdown ({total_classified} examples):"
+        "",
+        f"  Delimiter syntax-failure breakdown ({total_classified} examples):",
     ]
 
     if unclosed:
@@ -285,7 +294,8 @@ def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> s
         "span entry/exit — not task guidance issues. Each category points to "
         "a different span-lifecycle step to strengthen."
     )
-    return "\n".join(lines) + "\n"
+    model = HintLinesModel(lines=lines)
+    return _render_prompt(model, "feedback_loop/hint_lines.j2")
 
 
 class FailureStage(Enum):
@@ -516,7 +526,16 @@ class SynthesisExhaustionError(Exception):
             lines.append("")
             lines.append(f"Full report saved to: {self.report_path}")
 
-        return "\n".join(lines)
+        model = HintLinesModel(lines=lines)
+        rendered = _render_prompt(model, "feedback_loop/hint_lines.j2")
+        # The original implementation joined its lines with "\n" and never added
+        # a trailing newline; keep_trailing_newline on the shared Jinja
+        # environment means the template's own final line terminator survives
+        # rendering, so strip exactly that one trailing newline back off (same
+        # idiom as CompilationResult.get_error_summary).
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
 
 
 @dataclass
@@ -605,6 +624,10 @@ class SynthesisPipeline:
         "LastTokenBefore",
         "RegenerateUnitOnGroundingFailure",
         "CloseSpanWithinBudget",
+        # These form one state-management API. Keeping both visible prevents
+        # adaptive menu pruning from offering save without restore (or vice versa).
+        "SaveLogitsSnapshot",
+        "RestoreLogitsSnapshot",
     }
     PRUNABLE_HELPERS = {
         "UnconstrainedGeneration",
@@ -646,8 +669,6 @@ class SynthesisPipeline:
         "GetTopKTokens",
         "GetTokenLogit",
         "ScaleAllLogits",
-        "SaveLogitsSnapshot",
-        "RestoreLogitsSnapshot",
         "SpeculativeConstrainedRollout",
         "RolloutConstrainedWithPenalties",
         "RepetitionPenaltyStep",
@@ -680,6 +701,9 @@ class SynthesisPipeline:
         # Evaluation thresholds
         min_accuracy: float = 0.0,
         min_syntax_rate: float = 0.0,
+        # Split the accuracy bar was measured on (see synthesis/split_provenance.py);
+        # recorded in run_configuration so cross-split comparisons are auditable.
+        bar_split_name: Optional[str] = None,
         require_delimiters: bool = True,
         eval_sample_size: int = 10,
         eval_max_seconds_per_example: Optional[float] = 90.0,
@@ -703,6 +727,7 @@ class SynthesisPipeline:
         # anchor-based refinement gets stuck.
         restart_after_stuck_iters: int = 0,
         restart_cooldown_iters: int = 0,
+        token_cap_feedback: bool = True,
     ):
         """
         Initialize the synthesis pipeline.
@@ -714,7 +739,11 @@ class SynthesisPipeline:
             compiler: Dafny compiler (creates default if None)
             max_iterations: Maximum refinement iterations
             output_dir: Directory for outputs and reports
-            save_reports: Whether to save failure reports to disk
+            save_reports: Whether to write the incremental progress report
+                (progress_report.json) after each attempt. The end-of-run
+                failure report is written either way -- it is the audit trail
+                for the run, so turning it off would mean a finished run left
+                no record of what it did.
             min_accuracy: Minimum accuracy threshold for evaluation
             min_syntax_rate: Minimum syntax validity rate threshold
             require_delimiters: Whether evaluated outputs must contain << >> spans
@@ -747,6 +776,8 @@ class SynthesisPipeline:
             local_neighborhood_refinement: Prefer local edits during refinement
             max_local_edit_ratio: Soft bound on changed-line ratio for local edits
             beam_verify_candidates: Verify beam candidates before selecting one
+            token_cap_feedback: Append the token-cap exhaustion hint to author
+                feedback when most outputs ran to the maxSteps cap.
         """
         self.evaluator = evaluator
         self.generator = generator or StrategyGenerator()
@@ -755,13 +786,9 @@ class SynthesisPipeline:
         self.max_iterations = max_iterations
         self.output_dir = output_dir or self.DEFAULT_OUTPUT_DIR
         self.save_reports = save_reports
-
-        # Restart-from-scratch mechanism (replaces two-phase). When the
-        # Pareto-best anchor has not advanced for N consecutive iterations,
-        # the next refinement call switches into restart mode (drops anchor,
-        # asks for a structurally different family). Counter resets when the
-        # anchor advances. Optional cooldown after a restart prevents
-        # back-to-back restarts.
+        # Restart-from-scratch: after this many refinement iterations without
+        # the anchor advancing, generate fresh instead of refining. Optional
+        # cooldown after a restart prevents back-to-back restarts.
         self.restart_after_stuck_iters = max(0, int(restart_after_stuck_iters))
         self.restart_cooldown_iters = max(0, int(restart_cooldown_iters))
         self._anchor_attempt_number: int | None = None
@@ -769,6 +796,7 @@ class SynthesisPipeline:
 
         self.min_accuracy = min_accuracy
         self.min_syntax_rate = min_syntax_rate
+        self.bar_split_name = bar_split_name
         self.require_delimiters = require_delimiters
         self.eval_sample_size = eval_sample_size
         self.eval_max_seconds_per_example = eval_max_seconds_per_example
@@ -793,6 +821,9 @@ class SynthesisPipeline:
         self.local_neighborhood_refinement = local_neighborhood_refinement
         self.max_local_edit_ratio = max(0.0, max_local_edit_ratio)
         self.beam_verify_candidates = beam_verify_candidates
+        # Always on since 2026-07-17: append _token_cap_exhaustion_hint to the
+        # author feedback when most outputs ran to the maxSteps cap.
+        self.token_cap_feedback = token_cap_feedback
         self._helper_universe = self._extract_helper_universe_from_prompts()
 
         # Ensure output directory exists
@@ -826,6 +857,22 @@ class SynthesisPipeline:
         hook = getattr(logic, "starts_inside_constrained", None)
         return bool(hook()) if hook is not None else False
 
+    def _git_commit_hash(self) -> str:
+        """Best-effort repo commit hash for run provenance; 'unknown' if unavailable."""
+        import subprocess
+
+        try:
+            repo_root = Path(__file__).resolve().parent.parent.parent
+            return (
+                subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=repo_root, stderr=subprocess.DEVNULL
+                )
+                .decode()
+                .strip()
+            )
+        except Exception:
+            return "unknown"
+
     def _run_configuration_metadata(self, task_description: str, output_name: str) -> dict:
         """Return run-level provenance that is useful for experiment analysis."""
         evaluator = self.evaluator
@@ -833,6 +880,7 @@ class SynthesisPipeline:
         return {
             "task_description": task_description,
             "output_name": output_name,
+            "git_commit": self._git_commit_hash(),
             "max_iterations": self.max_iterations,
             "thresholds": {
                 "min_accuracy": self.min_accuracy,
@@ -843,6 +891,9 @@ class SynthesisPipeline:
                 "backend": getattr(generator, "backend", None),
                 "model": getattr(generator, "model_name", None),
                 "max_new_tokens": getattr(generator, "max_new_tokens", None),
+                "reasoning_budget_tokens": getattr(
+                    generator, "reasoning_budget_tokens", None
+                ),
                 "anthropic_thinking": getattr(generator, "anthropic_thinking", None),
                 "anthropic_effort": getattr(generator, "anthropic_effort", None),
                 "anthropic_thinking_display": getattr(
@@ -857,11 +908,15 @@ class SynthesisPipeline:
                 "eval_max_steps": getattr(evaluator, "max_steps", None),
                 "eval_step_token_budget": getattr(evaluator, "step_token_budget", None),
                 "eval_max_seconds_per_example": self.eval_max_seconds_per_example,
+                "eval_seed": getattr(evaluator, "sample_seed", None),
+                "smiles_classes": getattr(evaluator, "smiles_classes", None),
                 "min_examples_before_threshold_stop": self.min_examples_before_threshold_stop,
+                # Which split file/side this run evaluated on, plus the declared
+                # split of the accuracy bar — absence of this field is what made
+                # the 2026-07-17 train-vs-eval mismatch unrecoverable from reports.
+                "split_provenance": evaluator.split_provenance(self.bar_split_name),
             },
             "synthesis_controls": {
-                "restart_after_stuck_iters": self.restart_after_stuck_iters,
-                "restart_cooldown_iters": self.restart_cooldown_iters,
                 "adaptive_helper_mask": self.adaptive_helper_mask,
                 "helper_selection_policy": self.helper_selection_policy,
                 "helper_bandit_min_evals": self.helper_bandit_min_evals,
@@ -925,7 +980,14 @@ class SynthesisPipeline:
             if primary.related_file and primary.related_line:
                 line += f" | related contract: {Path(primary.related_file).name}:{primary.related_line}"
             lines.append(line)
-        return "\n".join(lines)
+        model = HintLinesModel(lines=lines)
+        rendered = _render_prompt(model, "feedback_loop/hint_lines.j2")
+        # See get_failure_summary above: strip the one trailing newline the
+        # template's keep_trailing_newline behavior adds back, to match the
+        # original "\n".join(lines) idiom exactly.
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
 
     @staticmethod
     def _remove_marked_comment_block(text: str, begin_marker: str, end_marker: str) -> str:
@@ -1496,7 +1558,14 @@ class SynthesisPipeline:
             lines.append("Recent evaluated branches:")
             for attempt in recent:
                 lines.extend(attempt_line(attempt, include_delta=True))
-        return "\n".join(lines)
+        model = HintLinesModel(lines=lines)
+        rendered = _render_prompt(model, "feedback_loop/hint_lines.j2")
+        # See get_failure_summary above: strip the one trailing newline the
+        # template's keep_trailing_newline behavior adds back, to match the
+        # original "\n".join(lines) idiom exactly.
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
 
     @staticmethod
     def _strategy_change_ratio(before: str, after: str) -> float:
@@ -1628,6 +1697,7 @@ class SynthesisPipeline:
         output_name: str = "generated_csd",
         initial_strategy_code: str | None = None,
         initial_attempt_offset: int = 0,
+        initial_attempts: list[SynthesisAttempt] | None = None,
     ) -> SynthesisResult:
         """
         Synthesize a CSD strategy for the given task.
@@ -1645,7 +1715,7 @@ class SynthesisPipeline:
         import time
 
         start_time = time.time()
-        attempts: list[SynthesisAttempt] = []
+        attempts: list[SynthesisAttempt] = list(initial_attempts or [])
 
         # Create an isolated output directory for this run. The directory layout is:
         #   outputs/generated/<output_name>_<run_id>/
@@ -1688,6 +1758,7 @@ class SynthesisPipeline:
             max_steps=self.evaluator.max_steps,
             step_token_budget=self.evaluator.step_token_budget,
         )
+        self.generator.set_task_description(task_description)
 
         allowed_helpers, helper_status = self._compute_allowed_helpers(attempts)
         if helper_status:
@@ -1695,6 +1766,12 @@ class SynthesisPipeline:
 
         # Initial generation, or a caller-provided recovery seed.
         if initial_strategy_code is not None:
+            logger.warning(
+                "[warm-resume] task context initialized before strategy replay; "
+                "task_chars=%d initial_attempt_offset=%d",
+                len(task_description),
+                initial_attempt_offset,
+            )
             print("Using caller-provided initial strategy seed")
             strategy_code = initial_strategy_code
         else:
@@ -2160,6 +2237,12 @@ class SynthesisPipeline:
                 )
                 if _bypass_hint:
                     print(_bypass_hint.rstrip("\n"))
+                if self.token_cap_feedback:
+                    _cap_hint = _token_cap_exhaustion_hint(
+                        eval_result.sample_outputs, self.evaluator.max_steps
+                    )
+                    if _cap_hint:
+                        print(_cap_hint.rstrip("\n"))
                 print(f"    Syntax: {eval_result.syntax_rate:.1%} (min: {self.min_syntax_rate:.1%})")
                 if self.eval_max_seconds_per_example is not None:
                     print(
@@ -2196,6 +2279,13 @@ class SynthesisPipeline:
                     )
                     + _final_span_failure_hint(
                         self.require_delimiters, eval_result.sample_outputs
+                    )
+                    + (
+                        _token_cap_exhaustion_hint(
+                            eval_result.sample_outputs, self.evaluator.max_steps
+                        )
+                        if self.token_cap_feedback
+                        else ""
                     )
                     + "\n"
                     + eval_result.get_feedback_summary(self.require_delimiters)
@@ -2317,16 +2407,14 @@ class SynthesisPipeline:
         print(f"Total time: {total_time:.1f}ms")
         print(f"{'='*60}")
 
-        # Save failure report
-        report_path = None
-        if self.save_reports:
-            report_path = self._save_failure_report(
-                attempts,
-                task_description,
-                output_name,
-                run_dir,
-                run_results_dir,
-            )
+        # Save failure report (always — reports are how runs are audited)
+        report_path = self._save_failure_report(
+            attempts,
+            task_description,
+            output_name,
+            run_dir,
+            run_results_dir,
+        )
 
         # Best-accuracy fallback: if any attempt's accuracy beat min_accuracy
         # (even if syntax fell short of min_syntax_rate), save a side-channel
@@ -2475,8 +2563,7 @@ class SynthesisPipeline:
 
         report = self._build_run_report(attempts, task_description, output_name)
 
-        with open(report_path, "w") as f:
-            json.dump(report, f, indent=2)
+        _write_json_atomic(report_path, report)
 
         print(f"Failure report saved to: {report_path}")
 
@@ -2539,8 +2626,7 @@ class SynthesisPipeline:
             "sample_outputs": evaluation_result.sample_outputs,
         }
 
-        with open(report_path, "w") as f:
-            json.dump(report, f, indent=2)
+        _write_json_atomic(report_path, report)
 
         print(f"Strategy saved to: {dafny_path}")
         print(f"Success report saved to: {report_path}")

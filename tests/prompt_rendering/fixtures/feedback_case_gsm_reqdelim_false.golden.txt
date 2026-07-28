@@ -1,0 +1,50 @@
+Evaluation Results (3 examples):
+  Accuracy: 33.3% (1/3)
+  Syntax Rate: 66.7%
+  Total Time: 18.85s
+  Slowest Example Time: 8.05s
+
+Prompt guidance used by this attempt:
+  - Solve step by step using template variable names (no curly braces). At the very end, write the COMPLETE arithmetic expression inside << >>. The expression must include ALL relevant variables and operators (e.g., <<n1 * p1 + n2 * p2 + n3 * p3>> or <<total - n1 - mult * n1>>). Write the FULL expression, not just one variable name.
+
+Primary Failure Modes:
+  - missing_constrained_segment: 1 example(s) (no `<< >>` segment detected)
+  - other_observed_failure: 1 example(s) (uncategorized wrong answer; see representative rollout examples for observed output)
+
+Output Run Summary:
+  verification: passed
+  compilation: passed
+  generated-token outputs: 3/3 nonempty
+  All evaluated examples completed and returned generated output records.
+
+Diagnostic Error Decomposition:
+  Correctness by syntax bucket: syntax_valid_correct 1/3, syntax_valid_wrong 1/3, syntax_invalid_correct 0/3, syntax_invalid_wrong 1/3
+  Constrained intervention activity: examples_with_activity 2/3, examples_without_activity 1/3, visible_span_without_activity 0/3
+  Correctness conditioned on constrained activity: correct_with_activity 1/3, wrong_with_activity 1/3, correct_without_activity 0/3, wrong_without_activity 1/3
+
+Failure Clusters (17-axis fingerprint, Hamming ≤ 1):
+  Wrong samples: 2 grouped into 2 cluster(s).
+  Constant across all clusters: answer_source=none, runtime_exceeded=no, error_present=no, partial_valid_spans=no, tiny_span_dominant=no, long_span_dominant=no, token_budget_band=mid, accuracy_applicable=yes
+  Varying across clusters: syntax_valid, contains_delimiters, visible_delimiters, used_constrained, has_extracted_answer, hit_max_steps, zero_visible_spans, zero_valid_spans, gen_time_band
+
+  [cluster_1] 1 sample(s):
+    syntax_valid: yes (100%)
+    contains_delimiters: yes (100%)
+    visible_delimiters: yes (100%)
+    used_constrained: yes (100%)
+    has_extracted_answer: yes (100%)
+    hit_max_steps: no (100%)
+    zero_visible_spans: no (100%)
+    zero_valid_spans: no (100%)
+    gen_time_band: fast (100%)
+
+  [cluster_2] 1 sample(s):
+    syntax_valid: no (100%)
+    contains_delimiters: no (100%)
+    visible_delimiters: no (100%)
+    used_constrained: no (100%)
+    has_extracted_answer: no (100%)
+    hit_max_steps: yes (100%)
+    zero_visible_spans: yes (100%)
+    zero_valid_spans: yes (100%)
+    gen_time_band: mid (100%)

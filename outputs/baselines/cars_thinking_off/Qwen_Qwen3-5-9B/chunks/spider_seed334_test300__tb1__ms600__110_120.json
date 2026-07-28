@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.5,
+  "syntax_rate": 0.9,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 773.1023,
+    "mean_generation_seconds_per_example": 77.31023,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 791.6544,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 110,
+    "eval_end_index": 120
+  },
+  "answers": [
+    {
+      "question": "List all document ids with at least two paragraphs.",
+      "generated_answer": "SELECT document_id FROM paragraphs GROUP BY document_id HAVING COUNT(*) >= 2",
+      "generation_seconds": 26.112415
+    },
+    {
+      "question": "What are the ids of documents that have 2 or more paragraphs?",
+      "generated_answer": "SELECT DISTINCT d.document_id FROM documents d JOIN paragraphs p ON d.document_id = p.document_id GROUP BY d.document_id HAVING COUNT(*) >= 2",
+      "generation_seconds": 56.33504
+    },
+    {
+      "question": "What is the document id and name with greatest number of paragraphs?",
+      "generated_answer": "SELECT d.document_id, d.document_name FROM documents d WHERE d.document_id = (SELECT doc_id FROM (SELECT document_id, COUNT(*) as cnt FROM paragraphs GROUP BY document_id ORDER BY cnt DESC LIMIT 1) AS ranked)",
+      "generation_seconds": 37.969009
+    },
+    {
+      "question": "Give the ids of documents that have between one and two paragraphs.",
+      "generated_answer": "Select document_id from documents where document_id in (Select paragraph_id from paragraphs) group by document_id having count(*) between 1 and 2",
+      "generation_seconds": 18.943635
+    },
+    {
+      "question": "What is the hometown of the youngest teacher?",
+      "generated_answer": "SELECT hometown FROM teacher ORDER BY age ASC LIMIT 1",
+      "generation_seconds": 55.896542
+    },
+    {
+      "question": "For each hometown, how many teachers are there?",
+      "generated_answer": "SELECT T1.hometown, COUNT(*) FROM teacher T1 GROUP BY T1.hometown",
+      "generation_seconds": 197.667681
+    },
+    {
+      "question": "What is the most commmon hometowns for teachers?",
+      "generated_answer": "SELECT hometown FROM teacher GROUP BY hometown ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 28.157956
+    },
+    {
+      "question": "What is the name of each teacher and what course they teach?",
+      "generated_answer": "SELECT name, course FROM course_arrange JOIN teacher ON course_arrange.teacher_id = teacher.teacher_id JOIN course ON course_arrange.course_id = course.course_id",
+      "generation_seconds": 15.877651
+    },
+    {
+      "question": "What are the names of the people who teach math courses?",
+      "generated_answer": "SELECT T.name FROM teacher T JOIN course_arrange CA ON T.teacher_id = CA.teacher_id JOIN course C ON CA.course_id = C.course_id WHERE C.course = 'math'",
+      "generation_seconds": 71.385948
+    },
+    {
+      "question": "Show names of teachers and the number of courses they teach.",
+      "generated_answer": "",
+      "generation_seconds": 264.756424
+    }
+  ]
+}

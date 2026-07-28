@@ -1,0 +1,205 @@
+========================================================================
+  AUTHOR MODEL : 'us.anthropic.claude-sonnet-4-6' via backend='bedrock'
+  EVAL   MODEL : 'Qwen/Qwen3.5-9B' via backend='vllm'
+========================================================================
+Initializing synthesis pipeline...
+Setting up evaluator for dataset: spider
+  Generation model: us.anthropic.claude-sonnet-4-6
+  Evaluation model: Qwen/Qwen3.5-9B
+Loaded initial strategy seed from: /tmp/spider9b_att20_strategy_body_h14_fast50.dfy
+Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit)
+Using caller-provided initial strategy seed
+
+============================================================
+Attempt 1/1
+============================================================
+Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit)
+Strategy:     // CSD_RATIONALE_BEGIN
+// SQL generation CSD for spider dataset - attempt 20.
+//
+// Analysis of previous attempts:
+// - Attempt 18 (best: 58.7% accuracy, 88.3% syntax): Uses UnconstrainedChunk + OpenConstrainedSpan
+//   + RolloutConstrainedWithPenalties + CloseSpanWithinBudget. Works well.
+// - Attempt 19 (52.3% accuracy, 3.3% syntax): Used CraneGeneration which is NOT in the allowed
+//   helper set. The model never emitted "<<" on its own, so spans never opened. This was a major
+//   regression.
+//
+// Key diagnostics from attempt 18:
+// - 89 syntax-valid but semantically wrong answers
+// - 35 wrong answers after constrained activity (SQL generated but incorrect)
+// - avg 23.25 tokens generated - still too short for complex queries
+// - The model uses aliases (t.col instead of col) which reference answers don't
+//
+// Strategy for attempt 20: Build on attempt 18 (best result) with these improvements:
+//
+// 1. FORCE "<<" immediately (no unconstrained chunk phase). The evaluator warning says:
+//    "Fix to consider: FORCE the opening delimiter at span entry"
+//    The 5-token unconstrained chunk in attempt 18 wastes budget AND risks the model
+//    not writing "SQL: " correctly. Instead, let the model write "SQL: " as the very first
+//    unconstrained token(s), then immediately force "<<".
+//
+// 2. More budget for content: With the forced approach, we save the chunk budget.
+//    Use 3 unconstrained steps for "SQL: " prefix, then force "<<", then use
+//    remaining budget (200 - 3 - 1 = 196 steps) for SQL content.
+//    Reserve 15 for closing (was 20, reduce to 15 to give more to content).
+//
+// 3. Better guidance targeting the main failure modes:
+//    - Emphasize NO table aliases (t.col should be table.col or just col)
+//    - Emphasize complete WHERE clauses and JOIN conditions
+//    - INTERSECT/UNION for "both"/"or"
+//
+// 4. Keep RolloutConstrainedWithPenalties as the core SQL generation loop.
+//    This has been reliable across multiple attempts.
+//
+// 5. The "SQL: " prefix: The evaluator extracts text after "SQL: " and between << >>.
+//    We need the model to write "SQL: " before we open the span. Use 3 unconstrained
+//    steps. If EOS is hit, return early. If model writes garbage, the "SQL: " prefix
+//    won't be correct but the span content will still be extracted.
+//    Actually - looking at the failing rollouts from attempt 19, the model naturally
+//    writes "SQL: " as the first output (the "CraneGeneration" showed it writes "SQL: "
+//    then the SQL). So 3 unconstrained steps should get "SQL: " reliably.
+//
+// Implementation: identical to attempt 18 but with:
+// - chunkBudget = 3 (was 5)
+// - closeReserve = 15 (was 20) to give more budget to content
+// - Stronger guidance about no aliases
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity (insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)):
+//   - Phase 1 (UnconstrainedChunk): if stoppedOnOpenSpan, EnterObservedConstrainedSpan
+//     sets currentConstrainedOut := [] which satisfies parser.IsValidPrefix([]) by
+//     the method precondition. If not stopped on open span, insideConstrainedOut stays
+//     false so the implication is vacuous.
+//   - Phase 2 (OpenConstrainedSpan): sets currentConstrainedOut := [] (valid). Costs +1 step.
+//   - Phase 3 (RolloutConstrainedWithPenalties): the helper guarantees rolloutGen is
+//     parser-valid on return. We set currentConstrainedOut := rolloutGen which satisfies
+//     parser.IsValidPrefix by the helper's postcondition.
+//   - Phase 4 (CloseSpanWithinBudget): returns either insideOut=false, currentOut=[]
+//     (implication vacuous) or insideOut=true, parser.IsValidPrefix(currentOut) (valid).
+//   All transitions preserve the parser_validity invariant.
+//
+// progress (|generated| <= |generatedPrefix| + steps, cost <= maxSteps):
+//   - Init: steps=0, |generated|=|generatedPrefix|. Bound holds trivially.
+//   - UnconstrainedChunk: |cg| <= |generated_before| + stepsUsed, steps += stepsUsed.
+//     So |generated| <= |generatedPrefix| + steps. Preserved.
+//   - OpenConstrainedSpan: appends 1 token ("<<") to generated, steps += 1. Preserved.
+//   - RolloutConstrainedWithPenalties: costs rolloutSteps <= fillBudget. |stable + rolloutGen|
+//     <= |stable| + |currentConstrainedOut_before| + rolloutSteps. Since generated_before =
+//     stable + currentConstrainedOut_before, we get |generated| <= |generated_before| + rolloutSteps.
+//     steps += rolloutSteps preserves |generated| <= |generatedPrefix| + steps.
+//   - CloseSpanWithinBudget: closeBudget = maxSteps - steps; |generatedOut| <= |generated| +
+//     closeBudget <= |generatedPrefix| + steps + (maxSteps - steps) = |generatedPrefix| + maxSteps.
+//     steps := maxSteps. Preserved.
+//   - cost := steps <= maxSteps. All bounds hold.
+//   - Progress: if maxSteps > 0, at least one step is taken (UnconstrainedChunk or
+//     OpenConstrainedSpan), so cost > 0, satisfying the progress postcondition.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var guidance: string := "Output exactly one SQL query as: SQL: <<query>> using ONLY the exact table and column names from the schema. Do NOT use table aliases. Write table.column or just column. Use INTERSECT for 'both' queries. Use UNION for 'or' queries. The query must be complete and correct.";
+helpers.AppendTaskGuidance(lm, guidance);
+
+var steps: nat := 0;
+
+// Phase 1: Generate a short free prefix "SQL: " stopping if "<<" is observed.
+if !insideConstrainedOut && steps < maxSteps {
+  var chunkBudget: nat := if 3 <= maxSteps - steps then 3 else maxSteps - steps;
+  if chunkBudget >= 1 {
+    var cg, stoppedOnOpenSpan, stoppedOnEos, stepsUsed :=
+      helpers.UnconstrainedChunk(lm, prompt, generated, chunkBudget, "<<", eosToken);
+    steps := steps + stepsUsed;
+    generated := cg;
+    if stoppedOnEos {
+      cost := steps;
+      return;
+    }
+    if stoppedOnOpenSpan {
+      generated, insideConstrainedOut, currentConstrainedOut :=
+        helpers.EnterObservedConstrainedSpan(lm, generated);
+    }
+  }
+}
+
+// Phase 2: Force-open constrained span if not already inside.
+if !insideConstrainedOut && steps < maxSteps {
+  generated, insideConstrainedOut, currentConstrainedOut :=
+    helpers.OpenConstrainedSpan(lm, generated);
+  steps := steps + 1;
+}
+
+// Phase 3: Generate SQL content inside constrained span using RolloutConstrainedWithPenalties.
+// Reserve 15 tokens for closing (">>" plus any needed tokens to reach a complete parse).
+if insideConstrainedOut && steps < maxSteps {
+  var rem: nat := maxSteps - steps;
+  var closeReserve: nat := if rem >= 15 then 15 else if rem >= 5 then 5 else rem;
+  var fillBudget: nat := if rem > closeReserve then rem - closeReserve else 0;
+
+  if fillBudget >= 1 {
+    var stable := generated[..|generated| - |currentConstrainedOut|];
+    var constrainedPrompt := prompt + stable;
+
+    var penaltyTokens: seq<Token> := [];
+    var rolloutGen, rolloutSteps, rolloutEos := helpers.RolloutConstrainedWithPenalties(
+      lm, parser, constrainedPrompt, currentConstrainedOut, fillBudget, penaltyTokens, 0.0, eosToken
+    );
+    generated := stable + rolloutGen;
+    currentConstrainedOut := rolloutGen;
+    steps := steps + rolloutSteps;
+  }
+}
+
+// Phase 4: Close the span using CloseSpanWithinBudget with remaining budget.
+if insideConstrainedOut && steps < maxSteps {
+  var closeBudget: nat := maxSteps - steps;
+  var cg, ci, cc := helpers.CloseSpanWithinBudget(
+    lm, parser, prompt, generated, currentConstrainedOut, eosToken, closeBudget
+  );
+  generated := cg;
+  insideConstrainedOut := ci;
+  currentConstrainedOut := cc;
+  steps := maxSteps;
+}
+
+cost := steps;
+
+  ✗ Strategy contract violation
+  Refining based on strategy contract violation...
+  Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit)
+  Beam search_contract: 2 candidate(s), selected contract_ok=True verify_ok=True local=False edit_ratio=0.99
+
+============================================================
+FAILED after 1 attempts
+Total time: 41444.0ms
+============================================================
+Failure report saved to: outputs/generated/h14_spider9b_att20_fast50_20260629/h14_spider9b_att20_fast50_20260629_20260628_235830_65e29f/results/failure_report.json
+Latest run link (failed) updated: outputs/generated/h14_spider9b_att20_fast50_20260629/latest
+[FALLBACK] No accuracy-only candidate found either (no attempt met the min_accuracy threshold); no fallback saved.
+Synthesis failed after 1 attempt(s):
+
+Failure breakdown by stage:
+  - search_contract: 1
+
+Individual attempt summaries:
+  Attempt 1: ✗ Failed at search_contract
+    Error: Strategy contract violation.
+Violations: RolloutConstrainedWithPenalties
+
+Full report saved to: outputs/generated/h14_spider9b_att20_fast50_20260629/h14_spider9b_att20_fast50_20260629_20260628_235830_65e29f/results/failure_report.json
+
+============================================================
+SYNTHESIS FAILED
+============================================================
+Synthesis failed after 1 attempt(s):
+
+Failure breakdown by stage:
+  - search_contract: 1
+
+Individual attempt summaries:
+  Attempt 1: ✗ Failed at search_contract
+    Error: Strategy contract violation.
+Violations: RolloutConstrainedWithPenalties
+
+Full report saved to: outputs/generated/h14_spider9b_att20_fast50_20260629/h14_spider9b_att20_fast50_20260629_20260628_235830_65e29f/results/failure_report.json

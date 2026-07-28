@@ -1,0 +1,41 @@
+Wed Jul 15 08:18:15 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 595.58.03              Driver Version: 595.58.03      CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-PCIE-40GB          On  |   00000000:12:00.0 Off |                    0 |
+| N/A   46C    P0             95W /  250W |   24447MiB /  40960MiB |     38%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA A100-PCIE-40GB          On  |   00000000:13:00.0 Off |                    0 |
+| N/A   27C    P0             34W /  250W |   35070MiB /  40960MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   2  NVIDIA A100-PCIE-40GB          On  |   00000000:C1:00.0 Off |                    0 |
+| N/A   28C    P0             34W /  250W |   24869MiB /  40960MiB |     14%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   3  NVIDIA A100-PCIE-40GB          On  |   00000000:C2:00.0 Off |                    0 |
+| N/A   31C    P0             54W /  250W |   18013MiB /  40960MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A         3418974      C   .../aadivyar/envs/csd/bin/python        516MiB |
+|    0   N/A  N/A         3422424      C   VLLM::EngineCore                      23910MiB |
+|    1   N/A  N/A         4178091      C   .../aadivyar/envs/csd/bin/python        516MiB |
+|    1   N/A  N/A         4178095      C   .../aadivyar/envs/csd/bin/python        518MiB |
+|    1   N/A  N/A         4180679      C   VLLM::EngineCore                      18016MiB |
+|    1   N/A  N/A         4189050      C   VLLM::EngineCore                      15988MiB |
+|    2   N/A  N/A         3207425      C   .../aadivyar/envs/csd/bin/python        416MiB |
+|    2   N/A  N/A         3418964      C   .../aadivyar/envs/csd/bin/python        516MiB |
+|    2   N/A  N/A         3422565      C   VLLM::EngineCore                      23910MiB |
+|    3   N/A  N/A         3207535      C   VLLM::EngineCore                      18004MiB |
++-----------------------------------------------------------------------------------------+

@@ -1,0 +1,136 @@
+{
+  "accuracy": 0.25,
+  "syntax_rate": 0.7083333333333334,
+  "metrics": {
+    "num_examples": 24,
+    "total_generation_seconds": 5067.6314,
+    "mean_generation_seconds_per_example": 211.151309,
+    "examples_with_generation_timing": 24,
+    "run_wall_time_seconds": 5091.0746,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 125,
+    "eval_end_index": 150
+  },
+  "answers": [
+    {
+      "question": "What is the name of the museum that had no visitor yet?",
+      "generated_answer": "SELECT name FROM museum WHERE museum_id NOT IN (SELECT museum_id FROM visit)",
+      "generation_seconds": 7.701349
+    },
+    {
+      "question": "What are the average and maximum number of tickets bought in all visits?",
+      "generated_answer": "SELECT AVG(num_of_ticket) AS avg_tickets, MAX(num_of_ticket) AS max_tickets FROM visit",
+      "generation_seconds": 12.165165
+    },
+    {
+      "question": "Find the number of visitors who did not visit any museum opened after 2010.",
+      "generated_answer": "Select count(id) As visitor_count From visitor where id not In ( Select visit_id From visit where museum_id IN ( Select museum_id From museum where open_year > 2010 ) )",
+      "generation_seconds": 83.093056
+    },
+    {
+      "question": "Find the name of tourney that has more than 10 matches.",
+      "generated_answer": "SELECT tourney_name FROM matches GROUP BY tourney_name, score, winner_id, loser_id Having COUNT(*) > 10",
+      "generation_seconds": 16.118202
+    },
+    {
+      "question": "What are the first names and country codes for players who won both the WTA Championships and the Australian Open?",
+      "generated_answer": "",
+      "generation_seconds": 203.845164
+    },
+    {
+      "question": "Find the first name and country code of the oldest player.",
+      "generated_answer": "SELECT first_name, country_code FROM players ORDER BY birth_date ASC LIMIT 1",
+      "generation_seconds": 3.082507
+    },
+    {
+      "question": "Find the first name and country code of the player who did the most number of tours.",
+      "generated_answer": "select first_name, country_code from players where player_id in (select player_id from rankings order by tours desc limit 1)",
+      "generation_seconds": 18.868367
+    },
+    {
+      "question": "Find the name and rank points of the winner who won the most times.",
+      "generated_answer": "",
+      "generation_seconds": 247.816381
+    },
+    {
+      "question": "What is the name of the winner who has won the most matches, and how many rank points does this player have?",
+      "generated_answer": "",
+      "generation_seconds": 657.197371
+    },
+    {
+      "question": "find the names of loser and winner who played in the match with greatest number of minutes.",
+      "generated_answer": "select winner_name as winner_name, loser_name as loser_name from matches join players as loser on matches.loser_id = loser.player_id join players as winner on matches.winner_id = winner.player_id where matches.minutes = (select max(minutes) from matches) order by winner_name asc",
+      "generation_seconds": 538.799875
+    },
+    {
+      "question": "find the number of players for each country.",
+      "generated_answer": "SELECT count(*) AS player_count, first_name, last_name FROM players GROUP BY country_code",
+      "generation_seconds": 101.938261
+    },
+    {
+      "question": "How many players are from each country?",
+      "generated_answer": "SELECT country_code, COUNT(*) AS player_count FROM players GROUP BY country_code",
+      "generation_seconds": 560.028819
+    },
+    {
+      "question": "find the code of the country where has the greatest number of players.",
+      "generated_answer": "SELECT country_code FROM players GROUP BY country_code ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 34.029958
+    },
+    {
+      "question": "What is the code of the country with the most players?",
+      "generated_answer": "SELECT last_name AS country_code FROM (SELECT last_name, COUNT(*) AS c FROM players GROUP BY last_name ORDER BY c DESC LIMIT 1) LIMIT 1",
+      "generation_seconds": 50.401232
+    },
+    {
+      "question": "How many total tours were there for each ranking date?",
+      "generated_answer": "",
+      "generation_seconds": 683.492377
+    },
+    {
+      "question": "Find the number of matches happened in each year.",
+      "generated_answer": "SELECT year, COUNT(*) FROM matches GROUP BY year",
+      "generation_seconds": 72.819405
+    },
+    {
+      "question": "What are the names and ranks of the three youngest winners across all matches?",
+      "generated_answer": "",
+      "generation_seconds": 392.007786
+    },
+    {
+      "question": "Find the first name, country code and birth date of the winner who has the highest rank points in all matches.",
+      "generated_answer": "",
+      "generation_seconds": 411.562857
+    },
+    {
+      "question": "Find the number of players for each hand type.",
+      "generated_answer": "SELECT first_name, hand, last_name, birth_date, country_code FROM players",
+      "generation_seconds": 7.326009
+    },
+    {
+      "question": "How many players are there for each hand type?",
+      "generated_answer": "select hand, count(*) as player_count from players group by hand",
+      "generation_seconds": 69.871871
+    },
+    {
+      "question": "How many ships ended up being 'Captured'?",
+      "generated_answer": "SELECT COUNT(*) FROM battle_death",
+      "generation_seconds": 19.372267
+    },
+    {
+      "question": "What is the average number of injuries caused each time?",
+      "generated_answer": "SELECT AVG(d.injured) FROM death d",
+      "generation_seconds": 200.177866
+    },
+    {
+      "question": "What are the different ids and names of the battles that lost any 'Brig' type shipes?",
+      "generated_answer": "",
+      "generation_seconds": 392.796104
+    },
+    {
+      "question": "What are the ids and names of the battles that led to more than 10 people killed in total.",
+      "generated_answer": "SELECT id, name FROM battle WHERE (SELECT SUM(d.killed) FROM death d JOIN ship s ON d.caused_by_ship_id = s.id JOIN battle b ON s.lost_in_battle = b.id WHERE b.id = T1.id) > 10",
+      "generation_seconds": 283.119174
+    }
+  ]
+}

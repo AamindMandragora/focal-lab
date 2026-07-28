@@ -1,0 +1,177 @@
+{
+  "accuracy": 0.45,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 20,
+    "total_generation_seconds": 6.5401,
+    "mean_generation_seconds_per_example": 0.327004,
+    "examples_with_generation_timing": 20,
+    "total_output_tokens": 194,
+    "mean_output_tokens_per_example": 9.7,
+    "examples_with_token_counts": 20,
+    "evaluator_total_time_seconds": 41.8147,
+    "evaluator_max_sample_time_seconds": 1.1707
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "generated_answer": "SELECT COUNT(DISTINCT singer_id) FROM singer>>",
+      "num_tokens": 11,
+      "generation_seconds": 1.170693,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the total number of singers?",
+      "generated_answer": "SELECT COUNT(*) FROM singer>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.27402,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the average, minimum, and maximum age of all singers from France?",
+      "generated_answer": "SELECT AVG(age) ,  MIN(age) ,  MAX(age) FROM singer>>",
+      "num_tokens": 17,
+      "generation_seconds": 0.773974,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many singers are from each country?",
+      "generated_answer": "SELECT country ,  COUNT(*) FROM singer>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.286627,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "List all song names by singers above the average age.",
+      "generated_answer": "SELECT T2.song_name FROM singer>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.255785,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are all the song names by singers who are older than average?",
+      "generated_answer": "SELECT T2.song_name FROM singer>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.199128,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+      "generated_answer": "SELECT stadium.location ,  stadium.name FROM stadium>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.269992,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the name and capacity for the stadium with the highest average attendance?",
+      "generated_answer": "SELECT stadium.name ,  stadium.capacity FROM stadium>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.250612,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the year that had the most concerts?",
+      "generated_answer": "SELECT YEAR FROM concert>>",
+      "num_tokens": 5,
+      "generation_seconds": 0.101879,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names of all stadiums that did not have a concert in 2014?",
+      "generated_answer": "SELECT stadium.name FROM stadium>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.118212,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names , themes , and number of singers for every concert ?",
+      "generated_answer": "SELECT concert.concert_name ,  concert.theme ,  COUNT(DISTINCT singer.singer_id) FROM concert>>",
+      "num_tokens": 23,
+      "generation_seconds": 0.709345,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "List all singer names in concerts in year 2014.",
+      "generated_answer": "SELECT T2.name FROM concert>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.148605,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
+      "generated_answer": "SELECT T2.name ,  T2.country FROM singer>>",
+      "num_tokens": 12,
+      "generation_seconds": 0.303396,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names and locations of the stadiums that had concerts that occurred in both 2014 and 2015?",
+      "generated_answer": "SELECT stadium.name ,  stadium.location FROM stadium>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.217776,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How much does the youngest dog weigh?",
+      "generated_answer": "SELECT T2.weight FROM pets>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.159761,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "List the maximum weight and type for each type of pet.",
+      "generated_answer": "SELECT pettype ,  MAX(weight) FROM pets>>",
+      "num_tokens": 11,
+      "generation_seconds": 0.295486,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many dog pets are raised by female students?",
+      "generated_answer": "SELECT COUNT(petid) FROM has>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.251235,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many different types of pet are there?",
+      "generated_answer": "SELECT COUNT(DISTINCT pettype) FROM pets>>",
+      "num_tokens": 11,
+      "generation_seconds": 0.317907,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the first names of every student who has a cat or dog as a pet?",
+      "generated_answer": "SELECT DISTINCT T1.fname FROM student>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.265797,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the ids of the students who do not own cats as pets?",
+      "generated_answer": "SELECT stuid FROM student>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.169843,
+      "is_correct": true,
+      "is_syntax_valid": true
+    }
+  ]
+}

@@ -63,8 +63,11 @@ def _result() -> EvaluationResult:
 
 
 # Lines that are delimiter/visible-span specific — noise under --no-require-delimiters.
+# Callers: test_delimiter_diagnostics_*; API: get_feedback_summary text.
+# User: "remove the contradiction through the contain delimiters thing"
 DELIM_MARKERS = [
-    "Contains << >>",
+    "Text contains << >>",
+    "Entered constrained mode",
     "Structural Generation Metrics",
     "Examples with visible `<<`",
     "Answer extraction source",
@@ -86,7 +89,8 @@ def test_default_keeps_delimiter_diagnostics():
     # Default call (no arg) must stay backward-compatible: delimiters required.
     summary = _result().get_feedback_summary()
     assert "Structural Generation Metrics" in summary
-    assert "Contains << >>" in summary
+    assert "Text contains << >>" in summary
+    assert "Entered constrained mode" in summary
 
 
 def test_delimiter_diagnostics_omitted_when_not_required():

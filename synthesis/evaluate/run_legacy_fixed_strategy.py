@@ -21,6 +21,81 @@ _MAX_PROMPT_CHARS = 50000  # ~12.5K tokens; leaves room for generation within 16
 _MAX_SUFFIX_CHARS = 45000
 
 
+
+def _maybe_seed_parity_rng() -> None:
+    """Optional deterministic RNG for fair stochastic baseline compares."""
+    import os
+    raw = os.environ.get("CSD_PARITY_SEED", "").strip()
+    if not raw:
+        return
+    seed = int(raw)
+    import random
+    random.seed(seed)
+    try:
+        import numpy as np
+        np.random.seed(seed)
+    except Exception:
+        pass
+    try:
+        import torch
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+    except Exception:
+        pass
+
+
+
+
+def _maybe_reseed_parity_attempt(example_index: int, attempt_index: int) -> None:
+    """Re-seed RNG per CARS get_sample attempt (pairs with remake CSD_PARITY_SEED_PER_ATTEMPT)."""
+    import os
+    if os.environ.get("CSD_PARITY_SEED_PER_ATTEMPT", "0") != "1":
+        return
+    raw = os.environ.get("CSD_PARITY_SEED", "").strip()
+    if not raw:
+        return
+    seed = int(raw) + int(example_index) * 1_000_003 + int(attempt_index) * 9176
+    import random
+    random.seed(seed)
+    try:
+        import numpy as np
+        np.random.seed(seed % (2**32 - 1))
+    except Exception:
+        pass
+    try:
+        import torch
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+    except Exception:
+        pass
+
+def _maybe_reseed_parity_example(example_index: int) -> None:
+    """Re-seed RNG per example so rolling-prompt parity is not poisoned by prior draw counts."""
+    import os
+    if os.environ.get("CSD_PARITY_SEED_PER_EXAMPLE", "0") != "1":
+        return
+    raw = os.environ.get("CSD_PARITY_SEED", "").strip()
+    if not raw:
+        return
+    seed = int(raw) + int(example_index) * 1_000_003
+    import random
+    random.seed(seed)
+    try:
+        import numpy as np
+        np.random.seed(seed % (2**32 - 1))
+    except Exception:
+        pass
+    try:
+        import torch
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+    except Exception:
+        pass
+
+
 def _truncate_prompt(prompt: str, base_prompt: str) -> str:
     """Keep *prompt* within ``_MAX_PROMPT_CHARS`` by dropping the oldest appended molecules."""
     if len(prompt) <= _MAX_PROMPT_CHARS:
@@ -698,6 +773,7 @@ def _cars_set_cached_grammar(
 
 
 def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
+    _maybe_seed_parity_rng()
     run_started = time.perf_counter()
     dataset = _normalize_dataset(args.dataset)
     repo_root = Path(__file__).resolve().parents[2]
@@ -767,7 +843,9 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     if dataset == "spider":
         spider_cars_grammar = (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
 
-    for example in examples:
+    for _ex_i, example in enumerate(examples):
+        _maybe_reseed_parity_example(_ex_i)
+        __import__("os").environ["CSD_PARITY_EXAMPLE_INDEX"] = str(_ex_i)
         if dataset == "gsm_symbolic":
             grammar_text = gsm_cars_grammar
         elif dataset == "spider":
@@ -780,7 +858,8 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
 
         if dataset == "smiles":
             cls = str(example.get("class_name", ""))
-            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+            if __import__("os").environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
         prompt = _legacy_benchmark_prompt(
             logic,
@@ -816,7 +895,8 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
             syntax_valid = bool(aux and aux.get("syntax_valid"))
             if syntax_valid and actual:
                 cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
+                if __import__("os").environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                    smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
         question = _baseline_row_question(dataset, example, expected)
         rows.append(
@@ -960,7 +1040,8 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
 
         if dataset == "smiles":
             cls = str(example.get("class_name", ""))
-            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+            if __import__("os").environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
         gen_started = time.perf_counter()
@@ -985,7 +1066,8 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
             syntax_valid = bool(aux and aux.get("syntax_valid"))
             if syntax_valid and actual:
                 cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
+                if __import__("os").environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                    smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
         question = _baseline_row_question(dataset, example, expected)
         rows.append(
@@ -1183,7 +1265,8 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
 
         if dataset == "smiles":
             cls = str(example.get("class_name", ""))
-            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+            if __import__("os").environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
         if dataset == "gsm_symbolic":
@@ -1221,7 +1304,8 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
             syntax_valid = bool(aux and aux.get("syntax_valid"))
             if syntax_valid and actual:
                 cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
+                if __import__("os").environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                    smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
         question = _baseline_row_question(dataset, example, expected)
         rows.append(
@@ -1600,7 +1684,8 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
 
         if dataset == "smiles":
             cls = str(example.get("class_name", ""))
-            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+            if __import__("os").environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "evaluator_default")
         gen_started = time.perf_counter()
@@ -1624,7 +1709,8 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
             syntax_valid = bool(aux and aux.get("syntax_valid"))
             if syntax_valid and actual:
                 cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
+                if __import__("os").environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                    smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
         question = _baseline_row_question(dataset, example, expected)
         rows.append(

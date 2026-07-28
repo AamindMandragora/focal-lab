@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.7,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 461.7933,
+    "mean_generation_seconds_per_example": 46.179331,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 482.5128,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 290,
+    "eval_end_index": 300
+  },
+  "answers": [
+    {
+      "question": "List the name of singers in ascending order of net worth.",
+      "generated_answer": "SELECT name FROM singer ORDER BY net_worth_millions ASC",
+      "generation_seconds": 5.142032
+    },
+    {
+      "question": "What are the birth year and citizenship of singers?",
+      "generated_answer": "SELECT birth_year, citizenship FROM singer",
+      "generation_seconds": 4.147701
+    },
+    {
+      "question": "List the name of singers whose citizenship is not \"France\".",
+      "generated_answer": "SELECT name FROM singer WHERE citizenship <> 'France'",
+      "generation_seconds": 5.758717
+    },
+    {
+      "question": "What are the names of the singers who are not French citizens?",
+      "generated_answer": "SELECT name FROM singer WHERE citizenship != 'French'",
+      "generation_seconds": 10.580764
+    },
+    {
+      "question": "Show the name of singers whose birth year is either 1948 or 1949?",
+      "generated_answer": "SELECT name FROM singer WHERE birth_year = 1948 OR birth_year = 1949",
+      "generation_seconds": 5.586303
+    },
+    {
+      "question": "Show different citizenships and the maximum net worth of singers of each citizenship.",
+      "generated_answer": "Select citizenship, Max(net_worth_millions) as max_net_worth from singer group by citizenship",
+      "generation_seconds": 138.353591
+    },
+    {
+      "question": "what are the different names of the singers that have sales more than 300000?",
+      "generated_answer": "SELECT name FROM singer JOIN song ON singer.singer_id = song.singer_id WHERE sales > 300000",
+      "generation_seconds": 23.506592
+    },
+    {
+      "question": "For each singer name, what is the total sales for their songs?",
+      "generated_answer": "SELECT s.name, SUM(so.sales) AS total_sales FROM singer AS s LEFT JOIN song AS so ON s.singer_id = so.singer_id GROUP BY s.singer_id, s.name",
+      "generation_seconds": 181.577527
+    },
+    {
+      "question": "What are the citizenships that are shared by singers with a birth year before 1945 and after 1955?",
+      "generated_answer": "Select DISTINCT citizenship from singer where birth_year < 1945 and birth_year > 1955",
+      "generation_seconds": 34.897073
+    },
+    {
+      "question": "What is the feature type name of feature AirCon?",
+      "generated_answer": "SELECT feature_type_name FROM ref_feature_types WHERE feature_type_code IN (SELECT DISTINCT feature_type_code FROM other_available_features WHERE feature_name = 'AirCon')",
+      "generation_seconds": 52.243011
+    }
+  ]
+}

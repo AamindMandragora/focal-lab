@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.2,
+  "syntax_rate": 0.7,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 1725.343,
+    "mean_generation_seconds_per_example": 172.534301,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 1743.7045,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 220,
+    "eval_end_index": 230
+  },
+  "answers": [
+    {
+      "question": "What is the official language spoken in the country whose head of state is Beatrix?",
+      "generated_answer": "SELECT T0.Language FROM Countrylanguage AS T0,Country AS T1 WHERE T0.Countrycode=T1.Code AND T1.Headofstate='Beatrix' AND T0.IsOfficial='T'",
+      "generation_seconds": 129.910916
+    },
+    {
+      "question": "Return the country codes for countries that do not speak English.",
+      "generated_answer": "SELECT code FROM country WHERE code NOT IN (SELECT DISTINCT countrycode FROM countrylanguage WHERE language = 'English')",
+      "generation_seconds": 47.878783
+    },
+    {
+      "question": "What are the codes of the countries that do not speak English and whose government forms are not Republic?",
+      "generated_answer": "SELECT code FROM country WHERE capital IS NOT NULL AND governmentform != 'Republic' AND code NOT IN (SELECT DISTINCT countrycode FROM countrylanguage WHERE language = 'English')",
+      "generation_seconds": 22.424586
+    },
+    {
+      "question": "Return the codes of countries that do not speak English and do not have Republics for governments.",
+      "generated_answer": "SELECT code FROM country WHERE NOT governmentform LIKE '%Republic%' AND NOT EXISTS (SELECT language FROM countrylanguage WHERE country.countrycode = countrylanguage.countrycode AND language = 'English')",
+      "generation_seconds": 74.016138
+    },
+    {
+      "question": "Which unique cities are in Asian countries where Chinese is the official language ?",
+      "generated_answer": "Select distinct c.name from city c join country co on c.countrycode = co.code join countrylanguage cl on co.code = cl.countrycode where co.continent = 'Asia' and cl.language = 'Chinese' and cl.isofficial = 'T'",
+      "generation_seconds": 309.077518
+    },
+    {
+      "question": "What are the names of countries that speak more than 2 languages, as well as how many languages they speak?",
+      "generated_answer": "SELECT country.name, count(countrylanguage.language) as lang_count FROM countrylanguage JOIN country ON countrylanguage.countrycode = country.code WHERE lang_count > 2 GROUP BY country.code",
+      "generation_seconds": 194.271624
+    },
+    {
+      "question": "Find the number of cities in each district whose population is greater than the average population of cities?",
+      "generated_answer": "",
+      "generation_seconds": 246.612751
+    },
+    {
+      "question": "How many cities in each district have a population that is above the average population across all cities?",
+      "generated_answer": "",
+      "generation_seconds": 236.713656
+    },
+    {
+      "question": "Find the government form name and total population for each government form whose average life expectancy is longer than 72.",
+      "generated_answer": "SELECT governmentform, population FROM country WHERE lifeexpectancy > 72 GROUP BY governmentform",
+      "generation_seconds": 69.218962
+    },
+    {
+      "question": "What are the different continents and the total popuation and average life expectancy corresponding to each, for continents that have an average life expectancy less than 72?",
+      "generated_answer": "",
+      "generation_seconds": 395.218072
+    }
+  ]
+}

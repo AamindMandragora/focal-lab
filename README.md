@@ -117,7 +117,9 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation always runs on local vLLM; pick the model with `--eval-model` (the backend is fixed in `synthesis/run_constants.py`).
+
+**BYOD (bring your own credentials):** all provider API keys load from the environment / `.env` (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, AWS credentials for Bedrock). There are no key or base-URL CLI flags.
 
 ```bash
 CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
@@ -130,21 +132,10 @@ CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
   --eval-sample-size 10
 ```
 
-Optional search-space controls for UCB/bandit helper-call pruning:
-
-- `--adaptive-helper-mask` / `--no-adaptive-helper-mask`
-- `--helper-selection-policy` (`bandit`)
-- `--helper-bandit-min-evals`
-- `--helper-bandit-top-k`
-- `--helper-bandit-ucb-c`
-- `--helper-bandit-explore-untried`
-
-Optional local-beam refinement controls:
-
-- `--refinement-beam-size` (defaults to 2)
-- `--local-neighborhood-refinement` / `--no-local-neighborhood-refinement`
-- `--max-local-edit-ratio`
-- `--beam-verify-candidates` / `--no-beam-verify-candidates`
+UCB/bandit helper-call pruning and local-beam refinement are no longer
+CLI-configurable: every recorded run used the same settings, so they are
+hard-coded in `synthesis/evaluate/feedback_loop.py` (2026-07-18 bucket-1
+audit; see `planning/ws2-ws3-landed-audit.md`).
 
 ## Dafny Files Used by Synthesis
 
@@ -161,7 +152,7 @@ Optional local-beam refinement controls:
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
 - `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider` order (GSM and SQL/Spider) and strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn. The CARS molecular/SMILES benchmark remains available for explicit manual runs, but it is not part of the default matrix. Metadecode runs use `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and use `--min-accuracy` as the best matching legacy baseline accuracy plus `--accuracy-win-margin 0.03`.
-- Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--refinement-beam-size 2`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `opus4.7` profile also forwards Anthropic adaptive thinking with `--anthropic-effort xhigh` and summarized thinking; the `gemini` profile uses Gemini thinking level `high` by default.
+- Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `opus4.7` profile also forwards Anthropic adaptive thinking with `--anthropic-effort xhigh` and summarized thinking; the `gemini` profile uses Gemini thinking level `high` by default.
 - `run_all_tests.py` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
 - Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
 - Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so those strategies compare against the same questions.
@@ -173,11 +164,11 @@ Optional local-beam refinement controls:
 
 ## Path Configuration
 
-Path defaults are intentionally overrideable. Use CLI flags where available and env vars for runtime/config paths:
+Since the 2026-07-17 CLI simplification, `run_synthesis.py` no longer takes `--output-dir`, `--baseline-output-dir`, or `--grammars-dir` flags — those paths are settled constants in `synthesis/run_constants.py` (`OUTPUT_DIR`, `GRAMMARS_DIR`). What still varies at runtime:
 
-- `--output-dir` / `CSD_OUTPUT_DIR`
-- `--baseline-output-dir` / `CSD_BASELINE_OUTPUT_DIR`
-- `--grammars-dir` / `CSD_GRAMMARS_DIR`
+- `CSD_OUTPUT_DIR` — recovery-resume-only override so a resumed run keeps writing under its original directory; not a general-purpose output location flag.
+- `CSD_GRAMMARS_DIR` — honored by the evaluator when `GRAMMARS_DIR` is unset (built-in grammars under `synthesis/evaluate/grammars/` otherwise).
+- `run_all_tests.py` (the matrix runner, a separate script from `run_synthesis.py`) has its own `--generated-output-dir` / `CSD_OUTPUT_DIR` and `--baseline-output-dir` / `CSD_BASELINE_OUTPUT_DIR` flags for where it writes matrix output.
 - `--dafny-path` / `DAFNY_PATH`
 - `VAS_CONDA_ENV` / `VAS_RDKIT_CONDA_ENV` (conda prefix for `run_all_tests.py`; default `/apps/conda/advayth2/envs/advayth2`; see `environment/README.md`)
 - `DAFNY_EXTRA_PATH` (extra PATH entries for Dafny subprocesses)

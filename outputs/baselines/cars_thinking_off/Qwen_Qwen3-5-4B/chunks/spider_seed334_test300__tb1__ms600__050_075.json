@@ -1,0 +1,141 @@
+{
+  "accuracy": 0.4,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 25,
+    "total_generation_seconds": 1861.1814,
+    "mean_generation_seconds_per_example": 74.447254,
+    "examples_with_generation_timing": 25,
+    "run_wall_time_seconds": 1883.0569,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 50,
+    "eval_end_index": 75
+  },
+  "answers": [
+    {
+      "question": "How many cars has over 6 cylinders?",
+      "generated_answer": "SELECT COUNT(*) FROM cars_data",
+      "generation_seconds": 38.120608
+    },
+    {
+      "question": "For all of the 4 cylinder cars, which model has the most horsepower?",
+      "generated_answer": "SELECT a.model FROM cars_data a INNER JOIN car_names b ON a.id = b.makeid INNER JOIN model_list c ON a.id = c.model WHERE a.cylinders = 4 GROUP BY a.model ORDER BY a.horsepower DESC LIMIT 1",
+      "generation_seconds": 187.115993
+    },
+    {
+      "question": "What is the maximum mpg of the cars that had 8 cylinders or that were produced before 1980 ?",
+      "generated_answer": "SELECT MAX(mp) FROM cars_data, car_names WHERE cars_data.accelerate <= 0 OR cars_data.year < 1980",
+      "generation_seconds": 175.067741
+    },
+    {
+      "question": "What are the different models wthat are lighter than 3500 but were not built by the Ford Motor Company?",
+      "generated_answer": "SELECT DISTINCT c.model FROM cars_data c JOIN car_names cn ON c.id = cn.makeid JOIN model_list m ON cn.model = m.model JOIN car_makers cm ON m.maker = cm.id WHERE c.weight < 3500 AND cm.maker != 'Ford Motor Company'",
+      "generation_seconds": 84.756133
+    },
+    {
+      "question": "What country is Jetblue Airways affiliated with?",
+      "generated_answer": "SELECT country FROM airlines WHERE abbreviation = 'JB'",
+      "generation_seconds": 19.27514
+    },
+    {
+      "question": "Give the airport code and airport name corresonding to the city Anthony.",
+      "generated_answer": "SELECT airportcode, airportname FROM airports WHERE city = 'Anthony'",
+      "generation_seconds": 24.140661
+    },
+    {
+      "question": "Which airline has abbreviation 'UAL'?",
+      "generated_answer": "SELECT airline FROM airlines WHERE abbreviation = 'UAL'",
+      "generation_seconds": 12.228144
+    },
+    {
+      "question": "Which city and country is the Alton airport at?",
+      "generated_answer": "SELECT city, country FROM airports WHERE airportcode = (SELECT destairport FROM flights WHERE airline = 'Alton')",
+      "generation_seconds": 45.91638
+    },
+    {
+      "question": "Return the name of the airport with code 'AKO'.",
+      "generated_answer": "SELECT airportname FROM airports WHERE airportcode = 'AKO'",
+      "generation_seconds": 27.458321
+    },
+    {
+      "question": "What are airport names at City 'Aberdeen'?",
+      "generated_answer": "SELECT airportname FROM airports WHERE city = 'Aberdeen'",
+      "generation_seconds": 59.680346
+    },
+    {
+      "question": "What are the names of airports in Aberdeen?",
+      "generated_answer": "SELECT name FROM airports WHERE city = 'Aberdeen'",
+      "generation_seconds": 14.453896
+    },
+    {
+      "question": "How many flights depart from 'APG'?",
+      "generated_answer": "SELECT COUNT(*) FROM flights JOIN airports ON flights.destairport = airports.airportcode WHERE airports.city = 'APG'",
+      "generation_seconds": 10.929159
+    },
+    {
+      "question": "Count the number of flights departing from 'APG'.",
+      "generated_answer": "SELECT COUNT(*) FROM flights JOIN airports ON flights.destairport = airports.airportcode JOIN airlines ON flights.airline = airlines.uid WHERE flights.destinationairport = 'APG'",
+      "generation_seconds": 68.519003
+    },
+    {
+      "question": "How many flights have destination ATO?",
+      "generated_answer": "select count(*) from flights join airports on flights.destairport = airports.airportcode where airports.city = 'ATO'",
+      "generation_seconds": 35.06654
+    },
+    {
+      "question": "Return the number of flights departing from Aberdeen.",
+      "generated_answer": "SELECT COUNT(*) FROM flight_2",
+      "generation_seconds": 77.828536
+    },
+    {
+      "question": "How many flights depart from City 'Aberdeen' and have destination City 'Ashley'?",
+      "generated_answer": "Select count(*) from (select A.airline, A.flightno, A.sourceairport, A.destairport from flight_2 f join airport_1 a on f.sourceairport = a.airportcode join airport_2 b on f.destairport = b.airportcode group by a.airline , a.flightno , a.sourceairport ,b.airportcode ) where b.city = 'Ashley' and a.city = 'Aberdeen'",
+      "generation_seconds": 78.455442
+    },
+    {
+      "question": "Count the number of United Airlines flights arriving in ASY Airport.",
+      "generated_answer": "SELECT COUNT(*) FROM flights INNER JOIN airports ON flights.destairport = airports.airportcode WHERE flights.airline = 'United' AND airports.airportcode = 'ASY'",
+      "generation_seconds": 13.769088
+    },
+    {
+      "question": "Return the number of United Airlines flights leaving from AHD Airport.",
+      "generated_answer": "SELECT COUNT(*) FROM flights JOIN airports ON flights.destairport = airports.airportcode JOIN airlines ON flights.airline = airlines.airline WHERE airlines.abbreviation = 'UA' AND cities.city = 'Albuquerque'",
+      "generation_seconds": 9.711333
+    },
+    {
+      "question": "How many United Airlines flights go to City 'Aberdeen'?",
+      "generated_answer": "SELECT COUNT(*) FROM flights f JOIN airports a ON f.destairport = a.airportcode WHERE a.countryabbrev = 'GB' AND f.airline IN ('UA', 'Un', 'United')",
+      "generation_seconds": 619.963765
+    },
+    {
+      "question": "Which city has most number of arriving flights?",
+      "generated_answer": "SELECT CITY FROM AIRPORTS WHERE AIRPORTCODE IN (SELECT DESTAIRPORT FROM FLIGHTS GROUP BY DESTAIRPORT ORDER BY COUNT(*) DESC LIMIT 1)",
+      "generation_seconds": 106.231146
+    },
+    {
+      "question": "Which city has the most frequent destination airport?",
+      "generated_answer": "select a.city from airports a group by a.city order by count(d.airportcode) desc limit 1",
+      "generation_seconds": 14.666469
+    },
+    {
+      "question": "What is the code of airport that has the highest number of flights?",
+      "generated_answer": "SELECT airportcode FROM airports GROUP BY airportcode ORDER BY COUNT(flights.flightno) DESC LIMIT 1",
+      "generation_seconds": 3.388526
+    },
+    {
+      "question": "Give the code of the airport with the least flights.",
+      "generated_answer": "SELECT MIN(c) FROM (SELECT sourceairport FROM flights GROUP BY sourceairport HAVING COUNT(*) > 0 ORDER BY COUNT(*) ASC) s, airports c WHERE c.airportcode = s.sourceairport ORDER BY s.COUNT ASC LIMIT 1",
+      "generation_seconds": 25.582212
+    },
+    {
+      "question": "What airline serves the most flights?",
+      "generated_answer": "SELECT abb, COUNT(*) as flt_count FROM flights AS f INNER JOIN airports AS a ON f.destairport = a.airportcode INNER JOIN airlines AS a2 ON f.airline = a2.airline GROUP BY f.airline, abb ORDER BY flt_count DESC LIMIT 1",
+      "generation_seconds": 71.957179
+    },
+    {
+      "question": "Find the abbreviation and country of the airline that has fewest number of flights?",
+      "generated_answer": "SELECT abbreviation, country FROM airlines WHERE uid = (SELECT airline FROM flights GROUP BY airline HAVING COUNT(*) = (SELECT MIN(count) FROM (SELECT airline, COUNT(*) AS count FROM flights GROUP BY airline) AS tmp))",
+      "generation_seconds": 36.89959
+    }
+  ]
+}

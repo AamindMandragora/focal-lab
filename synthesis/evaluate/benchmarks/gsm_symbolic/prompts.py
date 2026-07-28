@@ -97,7 +97,9 @@ _GSM_STD_FEWSHOTS = [
 ]
 
 
-_GSM_REASONING_HEADER = (
+# Trailing space before \n in "below: \n" is deliberate: CRANE gsm_symbolic.yaml
+# has that space; greedy Qwen3.5-2B diverges without it (verified 2026-07-02).
+GSM_CRANE_COT_TASK = (
     "You are an expert in solving grade school math tasks. "
     "You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\n"
     "Before answering you should reason about the problem (using the <reasoning> field in the response described below). "
@@ -113,6 +115,7 @@ _GSM_REASONING_HEADER = (
     "You will always respond in the format described below: \n"
     "Let's think step by step. <reasoning> The final answer is <<symbolic expression>>\n"
 )
+_GSM_REASONING_HEADER = GSM_CRANE_COT_TASK
 
 
 def reasoning_with_symbolic_expr_prompt(question: str) -> str:

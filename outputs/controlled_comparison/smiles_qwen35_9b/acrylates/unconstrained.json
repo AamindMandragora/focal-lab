@@ -1,0 +1,616 @@
+{
+  "accuracy": 0.06,
+  "syntax_rate": 0.29,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 167.1776,
+    "mean_generation_seconds_per_example": 1.671776,
+    "examples_with_generation_timing": 100,
+    "total_output_tokens": 11076,
+    "mean_output_tokens_per_example": 110.76,
+    "examples_with_token_counts": 100,
+    "run_wall_time_seconds": 240.5051
+  },
+  "answers": [
+    {
+      "question": "acrylates",
+      "generated_answer": "1",
+      "num_tokens": 2,
+      "generation_seconds": 0.911617
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,6-Hexanediol diacrylate\n1,6-Hexanediol diacrylate\n1,11-Undecanediol diacrylate\n1,11-Undecanediol diacrylate\n1,11-Undecanedei",
+      "num_tokens": 67,
+      "generation_seconds": 1.015262
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1=C=CC(=O)OC\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CCCCCCCCCCCCOC(=O)C(=C)C\nCCCCCOC(=O)C=C",
+      "num_tokens": 58,
+      "generation_seconds": 0.898228
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1-chloro-2-methyl-2-butene?\nMolecule: CCC(C)OC(=O)C(=C)C",
+      "num_tokens": 32,
+      "generation_seconds": 0.533329
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1 94/gAh\n1 94/gAh\n1 9 valid acrylates molecules in SMILES format.\n1 94/gAh",
+      "num_tokens": 35,
+      "generation_seconds": 0.578777
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " O=C(OCC(C)C(=O)OC(=O)C=C)C(=C)C",
+      "num_tokens": 26,
+      "generation_seconds": 0.456003
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "<think>\nThe user wants a new valid acrylates molecule in SMILES format.\nThe examples provided are mostly acrylates or methacrylates.\nAcrylate structure: $R-O-C(=O)-C=C$ or $R-O-C(=O)-C(=CH_2)-R'$.\nActually, acrylate specifically refers to the ester of acrylic acid ($CH_2=CH-COOH$). So the ester group is $-O-C(=O)-CH=CH_2$.\nMethacrylate refers to the ester of methacrylic acid ($CH_2=C(CH_3)-COOH$). So the ester group is $-O-C(=O)-C(CH_3)=CH_2$.\nLooking at the examples:\n1. `C=CC(=O)OCC1=CC=CC=C1` -> Phenyl ester of acrylic acid with a benzyl group? No, `C=CC(=O)O` is the acrylate part attached to `CC1=CC=CC=C1` (benzyl). Wait, `C=CC(=O)O` is acrylic acid esterified with benzyl alcohol.\n2. `C=CC(=O)OC1=CC=CC=C1` -> Phenyl acrylate.\n3. `CC(=C)C(=O)OC1=CC=CC=C1` -> Methacrylate (phenyl).\n4. `C=CC(=O)OCCC1=CC=CC=C1` -> Benzyl acrylate (homologated).\n5. `CCCCCCCCCOC(=O)C(=C)C` -> Methacrylate with long alkyl chain ester.\n6. `CCC(C)OC(=O)C=C` -> Acrylate",
+      "num_tokens": 400,
+      "generation_seconds": 5.692167
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "11",
+      "num_tokens": 3,
+      "generation_seconds": 0.129622
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OCC(C(C)C)C(=O)OC\nMolecule: CCCCCCCCOC(=O)C(=C)C\nCCCCCCCCCOC(=O)C(=C)C\nMolecule: CCCCCCCCCCCCOC(=O)C(=C)C\nMolecule: CCCCCCCCOC( SMILES format error. Correct the SMILES string by ensuring proper connectivity and chemical valence. Corrected SMILES: CCCCCCCCOC(=O)C(=C)C",
+      "num_tokens": 120,
+      "generation_seconds": 1.756038
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "\f",
+      "num_tokens": 2,
+      "generation_seconds": 0.123401
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1-(2-methylpropyl) 2-methylacrylate\n1-(2-methylpropyl) 2-methylacrylate\n1-(2-methylpropa-1,2-diyl) 2-methylene-benzene ... (truncated)\n1-(2-methylpropyl) 2-methylacrylate\n1-(2-mystic) 2-methylacrylate",
+      "num_tokens": 90,
+      "generation_seconds": 1.342661
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " CC(C)COC(=O)C(=C)C\nMolecule:  CCCCOC(=O)C=C\nM leading acrylates molecule\n Molecule:  CC(C)COC(=O)C(=C)C\nMolecule:  CCCCOC(=\nOutput: CCCCCC(=O)OC1=CC=CC=C1\nMolecule: CCCCCC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: CCCCCCOC(=O)C(=C)",
+      "num_tokens": 177,
+      "generation_seconds": 2.549709
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.123656
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " CC(C)COC(=O)C(=C)C\n  C: \n  C: \n  C: \n  C: \n  C: \n  C:",
+      "num_tokens": 40,
+      "generation_seconds": 0.655303
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OCC(C)C\nMolecule:  C=CC(=O)OCC(C)C\nMolecule:  C=CC(=O)OCC(C)C",
+      "num_tokens": 47,
+      "generation_seconds": 0.751236
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1=C=C=C=C1\n1=C=C=C=C1\n1=C=C=C=C1\n1=C=C=C=C1\n1=C=C=C=C1\n1=C=C=C=C1\n1=C=C=C=C1\n1=C=C=C=C1\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"\n1=\"",
+      "num_tokens": 170,
+      "generation_seconds": 2.459271
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " CC(C)C(=O)OCC1=CC=CC=C1\n CC(C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F\nMolecule:  CCCCCCCCCCCCOC(=O)C(=C)C\n CCCCCCCCCCCCOC(=O)C(=C)C\nMolecule: CCCCOC(=O)C=C\nMolecule: CCC(COCC(COC(=O)C=C)(COC(= previous examples)",
+      "num_tokens": 141,
+      "generation_seconds": 2.057741
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\nC=CC(=O)OC1=C(C(=C(C(=C1)CC)CC)CC)CC\nC=CC(=O)OC1=CC=CC=C1\nC=CC(=O)OC1=C(C(=C(C( phenyl group )=C1)CC)CC)CC\nCC(C)COC(=O)C(=C)C\nC=CC(=O)OC1=C(C(=C(C(=C1)CC)CC)CC)CC\nC=CC(=O)OC1=C(C(=C(C(=C1)F)F)F)F\nC=CC(\nProvide one new, valid acrylates molecule in SMILES format.",
+      "num_tokens": 198,
+      "generation_seconds": 2.850159
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OC1=CC=CO1 (invalid, has 5-membered ring)\nMolecule:  C=CC(=O)OC1=CC=CC=C1\nMolecule:  CC(=C)C(=O)OC1=CC=CC=C1\n 1. Analyze the structure of the input molecules.\n2. Define the constraints for the new molecule.\n3. Generate a valid SMILES string for a new molecule.\n4. Verify the structure against the constraints.",
+      "num_tokens": 116,
+      "generation_seconds": 2.17966
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1. O=C(OCC(CO)(COC(=O)C=C)COC(=O)\nMolecule: C=CC(=O)OC1=C(F)C=C(F)C=C(F)C=C(F)\nMolecule: C=CC(\nMolecule: CC(=C)C(=O)OCC1=CC=C(F)C=C(F)\nM",
+      "num_tokens": 89,
+      "generation_seconds": 1.338006
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=O\nMolecule: C=CC(=O)OC1=CC=CC=C1\nM molecule: CC(C)COC(=O)C=C\n molecule: CC(C)COC(=O)C(=C)C\n  molecule: C=CC(=O)OC1=CC=O\n molecule: C=CC(=O)OCC(C)C\n molecule: CC(=C)C(=O)OC1=CC=O\n molecule: C=CC(",
+      "num_tokens": 146,
+      "generation_seconds": 2.130176
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1st example: C=CC(=O)OCC1=CC=CMethyl acrylate: C=CC(=O)OC.\n2nd example: C=CC(=O)OC1=CC=CC=C1. Benzenesulfonyl acrylate ester? No, this is methyl 3-hydroxy-2-methylpropanoate. No, wait, the first example is clearly an acrylate ester. The second one is also an acrylate ester.\n3rd example: C=CC(=O)OC1=CC=CC=C1. Phenyl acrylate.\n3rd example: C=CC(=O)OC1=CC=CC=C1. Phenyl acrylate.\n4th example: C=CC(=O)OC1=CC=CC=C1. Phenyl acrylate.\n5th example: C=CC(=A)OCC1=CC=CC=C1. Mismatch in SMILES. Should be C=CC(=O)OCC1=CC=CC=C1\n5th example: CCCCCCCCOC(=O)C(=C)C. Long alkyl chain. Methacrylate.\n6th example: CCCCCCCCOC(=O)C(=C)C. Long alkyl chain. Methacrylate.\n7th example: CCCCCCCCOC(=O)C(=C)C. Long alkyl alcohol derived from 1-octanol.\n7th example: CCC(C)OC(=O)C=C. Isopropyl acrylate.\n8th example: CC(C)COC(=O)C(=C)C. Isobutyl methacrylate.\n9th example: CC(C)CCCCCCCOC(=O)C=C.",
+      "num_tokens": 400,
+      "generation_seconds": 5.654414
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "",
+      "num_tokens": 1,
+      "generation_seconds": 0.106468
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.127648
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " O=C(OC(=O)C=C)C(=C)C\n O=C(OC(=O)C=C)C(=C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: O=C(OC(=O)C=C)C(=C)C\n O=C(=O)C=C\nC=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nM prompt, an expert in chemistry. The goal is to create a acrylates molecule.",
+      "num_tokens": 131,
+      "generation_seconds": 1.922902
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "13C6O16C2O1012C13C13O1212C15C15O1212C15C15O1212C15C15O1212C15C15O1212C15C15O1212C15C15O123\nMolecule: CC(C)COC(=O)C(=C)C\nMolecule: CCCCCCCOC(=O)C(=C)C",
+      "num_tokens": 127,
+      "generation_seconds": 1.868835
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "###################################################################################\nConstraints:\n\u2022 The molecule must be an acrylate ester, meaning it must contain the ester group attached to a carbon-carbon double bond (C=C-C=O in ester linkage).\n\u2022 The molecule must contain at least one benzene ring.\n\u2022 The o- (ortho) position of the benzene ring must have a substituent.",
+      "num_tokens": 76,
+      "generation_seconds": 1.168505
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OCC(C)C\nMolecule: CC(C)COC(=O)C(=C)C\nM molecule: CCCCOC(=O)C=C\nMolecule: CCCCC(CC)COC(=O)C(=C)C\nMolecule: CCCCCCOC(=O)Ch(=C)C\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C(=C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC( molecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nMilen: C=CC(=O)OCC(C)C",
+      "num_tokens": 237,
+      "generation_seconds": 3.403222
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1-phenyl-1-propenyl acrylate: C=CC(=O)OC(C)=C(C)C\n1-phenyl-1-propenyl acrylate: C=CC(=O)OC(C)=C(C)C\n1-phenyl-1-propenyl acrylate: C=CC(=O)OC(C)=C(C)C\n1-pub-backup-1: C=CC(=O)OC1=CC=CC=C1\n1-pub-backup-1: C=CC(=O)SMILES\n1-pub-backup-1: C=CC(=O)OCC1=CC=CC=C1",
+      "num_tokens": 151,
+      "generation_seconds": 2.208678
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "............................",
+      "num_tokens": 3,
+      "generation_seconds": 0.162747
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=SMILES format.",
+      "num_tokens": 33,
+      "generation_seconds": 0.568724
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1",
+      "num_tokens": 34,
+      "generation_seconds": 0.580434
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "3-methylbut-2-enoate: CC(=C)C(=O)OC\nMolecule: acrylate: C=CC(=O)OCC\nMolecule: 3-methylbut-2-enoate: CC(=C) IUPAC name is 3-methylbut-2-enoic acid, but the SMILES provided is incorrect",
+      "num_tokens": 83,
+      "generation_seconds": 1.267639
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " <think>",
+      "num_tokens": 3,
+      "generation_seconds": 0.153479
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "10-undecenoic acid: C=CC(=O)OCCCCCCCCCCC\nM001: C=CC(=O)OCC1=CC=CC=C1\nM002: C=CC(= unformatted text\nM003: C=CC(=O)OC1=CC=CC=C1\nM003: C=CC(=O)OC1=CC=CC=C1\nM002: C=CC(=O)OC1=CC=CH1\nM002: C=CC(=O)OC1=CC=CH1\nM003: C=CC(=O)OC1=CC=CC=C1\nM001: C=CC(=O)OCC1=CC=CC=C1\nM001: C=CC(=O)OCC1=CC=CC=C1\nM001: C=CC(=O)OCC1=CC=CC=C1",
+      "num_tokens": 226,
+      "generation_seconds": 3.25087
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,3-Butadiene\n1,3-Butadiene is a conjugated diene with the structure CH2=CH-CH=CH2. Its SMILES representation is C=CC=C.\nC=CC=C\nMolecule: Methyl methacrylate\nMethyl methacrylate (MMA) is an acrylate with a methyl group on the double bond and a methyl ester group. Its SMILES is CC(=C)C(=O)OC.\nCC(=C)C(=O)OC\nMolecule: 2-Butyl acrylate\n2-Butyl acrylate is an acrylate with a 4-carbon alkyl chain attached to the oxygen. Its SMCCCCCC\nSMILES string must be valid SMILES that represents a molecule with an acrylate group (C=C-C(=O)O-R), where R is not a methyl or ethyl group (i.e., R must be at least propyl, e-ethyl acrylate)",
+      "num_tokens": 219,
+      "generation_seconds": 3.159779
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,3-Propanediol diacrylate\nMolecule: 1,3-Propanediol diacrylate\nM GDP(GTP)\nMolecule: CCCCCCCOC(=O)C(=C)C\nMolecule: CCCCCCCOC(=O)C(=C)C\nMolecule: CCCCCCOC(= list of constraints)",
+      "num_tokens": 82,
+      "generation_seconds": 1.255115
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,1,2,2-Tetrafluoroethane-1,2-diyl diacrylate\n1,1,2,2-Tetrafluoroethane-1,1-diyl diacrylate\n1,1,1,2-Tetrafluoroethane-1,2-diyl diac...\n1,1,2,2-Tetrafluoroethane-1,2-diyl diacrylate\n1,1,2,=C(C)=CC(=O)OCCF\n1,1,2,2-Tetrafluoroethane-1,2-diyl diacrylate\n1,1,2,2-Tedrafluoroethane-1,2-diyl diacrylate\n1,1,2,2-Tetrafluoroethane-1,2-diyl diIyI acrylate\n1,1,2,2-Tetrafluoroethane-1,2-diyl diacrylate\n1, ringed\nringed\nringed\ndogleg\ndogleg\ndogleg\ndogleg\ndogleg\ndogleg\ndogleg\ndogleg\ndogleg\ndoglog\ndoglog\ndogleg\ndogleg\nringed\nringed\nringed\nringed\nringed\nringed\nringed\nringed\nringed\ndogleg\ndogleg\ndogleg\ndogleg\nringed\nringed\nringed\nringed\nringed\nringed\ndogleg\ndogleg\ndogleg\ndogleg\ndogleg\ndogleg\ndogleg\nringed\nringed\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker\nring linker",
+      "num_tokens": 400,
+      "generation_seconds": 5.674833
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " 1 2 3 4 5 6  7 8\nThe target molecule is a mono-substituted acrylate. It has a benzene ring. It has a short aliphatic chain linker (1-2 carbons). It has a methyl group on the aromatic ring. It is isopropyl acrylate based.",
+      "num_tokens": 76,
+      "generation_seconds": 1.160207
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OCC(C)C\n C=CC(=O)OC1=CC=CC=C1",
+      "num_tokens": 29,
+      "generation_seconds": 0.517178
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " O=C(OCC(C)C(=O)OC(=O)C=C)C(=C)C\n O=C(OCC(C)C(=O)OC(=O)C=C)C(=C)C",
+      "num_tokens": 52,
+      "generation_seconds": 0.825288
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=AC=C1\n C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F\n C=CC( 'A' )C(=O)OCC(C)C\n C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\n C=COCC(=O)C=C\n COC(=O)C(=C)C\n CCCCCCCCOC(=O)C(=C)C\n C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\n C=CC(heavy=12)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\nC=CC(=O)OCC1=CC=CC=C1",
+      "num_tokens": 362,
+      "generation_seconds": 5.149947
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "2-Propylacrylate, 2-{[2-(2-propylacryloyloxy)ethyl]oxymethyl}ester; 2-Propylacrylate, 2-{[2-(2-propylacryloyloxy)ethyl]oxymethyl}ester; 2-Propic acid, 2-[(2-propylacryloyloxy)ethyl]oxymethyl ester; 2-Propylacrylate, 2-{[2-(2-propCCC(COCCCOC(=O)C=C)(COCCCOC(=O)C=C)C",
+      "num_tokens": 131,
+      "generation_seconds": 1.937626
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " O=C(OCC(C)C(=O)OC(=O)C=C)C(=C)C\n  O=C(OCC(C)C(=O)OC(=O)C=C)C(=C)C\n  O=C(OCC(C)C(=O)OC(=O)C=C)C(=C)C\n  O=C(OCC(C)C(=O)OC(=O)C=C)C(=C)C\n  O=C(OCC(C) of C=C)C(=C)C\n  O=C(OCC(C)C(=O)OC(=O)C=C)C(",
+      "num_tokens": 148,
+      "generation_seconds": 2.175241
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1\n1",
+      "num_tokens": 118,
+      "generation_seconds": 1.763172
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=C(C)C1\n(End of Examples)",
+      "num_tokens": 46,
+      "generation_seconds": 0.762331
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "2-methyl-3-(2-methyl-2-butenyl)-2-methyleneoxirane\nMolecule: CCCCCCOC(=O)C=C\nMolecule: CCCCCCOC(=O)C(=C)C\nCCCCCOC(=O)C=C\nCCCCCOC(=O)C(=C)C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(= common amine)\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C\nCC(C)COC(=O)C=C",
+      "num_tokens": 366,
+      "generation_seconds": 5.208748
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "<think>\nThe user wants a new valid acrylate molecule in SMILES format based on the provided examples.\nThe goal is to generate *one* new acrylate molecule, not just repeat one of the existing ones.\nAcrylates generally have the structure $R-O-C(=O)-C(R')=C(R'')$ or more commonly methyl methacrylate ($CH_2=C(CH_3)COOR$) or ethyl acrylate ($CH_2=CHCOOR$).\nLooking at the provided examples:\n1.  `C=CC(=O)OCC1=CC=CC=C1`: Ethyl esters of vinyl... no, it's 4-vinylbenzyl acrylate. Structure: Vinyl group, ester link, benzyl group.\n2.  `C=CC(=O)OC1=CC=CC=C1`: Phenyl acrylate (Vinyl group, ester, phenyl).\n3.  `CC(=C)C(=O)OC1=CC=CC=C1`: Methacrylate ester with phenol (Phenyl methacrylate).\n4.  `C=CC(=O)OCCC1=CC=CC=C1`: 2-phenylethyl acrylate.\n5.  `CCCCCCCCCOC(=O)C(=C)C`: Methacrylic acid octyl ester (or similar).\n6.  `CCC(C)OC(=O)C=C`: Isobutyl acrylate.\n7.  `CC(=C)C(=O)OCC1=CC=CC=C1`: 2-phenylethyl methacrylate.\n8.  `C=CC(=O)OC1=C(C(=C(C(=C1F)",
+      "num_tokens": 400,
+      "generation_seconds": 5.693472
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,3-Benzenedicarboxylate ester of 2-ethylhexanol\nMolecule: 1,3-Benzenedicarcorehotate ester of 2-ethylhexanol\nMOT: acrylates\nMOT: acrylates",
+      "num_tokens": 56,
+      "generation_seconds": 0.895459
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.146312
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,4-Cyclohexanediyl dimethacrylate\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nM few examples of acrylates molecules in SMILES format. Your task is to provide one new, valid acrylates molecule in SMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=C(C)C1\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=C(C)C1\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O",
+      "num_tokens": 400,
+      "generation_seconds": 5.69645
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1234567890123456789012345678901234567890\n                                ^\n                                100 characters",
+      "num_tokens": 51,
+      "generation_seconds": 0.822582
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "<think>\nThinking Process:",
+      "num_tokens": 6,
+      "generation_seconds": 0.207003
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 SMILES\nMolecule: CC(C)(C)C1=CC=CC=C1OC(=O)C(=C)C\nMolecule: CC(C)(C)C1=CC=CC=C1OC(=O)C(=C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: CC(C)(C)C1=CC=CC=C1OC( SMILES\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CCCCCCCOC(=O)C(=C)C\nMolecule: C=CC(=\"O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMcontext",
+      "num_tokens": 358,
+      "generation_seconds": 5.108666
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1-phenylethyl acrylate: CC(C)(OC(=O)C=C)C\n1-phenylpropyl acrylate: CC(C)(COC(=O)C=C)C\n1-phenylbutyl acrylate: CC(CC)(COC(=O)C=C)C\n1-phenylpentyl acrylate: CC(CCC)(COC()C=C)C",
+      "num_tokens": 94,
+      "generation_seconds": 1.438347
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.14963
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,1-Bis[1-(2-methoxyethoxy)ethyl]-2-((2-methoxyethoxy)ethylidene)malonate (Bis-GMA)\nMolecule: CC(C)(COC(=O)C=C)COC(=O)C=C\nMolecule: CCCCCCOC(",
+      "num_tokens": 74,
+      "generation_seconds": 1.153015
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1",
+      "num_tokens": 2,
+      "generation_seconds": 0.152682
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1\nMolecule: 0\nMolecule: CCCCCCCCCCCCOC(=O)C(=C)C\nMolecule: CCCCCCCCCCCCOC( alkyl group )C(=O)C(=C)C",
+      "num_tokens": 52,
+      "generation_seconds": 0.846321
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nM few examples of acrylates molecules in SMILES format. Your task is to provide one new, valid acrylates molecule in SMILES format.",
+      "num_tokens": 64,
+      "generation_seconds": 1.013213
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,4-Dihydro-1,4-epoxynaphthalene-5-carboxylic acid\n1,4-Dihydro-1,4-epoxynaphthalene-5-carboxylic acid",
+      "num_tokens": 48,
+      "generation_seconds": 0.794696
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=AC=C1\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nM examples.\n examples.\n examples.",
+      "num_tokens": 83,
+      "generation_seconds": 1.279136
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1-phenylpro-2-en-1-one\nMolecule: 1-phenylpro-2-en-benzyl ester\nMolecule: 1-phenylprop-1-en-1-one\nM enol esters are important intermediates in organic synthesis. Your task is to provide one new, valid enol ester molecule in SMILES format.",
+      "num_tokens": 78,
+      "generation_seconds": 1.220364
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "<think>",
+      "num_tokens": 2,
+      "generation_seconds": 0.152238
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1-phenylvinyl acrylate\n1-phenylvinyl acrylate",
+      "num_tokens": 20,
+      "generation_seconds": 0.403244
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "\bC=CC(=O)OC1=CC=CC=C1 (remove hidden chars)\nCleanup result: C=CC(=O)OC1=CC=CC=C1\nCleanup result: C=CC( some string was removed)\nCleanup result: C=CC(=O)OC1= backprop",
+      "num_tokens": 70,
+      "generation_seconds": 1.096383
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "****** POC(=O)C(=C)C\nMolecule: ****** POC(=O)C(=C)C\nMolecule: ****** POC(= placeholders\"=O)C(=C)C\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F\nMolecule: ****** POC(=O)C(=C)C\nM molecules:\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC= uppercase letters)C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F\nMolecule: CC(C)COC(=O)C(=C)C\nMolecule: CCCCCCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(\nMolecule: CCCOC(=O)C=C\nMolecule: CCC(C)OC(=O)C(=C)C\nMolecule: CCCOC(=O)C(=C)C\nMolecule: CC1CC(CC(C1)(C)C)OC(=O)C(=C)C\nMolecule: CC",
+      "num_tokens": 400,
+      "generation_seconds": 5.701338
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OC1=CC=CC=C1\n  Stop",
+      "num_tokens": 19,
+      "generation_seconds": 0.378942
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OCC(C)C\n C=CC(=O)OCC(C)C\nMolecule:  C=CC(=O)OCC1=CC=CC=C1\n C=CC(",
+      "num_tokens": 52,
+      "generation_seconds": 0.853488
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1 2 3 4 4a 5 6 8 8a 9 10 10a 11 12 12a 11 12 12a 11 12 12a 11 12 12a 11 12 12a 11 12 12a 1 general\nAtom 1\nAtom 2\nAtom 3\n...\nAtom 31\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nM noise\nMolecule: C=CC(=O)OC1=CC=C1\nMolecule: CC(=C)C(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCC(C)C\nMolecule: CCCCCCCOC(=O)C(=C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(For some reason this molecule looks really good)\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C",
+      "num_tokens": 400,
+      "generation_seconds": 5.708066
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "\f",
+      "num_tokens": 2,
+      "generation_seconds": 0.155924
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "4-methylpentan-2-yl 2-methylbut-2-enoate\n4-methylpentan-2-yl 2-methylbut-2-enoate",
+      "num_tokens": 40,
+      "generation_seconds": 0.685112
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "2-phenyl-2-propyl acrylate",
+      "num_tokens": 12,
+      "generation_seconds": 0.301508
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(1=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nM many molecules. You are given several examples of acrylates molecules in SMILES format. Your task is to provide one new, valid acrylates molecule in SM\uc2a4\ud130\nMolecule: C=CC(=O)OCC(CO)(COC(=O)C=C)COC(=O)C=C\nMolecule: C=CC(=O)OCC(CO)(COC(=O)C=C)COC(=O)C=C\nMolecule: C=CC(=O)OCC(CO)(COCC(COC(=O)C=C)(COC(=O)C=C)COC(=O)=C)COC(=O)C=C\nMolecule: C=CC(=O)OCC(CO)(COCC(COC(=O)C=C)(COC(=O)C=C)COC(=O)C=C)COC(=O)C=C\nMolecule: CCCCCCCCCCCCOC(=O)C(=C)C\nMolecule: CCCCCCCCCCCCOC(",
+      "num_tokens": 297,
+      "generation_seconds": 4.275342
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,2-ethanediol\n1,2-ethanediol\n1,2-ethanediol\n1,2-ethester\n1,2-ethanediol\n1,2-ethanediol\n1,2-ethanediol\n1,2-ethanediol\n1,1,1-trifluoroethane\n1,1,1-trifluoroetha**ne**",
+      "num_tokens": 97,
+      "generation_seconds": 1.488088
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,3-Bis(4-cyclohexenyl)propane-1,3-dione\n1,3-Bis(4-cyclohexenyl)propane-1,2-dione\n1,3-Bis(4-c requested below, give brief step-by-step reasoning about the constraints, then write the SMILES string.",
+      "num_tokens": 75,
+      "generation_seconds": 1.177777
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "2-phenylacrylate\n2-phenylacrylate",
+      "num_tokens": 16,
+      "generation_seconds": 0.359539
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "2-ethylhexyl acrylate\n2-ethylhexyl acrylate",
+      "num_tokens": 18,
+      "generation_seconds": 0.383305
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1-phenylethyl acrylate (C13H16O2)\n1-phenylethyl acrylate (C13H16O2)\n1-phenyle I am an expert in chemistry. I will reason through the constraints for generating a new acrylates molecule and then provide the SMILES string.",
+      "num_tokens": 74,
+      "generation_seconds": 1.163072
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1234567890\n1234567890\n1234567790\n120",
+      "num_tokens": 37,
+      "generation_seconds": 0.650266
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "2-phenylacrylate",
+      "num_tokens": 8,
+      "generation_seconds": 0.246147
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1",
+      "num_tokens": 2,
+      "generation_seconds": 0.158739
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "2-(4-methoxyphenyl)-2-(prop-2-enoyloxy)ethoxyacetic acid\n2-(4-methoxyphenyl)-2-(prop-2-enoyloxy)ethoxyacetic acid\n2-(4-methoxyphen\u66f4\u77ed",
+      "num_tokens": 60,
+      "generation_seconds": 0.970054
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "125\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(1=CC=CC=C1)C(=O)OC1=CC=CC=C1\nC=CC(=O)OCC1=CC=CC=C1",
+      "num_tokens": 69,
+      "generation_seconds": 1.097448
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,2-Ethanediol\n1,2-Ethanediol\n1,2-Ethanedian\n1,2-Ethanediol\n1,2-ECC\n1,2-Ethanediol\n1,2-Ethanediol\n1,2-Ethanediol\n1,2-Ethanediol\n1, OCC(=O)CC1=C(F)C=CC=C1\n1, OCC(=O)CC1=C(F)C=CC=C1\n1, OCC( alcohol)\n1, OCC( alcohol)\n1, OCC( alcohol)\n1, OCC( alcohol)\n1, OCC( alcohol)\n1, OCC( alcohol)\n1, OCC( alcohol)\n1, OCC(=O)CC1=C(F)C=FC1\n1, OCC(=O)CC1=C(F)C=CC=C1\n1, OCC(=O)CC1=C(F)C=CC=C1\n1, OCC(=O)CC1=C(F)C=CC=C1\n1, OCC(=O)CC1=C(F)C=CC=C1\n1, OCC(=O)CC1=C(F)C=CC=C1",
+      "num_tokens": 262,
+      "generation_seconds": 3.782856
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1\nMolecule: 1\nMolecule: 2\nM noise\nMolecule: 1\nM noise\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=O\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: C=CC( noise\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: CCCCCCOC(=",
+      "num_tokens": 400,
+      "generation_seconds": 5.712438
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CO1\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule:  C=CC(=O)OC1=CC=CC=C1\n \n C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CO1\nMolecule: C=CC(benzene)\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nM extensive list of acrylates.",
+      "num_tokens": 287,
+      "generation_seconds": 4.12585
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "\bC=CC(=O)OC1=CC=CC=C1",
+      "num_tokens": 17,
+      "generation_seconds": 0.373935
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(\n=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OCC1",
+      "num_tokens": 56,
+      "generation_seconds": 0.912917
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nM \"\nMolecule: C=CC(=O)OC1=CC=CC=C1",
+      "num_tokens": 85,
+      "generation_seconds": 1.320032
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,2-dichloroethane\n1,2-dichloroethane is an organic compound with the formula ClCH2CH2Cl.\n1,2-dichlorochemically stable,\n1,2-dichloroethane is a colorless, volatile liquid.\n1,2-dighydrolysis of diethyl ether.\n1,2-dichloroethane is a good solvent for organic compounds.\n1,2-dichloroethane is used as a reactant in organic synthesis.\n1,2-dichloroethane is used as a solvent for polymerization.\n1,\n1,2-smile: ClCCCl\nC=CC(=O)OC1=CC=CC=C1",
+      "num_tokens": 164,
+      "generation_seconds": 2.424027
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1\nMolecule: CCCCCCOC(=O)C(=C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC(=O)OCC=C(C)C\nCCCCCCCCC( SMILES",
+      "num_tokens": 209,
+      "generation_seconds": 3.050305
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1",
+      "num_tokens": 2,
+      "generation_seconds": 0.16491
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1\n1\n2",
+      "num_tokens": 6,
+      "generation_seconds": 0.220624
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1-phenylethyl acrylate\n1-phenylethyl acrylate",
+      "num_tokens": 20,
+      "generation_seconds": 0.413767
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OC1=CC=CC=C1\nMolecule:  C=CC(=O)OC1=CC=C(C)C1\nMolecule:  C=CC(=O)OC1=CC=C(C)C1\nMolecule:  C=CC( valence error )\nMolecule:  C=CC( valence error )\nMolecule:  C=CC( valence incomplete )\nM radicals\nMolecules\nMolecule:  C=CC(=O)OC1=CC=CC=C1\nMolecule:  C=CC(=O)OC1=CC=C(C)Tol\nI need to generate 1 new valid acrylate molecule in SMILES format.",
+      "num_tokens": 163,
+      "generation_seconds": 2.405732
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " C=CC(=O)OC1=CC=CC=C1\n C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=2CC=CC=C1\nMolecule: N#CCCOC(=O)C=C\nMolecule: CCCCCCOC(=O)C(=C)C\nMolecule: CCCCCCOC(=)C=C\nC=CC(=O)OC1=CC=CC=C1\nC=CC(=O)OC1=CC=CC=C1",
+      "num_tokens": 131,
+      "generation_seconds": 1.964087
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1,2-dichloroethane\n1,2-dichloroethane\n1,2-dichloro2,3,4,5,6",
+      "num_tokens": 37,
+      "generation_seconds": 0.654798
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": " CC(C)CCCCCCCOC(=O)C=C\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(C)COC(=O)C(=C)C\nMolecule: C=CC( leading to potential syntax errors.\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C\nM some long chains.\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=\nMolecule: CCCCCCOC(=O)C=C\nMolecule: C=CC(=O)OCC(C)C\nMolecule: C=CC(=O)OCC(C)C",
+      "num_tokens": 184,
+      "generation_seconds": 2.702792
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "1-Butyl acrylate\n1-Butyl acrylate",
+      "num_tokens": 16,
+      "generation_seconds": 0.359094
+    }
+  ]
+}

@@ -1,0 +1,5281 @@
+{
+  "candidate_count": 218,
+  "candidates": [
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "4 * (sides - target) * 100 / sides / 4 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100",
+      "expression": "4 * (sides - target) * 100 / sides / 4 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100",
+      "group_id": 1,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 1,
+      "scorer_metadata": {
+        "split_row_index": 1,
+        "variable_types": {
+          "name": "str",
+          "sides": "int",
+          "target": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct calculation of the percentage difference: $\\frac{4(sides - target)}{sides} \\times 100$.",
+      "expression": "direct calculation of the percentage difference: $\\frac{4(sides - target)}{sides} \\times 100$.",
+      "group_id": 1,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 1,
+      "scorer_metadata": {
+        "split_row_index": 1,
+        "variable_types": {
+          "name": "str",
+          "sides": "int",
+          "target": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check using the fraction form: $4 \\times \\frac{sides - target}{sides} \\times 100$.",
+      "expression": "reverse check using the fraction form: $4 \\times \\frac{sides - target}{sides} \\times 100$.",
+      "group_id": 1,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 1,
+      "scorer_metadata": {
+        "split_row_index": 1,
+        "variable_types": {
+          "name": "str",
+          "sides": "int",
+          "target": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping the multiplication: $4 \\times (sides - target) \\times \\frac{100}{sides}$.",
+      "expression": "grouping the multiplication: $4 \\times (sides - target) \\times \\frac{100}{sides}$.",
+      "group_id": 1,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 1,
+      "scorer_metadata": {
+        "split_row_index": 1,
+        "variable_types": {
+          "name": "str",
+          "sides": "int",
+          "target": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation (simplifying the fraction): $4 \\times \\frac{sides - target}{sides} \\times 100$.",
+      "expression": "unit operation (simplifying the fraction): $4 \\times \\frac{sides - target}{sides} \\times 100$.",
+      "group_id": 1,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 1,
+      "scorer_metadata": {
+        "split_row_index": 1,
+        "variable_types": {
+          "name": "str",
+          "sides": "int",
+          "target": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: $4 \\times \\frac{sides - target}{sides} \\times 100$.",
+      "expression": "minimal form: $4 \\times \\frac{sides - target}{sides} \\times 100$.",
+      "group_id": 1,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 1,
+      "scorer_metadata": {
+        "split_row_index": 1,
+        "variable_types": {
+          "name": "str",
+          "sides": "int",
+          "target": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case (e.g., 6-sided die, target 1): $4 \\times \\frac{6 - 1}{6} \\times 100 = 4 \\times \\frac{5}{6} \\times 100$.",
+      "expression": "sanity case (e.g., 6-sided die, target 1): $4 \\times \\frac{6 - 1}{6} \\times 100 = 4 \\times \\frac{5}{6} \\times 100$.",
+      "group_id": 1,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 1,
+      "scorer_metadata": {
+        "split_row_index": 1,
+        "variable_types": {
+          "name": "str",
+          "sides": "int",
+          "target": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n - n1 - 3 * n2",
+      "expression": "n - n1 - 3 * n2",
+      "group_id": 2,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 2,
+      "scorer_metadata": {
+        "split_row_index": 2,
+        "variable_types": {
+          "g": "str",
+          "h_1": "str",
+          "h_2": "str",
+          "h_3": "str",
+          "h_4": "str",
+          "n": "int",
+          "n_1": "int",
+          "n_2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "13/8 * k_3 * n + k_3 * n / 2 + k_3 * n / 8 - k_3 * n / 2 - k_3 * n / 8 + k_3 * n / 2 + k_3 * n",
+      "expression": "13/8 * k_3 * n + k_3 * n / 2 + k_3 * n / 8 - k_3 * n / 2 - k_3 * n / 8 + k_3 * n / 2 + k_3 * n",
+      "group_id": 3,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 3,
+      "scorer_metadata": {
+        "split_row_index": 3,
+        "variable_types": {
+          "k_2": "int",
+          "k_3": "int",
+          "n": "int",
+          "name": "str",
+          "p": "str",
+          "s": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "Direct summation of all phases.",
+      "expression": "Direct summation of all phases.",
+      "group_id": 3,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 3,
+      "scorer_metadata": {
+        "split_row_index": 3,
+        "variable_types": {
+          "k_2": "int",
+          "k_3": "int",
+          "n": "int",
+          "name": "str",
+          "p": "str",
+          "s": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "Reverse check (simplifying the fractions).",
+      "expression": "Reverse check (simplifying the fractions).",
+      "group_id": 3,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 3,
+      "scorer_metadata": {
+        "split_row_index": 3,
+        "variable_types": {
+          "k_2": "int",
+          "k_3": "int",
+          "n": "int",
+          "name": "str",
+          "p": "str",
+          "s": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "k * x * 12",
+      "expression": "k * x * 12",
+      "group_id": 4,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 4,
+      "scorer_metadata": {
+        "split_row_index": 4,
+        "variable_types": {
+          "area": "str",
+          "fruit": "str",
+          "k": "int",
+          "n": "int",
+          "name": "str",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+      "expression": "1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+      "group_id": 5,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 5,
+      "scorer_metadata": {
+        "split_row_index": 5,
+        "variable_types": {
+          "ball_type": "str",
+          "color": "str",
+          "frac_1": "float between 0 and 1",
+          "frac_2": "float between 0 and 1",
+          "n": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: $\\frac{1}{n^2}$",
+      "expression": "direct equation: $\\frac{1}{n^2}$",
+      "group_id": 5,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 5,
+      "scorer_metadata": {
+        "split_row_index": 5,
+        "variable_types": {
+          "ball_type": "str",
+          "color": "str",
+          "frac_1": "float between 0 and 1",
+          "frac_2": "float between 0 and 1",
+          "n": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: $\\frac{1}{n} \\times \\frac{1}{n} = \\frac{1}{n^2}$",
+      "expression": "reverse check: $\\frac{1}{n} \\times \\frac{1}{n} = \\frac{1}{n^2}$",
+      "group_id": 5,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 5,
+      "scorer_metadata": {
+        "split_row_index": 5,
+        "variable_types": {
+          "ball_type": "str",
+          "color": "str",
+          "frac_1": "float between 0 and 1",
+          "frac_2": "float between 0 and 1",
+          "n": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: $\\frac{1}{n} \\times \\frac{1}{n} = \\frac{1}{n^2}$",
+      "expression": "grouping: $\\frac{1}{n} \\times \\frac{1}{n} = \\frac{1}{n^2}$",
+      "group_id": 5,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 5,
+      "scorer_metadata": {
+        "split_row_index": 5,
+        "variable_types": {
+          "ball_type": "str",
+          "color": "str",
+          "frac_1": "float between 0 and 1",
+          "frac_2": "float between 0 and 1",
+          "n": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: $\\frac{1}{n^2}$",
+      "expression": "unit operation: $\\frac{1}{n^2}$",
+      "group_id": 5,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 5,
+      "scorer_metadata": {
+        "split_row_index": 5,
+        "variable_types": {
+          "ball_type": "str",
+          "color": "str",
+          "frac_1": "float between 0 and 1",
+          "frac_2": "float between 0 and 1",
+          "n": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: $\\frac{1}{n^2}$",
+      "expression": "minimal form: $\\frac{1}{n^2}$",
+      "group_id": 5,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 5,
+      "scorer_metadata": {
+        "split_row_index": 5,
+        "variable_types": {
+          "ball_type": "str",
+          "color": "str",
+          "frac_1": "float between 0 and 1",
+          "frac_2": "float between 0 and 1",
+          "n": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: $1 \\times 1 = 1$ (assuming $n=1$)",
+      "expression": "sanity case: $1 \\times 1 = 1$ (assuming $n=1$)",
+      "group_id": 5,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 5,
+      "scorer_metadata": {
+        "split_row_index": 5,
+        "variable_types": {
+          "ball_type": "str",
+          "color": "str",
+          "frac_1": "float between 0 and 1",
+          "frac_2": "float between 0 and 1",
+          "n": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "3*t / 1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+      "expression": "3*t / 1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+      "group_id": 6,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 6,
+      "scorer_metadata": {
+        "split_row_index": 6,
+        "variable_types": {
+          "currency": "str",
+          "dev": "str",
+          "frac1": "float",
+          "frac2": "float",
+          "t": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: $\\frac{3t}{currency}$",
+      "expression": "direct equation: $\\frac{3t}{currency}$",
+      "group_id": 6,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 6,
+      "scorer_metadata": {
+        "split_row_index": 6,
+        "variable_types": {
+          "currency": "str",
+          "dev": "str",
+          "frac1": "float",
+          "frac2": "float",
+          "t": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: $\\frac{t}{currency} + \\frac{2t}{currency}$",
+      "expression": "reverse check: $\\frac{t}{currency} + \\frac{2t}{currency}$",
+      "group_id": 6,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 6,
+      "scorer_metadata": {
+        "split_row_index": 6,
+        "variable_types": {
+          "currency": "str",
+          "dev": "str",
+          "frac1": "float",
+          "frac2": "float",
+          "t": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: $\\frac{t + 2t}{currency}$",
+      "expression": "grouping: $\\frac{t + 2t}{currency}$",
+      "group_id": 6,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 6,
+      "scorer_metadata": {
+        "split_row_index": 6,
+        "variable_types": {
+          "currency": "str",
+          "dev": "str",
+          "frac1": "float",
+          "frac2": "float",
+          "t": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: $\\frac{t}{currency} + \\frac{2t}{currency}$",
+      "expression": "unit operation: $\\frac{t}{currency} + \\frac{2t}{currency}$",
+      "group_id": 6,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 6,
+      "scorer_metadata": {
+        "split_row_index": 6,
+        "variable_types": {
+          "currency": "str",
+          "dev": "str",
+          "frac1": "float",
+          "frac2": "float",
+          "t": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: $\\frac{3t}{currency}$",
+      "expression": "minimal form: $\\frac{3t}{currency}$",
+      "group_id": 6,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 6,
+      "scorer_metadata": {
+        "split_row_index": 6,
+        "variable_types": {
+          "currency": "str",
+          "dev": "str",
+          "frac1": "float",
+          "frac2": "float",
+          "t": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: $\\frac{3t}{currency}$",
+      "expression": "sanity case: $\\frac{3t}{currency}$",
+      "group_id": 6,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 6,
+      "scorer_metadata": {
+        "split_row_index": 6,
+        "variable_types": {
+          "currency": "str",
+          "dev": "str",
+          "frac1": "float",
+          "frac2": "float",
+          "t": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n - (n1*w1 + n2*w2 + n3*w3)",
+      "expression": "n - (n1*w1 + n2*w2 + n3*w3)",
+      "group_id": 7,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 7,
+      "scorer_metadata": {
+        "split_row_index": 7,
+        "variable_types": {
+          "n": "int",
+          "n1": "int",
+          "n2": "int",
+          "n3": "int",
+          "name": "str",
+          "unit": "str",
+          "w1": "int",
+          "w2": "int",
+          "w3": "float between 0 and 1"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "{n} - ({n1}*{w1} + {n2}*{w2} + {n3}*{w3})",
+      "expression": "{n} - ({n1}*{w1} + {n2}*{w2} + {n3}*{w3})",
+      "group_id": 7,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 7,
+      "scorer_metadata": {
+        "split_row_index": 7,
+        "variable_types": {
+          "n": "int",
+          "n1": "int",
+          "n2": "int",
+          "n3": "int",
+          "name": "str",
+          "unit": "str",
+          "w1": "int",
+          "w2": "int",
+          "w3": "float between 0 and 1"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "0% -100% -100% -100% -100% -100% -100% -100% -100% -100% -100% -100% -100",
+      "expression": "0% -100% -100% -100% -100% -100% -100% -100% -100% -100% -100% -100% -100",
+      "group_id": 8,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 8,
+      "scorer_metadata": {
+        "split_row_index": 8,
+        "variable_types": {
+          "k1": "int",
+          "k2": "int",
+          "n1": "int",
+          "n2": "int",
+          "name1": "str",
+          "name2": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "Direct calculation of the fraction of spots: (({k1} + {k2}) / ({n1} + {n2})) * 100.",
+      "expression": "Direct calculation of the fraction of spots: (({k1} + {k2}) / ({n1} + {n2})) * 100.",
+      "group_id": 8,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 8,
+      "scorer_metadata": {
+        "split_row_index": 8,
+        "variable_types": {
+          "k1": "int",
+          "k2": "int",
+          "n1": "int",
+          "n2": "int",
+          "name1": "str",
+          "name2": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "Reverse check, ensuring the order of addition is correct: ({k1} + {k2}) / ({n1} + {n2}) * 100.",
+      "expression": "Reverse check, ensuring the order of addition is correct: ({k1} + {k2}) / ({n1} + {n2}) * 100.",
+      "group_id": 8,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 8,
+      "scorer_metadata": {
+        "split_row_index": 8,
+        "variable_types": {
+          "k1": "int",
+          "k2": "int",
+          "n1": "int",
+          "n2": "int",
+          "name1": "str",
+          "name2": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "Grouping the numerator and denominator: ({k1} + {k2}) / ({n1} + {n2}) * 100.",
+      "expression": "Grouping the numerator and denominator: ({k1} + {k2}) / ({n1} + {n2}) * 100.",
+      "group_id": 8,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 8,
+      "scorer_metadata": {
+        "split_row_index": 8,
+        "variable_types": {
+          "k1": "int",
+          "k2": "int",
+          "n1": "int",
+          "n2": "int",
+          "name1": "str",
+          "name2": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "Unit operation, calculating the sum of spots first: ({k1} + {k2}) / ({n1} + {n2}) * 100.",
+      "expression": "Unit operation, calculating the sum of spots first: ({k1} + {k2}) / ({n1} + {n2}) * 100.",
+      "group_id": 8,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 8,
+      "scorer_metadata": {
+        "split_row_index": 8,
+        "variable_types": {
+          "k1": "int",
+          "k2": "int",
+          "n1": "int",
+          "n2": "int",
+          "name1": "str",
+          "name2": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "Minimal form, simplifying the structure: ({k1} + {k2}) / ({n1} + {n2}) * 100.",
+      "expression": "Minimal form, simplifying the structure: ({k1} + {k2}) / ({n1} + {n2}) * 100.",
+      "group_id": 8,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 8,
+      "scorer_metadata": {
+        "split_row_index": 8,
+        "variable_types": {
+          "k1": "int",
+          "k2": "int",
+          "n1": "int",
+          "n2": "int",
+          "name1": "str",
+          "name2": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "Sanity case, checking if the total puppies is non-zero: ({n1} + {n2}) != 0.",
+      "expression": "Sanity case, checking if the total puppies is non-zero: ({n1} + {n2}) != 0.",
+      "group_id": 8,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 8,
+      "scorer_metadata": {
+        "split_row_index": 8,
+        "variable_types": {
+          "k1": "int",
+          "k2": "int",
+          "n1": "int",
+          "n2": "int",
+          "name1": "str",
+          "name2": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "c1 * n1 + c2 * n2 + c3 * c1 + c2 * n2 + c3 * n2 + c3 * c2 + c3 * n1 + c3 * c2 + c3 * n2 + c3 * c1 + c3",
+      "expression": "c1 * n1 + c2 * n2 + c3 * c1 + c2 * n2 + c3 * n2 + c3 * c2 + c3 * n1 + c3 * c2 + c3 * n2 + c3 * c1 + c3",
+      "group_id": 9,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 9,
+      "scorer_metadata": {
+        "split_row_index": 9,
+        "variable_types": {
+          "c1": "float",
+          "c2": "float",
+          "c3": "int",
+          "cur": "str",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "obj1": "str",
+          "obj2": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "total + n2 - n1+1000000000000000000000000000000000000000000000000000000",
+      "expression": "total + n2 - n1+1000000000000000000000000000000000000000000000000000000",
+      "group_id": 10,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 10,
+      "scorer_metadata": {
+        "split_row_index": 10,
+        "variable_types": {
+          "event": "str",
+          "food": "str",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "obj": "str",
+          "total": "int",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: total + n2 - n1",
+      "expression": "direct equation: total + n2 - n1",
+      "group_id": 10,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 10,
+      "scorer_metadata": {
+        "split_row_index": 10,
+        "variable_types": {
+          "event": "str",
+          "food": "str",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "obj": "str",
+          "total": "int",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: total + n2 - n1",
+      "expression": "reverse check: total + n2 - n1",
+      "group_id": 10,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 10,
+      "scorer_metadata": {
+        "split_row_index": 10,
+        "variable_types": {
+          "event": "str",
+          "food": "str",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "obj": "str",
+          "total": "int",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: (total + n2) - n1",
+      "expression": "grouping: (total + n2) - n1",
+      "group_id": 10,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 10,
+      "scorer_metadata": {
+        "split_row_index": 10,
+        "variable_types": {
+          "event": "str",
+          "food": "str",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "obj": "str",
+          "total": "int",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: total + n2 - n1",
+      "expression": "unit operation: total + n2 - n1",
+      "group_id": 10,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 10,
+      "scorer_metadata": {
+        "split_row_index": 10,
+        "variable_types": {
+          "event": "str",
+          "food": "str",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "obj": "str",
+          "total": "int",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: total + n2 - n1",
+      "expression": "minimal form: total + n2 - n1",
+      "group_id": 10,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 10,
+      "scorer_metadata": {
+        "split_row_index": 10,
+        "variable_types": {
+          "event": "str",
+          "food": "str",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "obj": "str",
+          "total": "int",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: total + n2 - n1",
+      "expression": "sanity case: total + n2 - n1",
+      "group_id": 10,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 10,
+      "scorer_metadata": {
+        "split_row_index": 10,
+        "variable_types": {
+          "event": "str",
+          "food": "str",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "obj": "str",
+          "total": "int",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "4 + n5",
+      "expression": "4 + n5",
+      "group_id": 11,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 11,
+      "scorer_metadata": {
+        "split_row_index": 11,
+        "variable_types": {
+          "c1": "str",
+          "c2": "str",
+          "c3": "str",
+          "c4": "str",
+          "c5": "str",
+          "children": "int",
+          "count": "int",
+          "n1": "int",
+          "n2": "int",
+          "n3": "int",
+          "n4": "int",
+          "n5": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "total - spent / cal",
+      "expression": "total - spent / cal",
+      "group_id": 12,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 12,
+      "scorer_metadata": {
+        "split_row_index": 12,
+        "variable_types": {
+          "cal": "int",
+          "food": "str",
+          "n": "int",
+          "size": "int",
+          "spent": "int",
+          "total": "int",
+          "unit": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "$(total - spent) / cal$",
+      "expression": "$(total - spent) / cal$",
+      "group_id": 12,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 12,
+      "scorer_metadata": {
+        "split_row_index": 12,
+        "variable_types": {
+          "cal": "int",
+          "food": "str",
+          "n": "int",
+          "size": "int",
+          "spent": "int",
+          "total": "int",
+          "unit": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "$total - spent$",
+      "expression": "$total - spent$",
+      "group_id": 12,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 12,
+      "scorer_metadata": {
+        "split_row_index": 12,
+        "variable_types": {
+          "cal": "int",
+          "food": "str",
+          "n": "int",
+          "size": "int",
+          "spent": "int",
+          "total": "int",
+          "unit": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "$((total - spent) / cal)$",
+      "expression": "$((total - spent) / cal)$",
+      "group_id": 12,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 12,
+      "scorer_metadata": {
+        "split_row_index": 12,
+        "variable_types": {
+          "cal": "int",
+          "food": "str",
+          "n": "int",
+          "size": "int",
+          "spent": "int",
+          "total": "int",
+          "unit": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "$total - spent / cal$",
+      "expression": "$total - spent / cal$",
+      "group_id": 12,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 12,
+      "scorer_metadata": {
+        "split_row_index": 12,
+        "variable_types": {
+          "cal": "int",
+          "food": "str",
+          "n": "int",
+          "size": "int",
+          "spent": "int",
+          "total": "int",
+          "unit": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "$(total - spent) / cal$",
+      "expression": "$(total - spent) / cal$",
+      "group_id": 12,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 12,
+      "scorer_metadata": {
+        "split_row_index": 12,
+        "variable_types": {
+          "cal": "int",
+          "food": "str",
+          "n": "int",
+          "size": "int",
+          "spent": "int",
+          "total": "int",
+          "unit": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "$((total - spent) / cal)$",
+      "expression": "$((total - spent) / cal)$",
+      "group_id": 12,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 12,
+      "scorer_metadata": {
+        "split_row_index": 12,
+        "variable_types": {
+          "cal": "int",
+          "food": "str",
+          "n": "int",
+          "size": "int",
+          "spent": "int",
+          "total": "int",
+          "unit": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "total - frac * total - daily * period * 7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period*7",
+      "expression": "total - frac * total - daily * period * 7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period*7",
+      "group_id": 13,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 13,
+      "scorer_metadata": {
+        "split_row_index": 13,
+        "variable_types": {
+          "daily": "int",
+          "event": "str",
+          "facility": "str",
+          "frac": "float between 0 and 1",
+          "item": "str",
+          "period": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price",
+      "expression": "initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price/initial_amount - quantity * unit_price",
+      "group_id": 14,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 14,
+      "scorer_metadata": {
+        "split_row_index": 14,
+        "variable_types": {
+          "cur": "str",
+          "initial_amount": "float",
+          "item": "str",
+          "name": "str",
+          "quantity": "int",
+          "store_type": "str",
+          "unit_price": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: {initial_amount} - {quantity} * {unit_price}",
+      "expression": "direct equation: {initial_amount} - {quantity} * {unit_price}",
+      "group_id": 14,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 14,
+      "scorer_metadata": {
+        "split_row_index": 14,
+        "variable_types": {
+          "cur": "str",
+          "initial_amount": "float",
+          "item": "str",
+          "name": "str",
+          "quantity": "int",
+          "store_type": "str",
+          "unit_price": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: {initial_amount} - {quantity} * {unit_price}",
+      "expression": "reverse check: {initial_amount} - {quantity} * {unit_price}",
+      "group_id": 14,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 14,
+      "scorer_metadata": {
+        "split_row_index": 14,
+        "variable_types": {
+          "cur": "str",
+          "initial_amount": "float",
+          "item": "str",
+          "name": "str",
+          "quantity": "int",
+          "store_type": "str",
+          "unit_price": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: {initial_amount} - ({quantity} * {unit_price})",
+      "expression": "grouping: {initial_amount} - ({quantity} * {unit_price})",
+      "group_id": 14,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 14,
+      "scorer_metadata": {
+        "split_row_index": 14,
+        "variable_types": {
+          "cur": "str",
+          "initial_amount": "float",
+          "item": "str",
+          "name": "str",
+          "quantity": "int",
+          "store_type": "str",
+          "unit_price": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: {initial_amount} - {quantity} * {unit_price}",
+      "expression": "unit operation: {initial_amount} - {quantity} * {unit_price}",
+      "group_id": 14,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 14,
+      "scorer_metadata": {
+        "split_row_index": 14,
+        "variable_types": {
+          "cur": "str",
+          "initial_amount": "float",
+          "item": "str",
+          "name": "str",
+          "quantity": "int",
+          "store_type": "str",
+          "unit_price": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: {initial_amount} - {quantity} * {unit_price}",
+      "expression": "minimal form: {initial_amount} - {quantity} * {unit_price}",
+      "group_id": 14,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 14,
+      "scorer_metadata": {
+        "split_row_index": 14,
+        "variable_types": {
+          "cur": "str",
+          "initial_amount": "float",
+          "item": "str",
+          "name": "str",
+          "quantity": "int",
+          "store_type": "str",
+          "unit_price": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: {initial_amount} - {quantity} * {unit_price}",
+      "expression": "sanity case: {initial_amount} - {quantity} * {unit_price}",
+      "group_id": 14,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 14,
+      "scorer_metadata": {
+        "split_row_index": 14,
+        "variable_types": {
+          "cur": "str",
+          "initial_amount": "float",
+          "item": "str",
+          "name": "str",
+          "quantity": "int",
+          "store_type": "str",
+          "unit_price": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n1*p1 + n2*p2 + n3*p3",
+      "expression": "n1*p1 + n2*p2 + n3*p3",
+      "group_id": 16,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 1.0,
+      "sample_index": 16,
+      "scorer_metadata": {
+        "split_row_index": 16,
+        "variable_types": {
+          "item": "str",
+          "item1": "str",
+          "item2": "str",
+          "item3": "str",
+          "n1": "int",
+          "n2": "int",
+          "n3": "int",
+          "name": "str",
+          "p1": "int",
+          "p2": "int",
+          "p3": "int",
+          "shop": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n // x // (1 + mult) / 1000000000000000000000000000000000000000000000000000",
+      "expression": "n // x // (1 + mult) / 1000000000000000000000000000000000000000000000000000",
+      "group_id": 17,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 17,
+      "scorer_metadata": {
+        "split_row_index": 17,
+        "variable_types": {
+          "item": "str",
+          "mult": "int",
+          "n": "int",
+          "name1": "str",
+          "name2": "str",
+          "unit": "str",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct division: {n} / ({x} * (1 + {mult}))",
+      "expression": "direct division: {n} / ({x} * (1 + {mult}))",
+      "group_id": 17,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 17,
+      "scorer_metadata": {
+        "split_row_index": 17,
+        "variable_types": {
+          "item": "str",
+          "mult": "int",
+          "n": "int",
+          "name1": "str",
+          "name2": "str",
+          "unit": "str",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: {n} / {x} / (1 + {mult})",
+      "expression": "reverse check: {n} / {x} / (1 + {mult})",
+      "group_id": 17,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 17,
+      "scorer_metadata": {
+        "split_row_index": 17,
+        "variable_types": {
+          "item": "str",
+          "mult": "int",
+          "n": "int",
+          "name1": "str",
+          "name2": "str",
+          "unit": "str",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: {n} / ({x} * (1 + {mult}))",
+      "expression": "grouping: {n} / ({x} * (1 + {mult}))",
+      "group_id": 17,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 17,
+      "scorer_metadata": {
+        "split_row_index": 17,
+        "variable_types": {
+          "item": "str",
+          "mult": "int",
+          "n": "int",
+          "name1": "str",
+          "name2": "str",
+          "unit": "str",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: {n} // {x} // (1 + {mult})",
+      "expression": "unit operation: {n} // {x} // (1 + {mult})",
+      "group_id": 17,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 17,
+      "scorer_metadata": {
+        "split_row_index": 17,
+        "variable_types": {
+          "item": "str",
+          "mult": "int",
+          "n": "int",
+          "name1": "str",
+          "name2": "str",
+          "unit": "str",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: {n} // {x} // (1 + {mult})",
+      "expression": "minimal form: {n} // {x} // (1 + {mult})",
+      "group_id": 17,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 17,
+      "scorer_metadata": {
+        "split_row_index": 17,
+        "variable_types": {
+          "item": "str",
+          "mult": "int",
+          "n": "int",
+          "name1": "str",
+          "name2": "str",
+          "unit": "str",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: {n} // {x} // (1 + {mult})",
+      "expression": "sanity case: {n} // {x} // (1 + {mult})",
+      "group_id": 17,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 17,
+      "scorer_metadata": {
+        "split_row_index": 17,
+        "variable_types": {
+          "item": "str",
+          "mult": "int",
+          "n": "int",
+          "name1": "str",
+          "name2": "str",
+          "unit": "str",
+          "x": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "(5 * t) / (3 * h) * 100 * 60 * 100 * 100",
+      "expression": "(5 * t) / (3 * h) * 100 * 60 * 100 * 100",
+      "group_id": 18,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 18,
+      "scorer_metadata": {
+        "split_row_index": 18,
+        "variable_types": {
+          "building": "str",
+          "d": "int",
+          "h": "int",
+          "job": "str",
+          "n": "int",
+          "room": "str",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: $(n \\times t \\times 100) / (h \\times 60)$",
+      "expression": "direct equation: $(n \\times t \\times 100) / (h \\times 60)$",
+      "group_id": 18,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 18,
+      "scorer_metadata": {
+        "split_row_index": 18,
+        "variable_types": {
+          "building": "str",
+          "d": "int",
+          "h": "int",
+          "job": "str",
+          "n": "int",
+          "room": "str",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: $((n \\times t) / (h \\times 60)) \\times 100$",
+      "expression": "reverse check: $((n \\times t) / (h \\times 60)) \\times 100$",
+      "group_id": 18,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 18,
+      "scorer_metadata": {
+        "split_row_index": 18,
+        "variable_types": {
+          "building": "str",
+          "d": "int",
+          "h": "int",
+          "job": "str",
+          "n": "int",
+          "room": "str",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: $((n \\times t) / (h \\times 60)) \\times 100$",
+      "expression": "grouping: $((n \\times t) / (h \\times 60)) \\times 100$",
+      "group_id": 18,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 18,
+      "scorer_metadata": {
+        "split_row_index": 18,
+        "variable_types": {
+          "building": "str",
+          "d": "int",
+          "h": "int",
+          "job": "str",
+          "n": "int",
+          "room": "str",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: $(n \\times t) / (h \\times 60)$",
+      "expression": "unit operation: $(n \\times t) / (h \\times 60)$",
+      "group_id": 18,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 18,
+      "scorer_metadata": {
+        "split_row_index": 18,
+        "variable_types": {
+          "building": "str",
+          "d": "int",
+          "h": "int",
+          "job": "str",
+          "n": "int",
+          "room": "str",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: $(5 \\times t) / (3 \\times h)$",
+      "expression": "minimal form: $(5 \\times t) / (3 \\times h)$",
+      "group_id": 18,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 18,
+      "scorer_metadata": {
+        "split_row_index": 18,
+        "variable_types": {
+          "building": "str",
+          "d": "int",
+          "h": "int",
+          "job": "str",
+          "n": "int",
+          "room": "str",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: $((1 \\times 1 \\times 100) / (1 \\times 60))$",
+      "expression": "sanity case: $((1 \\times 1 \\times 100) / (1 \\times 60))$",
+      "group_id": 18,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 18,
+      "scorer_metadata": {
+        "split_row_index": 18,
+        "variable_types": {
+          "building": "str",
+          "d": "int",
+          "h": "int",
+          "job": "str",
+          "n": "int",
+          "room": "str",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "total - n1 - mult",
+      "expression": "total - n1 - mult",
+      "group_id": 19,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 19,
+      "scorer_metadata": {
+        "split_row_index": 19,
+        "variable_types": {
+          "color1": "str",
+          "color2": "str",
+          "color3": "str",
+          "mult": "int",
+          "n1": "int",
+          "obj": "str",
+          "structure": "str",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: $total - n1 - mult$.",
+      "expression": "direct equation: $total - n1 - mult$.",
+      "group_id": 19,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 19,
+      "scorer_metadata": {
+        "split_row_index": 19,
+        "variable_types": {
+          "color1": "str",
+          "color2": "str",
+          "color3": "str",
+          "mult": "int",
+          "n1": "int",
+          "obj": "str",
+          "structure": "str",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: $total - n1 - mult$.",
+      "expression": "reverse check: $total - n1 - mult$.",
+      "group_id": 19,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 19,
+      "scorer_metadata": {
+        "split_row_index": 19,
+        "variable_types": {
+          "color1": "str",
+          "color2": "str",
+          "color3": "str",
+          "mult": "int",
+          "n1": "int",
+          "obj": "str",
+          "structure": "str",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: $(total - n1) - mult$.",
+      "expression": "grouping: $(total - n1) - mult$.",
+      "group_id": 19,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 19,
+      "scorer_metadata": {
+        "split_row_index": 19,
+        "variable_types": {
+          "color1": "str",
+          "color2": "str",
+          "color3": "str",
+          "mult": "int",
+          "n1": "int",
+          "obj": "str",
+          "structure": "str",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: $total - (n1 + mult)$.",
+      "expression": "unit operation: $total - (n1 + mult)$.",
+      "group_id": 19,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 19,
+      "scorer_metadata": {
+        "split_row_index": 19,
+        "variable_types": {
+          "color1": "str",
+          "color2": "str",
+          "color3": "str",
+          "mult": "int",
+          "n1": "int",
+          "obj": "str",
+          "structure": "str",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: $total - n1 - mult$.",
+      "expression": "minimal form: $total - n1 - mult$.",
+      "group_id": 19,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 19,
+      "scorer_metadata": {
+        "split_row_index": 19,
+        "variable_types": {
+          "color1": "str",
+          "color2": "str",
+          "color3": "str",
+          "mult": "int",
+          "n1": "int",
+          "obj": "str",
+          "structure": "str",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: $5 - 2 - 3 = 0$.",
+      "expression": "sanity case: $5 - 2 - 3 = 0$.",
+      "group_id": 19,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 19,
+      "scorer_metadata": {
+        "split_row_index": 19,
+        "variable_types": {
+          "color1": "str",
+          "color2": "str",
+          "color3": "str",
+          "mult": "int",
+          "n1": "int",
+          "obj": "str",
+          "structure": "str",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "usage * 7 * (price + percent/100) * (1 + percent/100) + usage * 7 * price + usage * 7 * price + extra_price + usage * 7 * price * (1 + percent/100) + extra_price + usage",
+      "expression": "usage * 7 * (price + percent/100) * (1 + percent/100) + usage * 7 * price + usage * 7 * price + extra_price + usage * 7 * price * (1 + percent/100) + extra_price + usage",
+      "group_id": 20,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 20,
+      "scorer_metadata": {
+        "split_row_index": 20,
+        "variable_types": {
+          "cur": "str",
+          "extra_item": "str",
+          "extra_price": "int",
+          "item": "str",
+          "name": "str",
+          "percent": "int",
+          "price": "int",
+          "unit": "str",
+          "usage": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n * (1 + mult) / 100000000000000000000000000000000000000000000000000000",
+      "expression": "n * (1 + mult) / 100000000000000000000000000000000000000000000000000000",
+      "group_id": 21,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 21,
+      "scorer_metadata": {
+        "split_row_index": 21,
+        "variable_types": {
+          "mult": "int",
+          "n": "int",
+          "place": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "$n + mult \\times n$",
+      "expression": "$n + mult \\times n$",
+      "group_id": 21,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 21,
+      "scorer_metadata": {
+        "split_row_index": 21,
+        "variable_types": {
+          "mult": "int",
+          "n": "int",
+          "place": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "$n + n \\times mult$",
+      "expression": "$n + n \\times mult$",
+      "group_id": 21,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 21,
+      "scorer_metadata": {
+        "split_row_index": 21,
+        "variable_types": {
+          "mult": "int",
+          "n": "int",
+          "place": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "$n(1 + mult)$",
+      "expression": "$n(1 + mult)$",
+      "group_id": 21,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 21,
+      "scorer_metadata": {
+        "split_row_index": 21,
+        "variable_types": {
+          "mult": "int",
+          "n": "int",
+          "place": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "$n(1 + mult)$",
+      "expression": "$n(1 + mult)$",
+      "group_id": 21,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 21,
+      "scorer_metadata": {
+        "split_row_index": 21,
+        "variable_types": {
+          "mult": "int",
+          "n": "int",
+          "place": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "$n(1 + mult)$",
+      "expression": "$n(1 + mult)$",
+      "group_id": 21,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 21,
+      "scorer_metadata": {
+        "split_row_index": 21,
+        "variable_types": {
+          "mult": "int",
+          "n": "int",
+          "place": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "$n + mult \\times n$",
+      "expression": "$n + mult \\times n$",
+      "group_id": 21,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 21,
+      "scorer_metadata": {
+        "split_row_index": 21,
+        "variable_types": {
+          "mult": "int",
+          "n": "int",
+          "place": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "owned",
+      "expression": "owned",
+      "group_id": 22,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 22,
+      "scorer_metadata": {
+        "split_row_index": 22,
+        "variable_types": {
+          "cost": "int",
+          "cur": "str",
+          "length": "int",
+          "name": "str",
+          "owned": "int",
+          "plant_width": "int",
+          "space": "float",
+          "unit_length": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "Direct equation. Cost = {cur} * {owned}.",
+      "expression": "Direct equation. Cost = {cur} * {owned}.",
+      "group_id": 22,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 22,
+      "scorer_metadata": {
+        "split_row_index": 22,
+        "variable_types": {
+          "cost": "int",
+          "cur": "str",
+          "length": "int",
+          "name": "str",
+          "owned": "int",
+          "plant_width": "int",
+          "space": "float",
+          "unit_length": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "Reverse check. Same as A.",
+      "expression": "Reverse check. Same as A.",
+      "group_id": 22,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 22,
+      "scorer_metadata": {
+        "split_row_index": 22,
+        "variable_types": {
+          "cost": "int",
+          "cur": "str",
+          "length": "int",
+          "name": "str",
+          "owned": "int",
+          "plant_width": "int",
+          "space": "float",
+          "unit_length": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "Grouping. Same as A.",
+      "expression": "Grouping. Same as A.",
+      "group_id": 22,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 22,
+      "scorer_metadata": {
+        "split_row_index": 22,
+        "variable_types": {
+          "cost": "int",
+          "cur": "str",
+          "length": "int",
+          "name": "str",
+          "owned": "int",
+          "plant_width": "int",
+          "space": "float",
+          "unit_length": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "Unit operation. Same as A.",
+      "expression": "Unit operation. Same as A.",
+      "group_id": 22,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 22,
+      "scorer_metadata": {
+        "split_row_index": 22,
+        "variable_types": {
+          "cost": "int",
+          "cur": "str",
+          "length": "int",
+          "name": "str",
+          "owned": "int",
+          "plant_width": "int",
+          "space": "float",
+          "unit_length": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "Minimal form. Same as A.",
+      "expression": "Minimal form. Same as A.",
+      "group_id": 22,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 22,
+      "scorer_metadata": {
+        "split_row_index": 22,
+        "variable_types": {
+          "cost": "int",
+          "cur": "str",
+          "length": "int",
+          "name": "str",
+          "owned": "int",
+          "plant_width": "int",
+          "space": "float",
+          "unit_length": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "Sanity case. Same as A.",
+      "expression": "Sanity case. Same as A.",
+      "group_id": 22,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 22,
+      "scorer_metadata": {
+        "split_row_index": 22,
+        "variable_types": {
+          "cost": "int",
+          "cur": "str",
+          "length": "int",
+          "name": "str",
+          "owned": "int",
+          "plant_width": "int",
+          "space": "float",
+          "unit_length": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "total / n1 + total / n2",
+      "expression": "total / n1 + total / n2",
+      "group_id": 23,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 23,
+      "scorer_metadata": {
+        "split_row_index": 23,
+        "variable_types": {
+          "food": "str",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "t": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "f * (2 * n_first * a + p) * r",
+      "expression": "f * (2 * n_first * a + p) * r",
+      "group_id": 24,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 24,
+      "scorer_metadata": {
+        "split_row_index": 24,
+        "variable_types": {
+          "a": "int",
+          "cur": "str",
+          "f": "int",
+          "n": "int",
+          "n_first": "int",
+          "name": "str",
+          "p": "int",
+          "r": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: $f * (2 * n_{first} * a + p) * r$",
+      "expression": "direct equation: $f * (2 * n_{first} * a + p) * r$",
+      "group_id": 24,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 24,
+      "scorer_metadata": {
+        "split_row_index": 24,
+        "variable_types": {
+          "a": "int",
+          "cur": "str",
+          "f": "int",
+          "n": "int",
+          "n_first": "int",
+          "name": "str",
+          "p": "int",
+          "r": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: $f * (2 * n_{first} * a + p) * r$",
+      "expression": "reverse check: $f * (2 * n_{first} * a + p) * r$",
+      "group_id": 24,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 24,
+      "scorer_metadata": {
+        "split_row_index": 24,
+        "variable_types": {
+          "a": "int",
+          "cur": "str",
+          "f": "int",
+          "n": "int",
+          "n_first": "int",
+          "name": "str",
+          "p": "int",
+          "r": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: $f * (2 * n_{first} * a + p) * r$",
+      "expression": "grouping: $f * (2 * n_{first} * a + p) * r$",
+      "group_id": 24,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 24,
+      "scorer_metadata": {
+        "split_row_index": 24,
+        "variable_types": {
+          "a": "int",
+          "cur": "str",
+          "f": "int",
+          "n": "int",
+          "n_first": "int",
+          "name": "str",
+          "p": "int",
+          "r": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: $f * (2 * n_{first} * a + p) * r$",
+      "expression": "unit operation: $f * (2 * n_{first} * a + p) * r$",
+      "group_id": 24,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 24,
+      "scorer_metadata": {
+        "split_row_index": 24,
+        "variable_types": {
+          "a": "int",
+          "cur": "str",
+          "f": "int",
+          "n": "int",
+          "n_first": "int",
+          "name": "str",
+          "p": "int",
+          "r": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: $f * (2 * n_{first} * a + p) * r$",
+      "expression": "minimal form: $f * (2 * n_{first} * a + p) * r$",
+      "group_id": 24,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 24,
+      "scorer_metadata": {
+        "split_row_index": 24,
+        "variable_types": {
+          "a": "int",
+          "cur": "str",
+          "f": "int",
+          "n": "int",
+          "n_first": "int",
+          "name": "str",
+          "p": "int",
+          "r": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: $f * (2 * n_{first} * a + p) * r$",
+      "expression": "sanity case: $f * (2 * n_{first} * a + p) * r$",
+      "group_id": 24,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 24,
+      "scorer_metadata": {
+        "split_row_index": 24,
+        "variable_types": {
+          "a": "int",
+          "cur": "str",
+          "f": "int",
+          "n": "int",
+          "n_first": "int",
+          "name": "str",
+          "p": "int",
+          "r": "float"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n - (m * p1) - (k * p2)",
+      "expression": "n - (m * p1) - (k * p2)",
+      "group_id": 25,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 25,
+      "scorer_metadata": {
+        "split_row_index": 25,
+        "variable_types": {
+          "bill": "int",
+          "cur": "str",
+          "item1": "str",
+          "item2": "str",
+          "k": "int",
+          "m": "int",
+          "n": "int",
+          "name": "str",
+          "p1": "int",
+          "p2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "expression": "direct equation: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "group_id": 25,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 25,
+      "scorer_metadata": {
+        "split_row_index": 25,
+        "variable_types": {
+          "bill": "int",
+          "cur": "str",
+          "item1": "str",
+          "item2": "str",
+          "k": "int",
+          "m": "int",
+          "n": "int",
+          "name": "str",
+          "p1": "int",
+          "p2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "expression": "reverse check: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "group_id": 25,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 25,
+      "scorer_metadata": {
+        "split_row_index": 25,
+        "variable_types": {
+          "bill": "int",
+          "cur": "str",
+          "item1": "str",
+          "item2": "str",
+          "k": "int",
+          "m": "int",
+          "n": "int",
+          "name": "str",
+          "p1": "int",
+          "p2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "expression": "grouping: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "group_id": 25,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 25,
+      "scorer_metadata": {
+        "split_row_index": 25,
+        "variable_types": {
+          "bill": "int",
+          "cur": "str",
+          "item1": "str",
+          "item2": "str",
+          "k": "int",
+          "m": "int",
+          "n": "int",
+          "name": "str",
+          "p1": "int",
+          "p2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "expression": "unit operation: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "group_id": 25,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 25,
+      "scorer_metadata": {
+        "split_row_index": 25,
+        "variable_types": {
+          "bill": "int",
+          "cur": "str",
+          "item1": "str",
+          "item2": "str",
+          "k": "int",
+          "m": "int",
+          "n": "int",
+          "name": "str",
+          "p1": "int",
+          "p2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "expression": "minimal form: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "group_id": 25,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 25,
+      "scorer_metadata": {
+        "split_row_index": 25,
+        "variable_types": {
+          "bill": "int",
+          "cur": "str",
+          "item1": "str",
+          "item2": "str",
+          "k": "int",
+          "m": "int",
+          "n": "int",
+          "name": "str",
+          "p1": "int",
+          "p2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "expression": "sanity case: {n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "group_id": 25,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 25,
+      "scorer_metadata": {
+        "split_row_index": 25,
+        "variable_types": {
+          "bill": "int",
+          "cur": "str",
+          "item1": "str",
+          "item2": "str",
+          "k": "int",
+          "m": "int",
+          "n": "int",
+          "name": "str",
+          "p1": "int",
+          "p2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n1 * (frac1 + mult1)",
+      "expression": "n1 * (frac1 + mult1)",
+      "group_id": 26,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 26,
+      "scorer_metadata": {
+        "split_row_index": 26,
+        "variable_types": {
+          "color1": "str",
+          "color2": "str",
+          "frac1": "float between 0 and 1",
+          "mult1": "float",
+          "n1": "int",
+          "n2": "int",
+          "name1": "str",
+          "name2": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n * mult1 + n * mult2 * days - n * mult1 - n * mult2 * days + n * mult1 + n * mult2 * days - n * mult1 - n * mult2 * days + n * mult1 + n * mult2 * days - n",
+      "expression": "n * mult1 + n * mult2 * days - n * mult1 - n * mult2 * days + n * mult1 + n * mult2 * days - n * mult1 - n * mult2 * days + n * mult1 + n * mult2 * days - n",
+      "group_id": 27,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 27,
+      "scorer_metadata": {
+        "split_row_index": 27,
+        "variable_types": {
+          "base": "int",
+          "days": "int",
+          "mult1": "int",
+          "mult2": "int",
+          "n": "int",
+          "tool1": "str",
+          "tool2": "str",
+          "tool3": "str",
+          "unit": "str",
+          "worker": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "Direct calculation of total rate times days.",
+      "expression": "Direct calculation of total rate times days.",
+      "group_id": 27,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 27,
+      "scorer_metadata": {
+        "split_row_index": 27,
+        "variable_types": {
+          "base": "int",
+          "days": "int",
+          "mult1": "int",
+          "mult2": "int",
+          "n": "int",
+          "tool1": "str",
+          "tool2": "str",
+          "tool3": "str",
+          "unit": "str",
+          "worker": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "Reverse check (associativity of multiplication).",
+      "expression": "Reverse check (associativity of multiplication).",
+      "group_id": 27,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 27,
+      "scorer_metadata": {
+        "split_row_index": 27,
+        "variable_types": {
+          "base": "int",
+          "days": "int",
+          "mult1": "int",
+          "mult2": "int",
+          "n": "int",
+          "tool1": "str",
+          "tool2": "str",
+          "tool3": "str",
+          "unit": "str",
+          "worker": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "Grouping terms.",
+      "expression": "Grouping terms.",
+      "group_id": 27,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 27,
+      "scorer_metadata": {
+        "split_row_index": 27,
+        "variable_types": {
+          "base": "int",
+          "days": "int",
+          "mult1": "int",
+          "mult2": "int",
+          "n": "int",
+          "tool1": "str",
+          "tool2": "str",
+          "tool3": "str",
+          "unit": "str",
+          "worker": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "Unit operation (multiplication).",
+      "expression": "Unit operation (multiplication).",
+      "group_id": 27,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 27,
+      "scorer_metadata": {
+        "split_row_index": 27,
+        "variable_types": {
+          "base": "int",
+          "days": "int",
+          "mult1": "int",
+          "mult2": "int",
+          "n": "int",
+          "tool1": "str",
+          "tool2": "str",
+          "tool3": "str",
+          "unit": "str",
+          "worker": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "Minimal form (simplified).",
+      "expression": "Minimal form (simplified).",
+      "group_id": 27,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 27,
+      "scorer_metadata": {
+        "split_row_index": 27,
+        "variable_types": {
+          "base": "int",
+          "days": "int",
+          "mult1": "int",
+          "mult2": "int",
+          "n": "int",
+          "tool1": "str",
+          "tool2": "str",
+          "tool3": "str",
+          "unit": "str",
+          "worker": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "Sanity case (check with simple numbers).",
+      "expression": "Sanity case (check with simple numbers).",
+      "group_id": 27,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 27,
+      "scorer_metadata": {
+        "split_row_index": 27,
+        "variable_types": {
+          "base": "int",
+          "days": "int",
+          "mult1": "int",
+          "mult2": "int",
+          "n": "int",
+          "tool1": "str",
+          "tool2": "str",
+          "tool3": "str",
+          "unit": "str",
+          "worker": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n1 + n2 - spill / 2",
+      "expression": "n1 + n2 - spill / 2",
+      "group_id": 28,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 28,
+      "scorer_metadata": {
+        "split_row_index": 28,
+        "variable_types": {
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "fruit1": "str",
+          "fruit2": "str",
+          "n1": "int",
+          "n2": "int",
+          "spill": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: ({n1} + {n2} - {spill}) / 2",
+      "expression": "direct equation: ({n1} + {n2} - {spill}) / 2",
+      "group_id": 28,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 28,
+      "scorer_metadata": {
+        "split_row_index": 28,
+        "variable_types": {
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "fruit1": "str",
+          "fruit2": "str",
+          "n1": "int",
+          "n2": "int",
+          "spill": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: ({n1} + {n2} - {spill}) / 2",
+      "expression": "reverse check: ({n1} + {n2} - {spill}) / 2",
+      "group_id": 28,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 28,
+      "scorer_metadata": {
+        "split_row_index": 28,
+        "variable_types": {
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "fruit1": "str",
+          "fruit2": "str",
+          "n1": "int",
+          "n2": "int",
+          "spill": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: ({n1} + {n2}) / 2 - {spill} / 2",
+      "expression": "grouping: ({n1} + {n2}) / 2 - {spill} / 2",
+      "group_id": 28,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 28,
+      "scorer_metadata": {
+        "split_row_index": 28,
+        "variable_types": {
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "fruit1": "str",
+          "fruit2": "str",
+          "n1": "int",
+          "n2": "int",
+          "spill": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: ({n1} + {n2} - {spill}) / 2",
+      "expression": "unit operation: ({n1} + {n2} - {spill}) / 2",
+      "group_id": 28,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 28,
+      "scorer_metadata": {
+        "split_row_index": 28,
+        "variable_types": {
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "fruit1": "str",
+          "fruit2": "str",
+          "n1": "int",
+          "n2": "int",
+          "spill": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: ({n1} + {n2} - {spill}) / 2",
+      "expression": "minimal form: ({n1} + {n2} - {spill}) / 2",
+      "group_id": 28,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 28,
+      "scorer_metadata": {
+        "split_row_index": 28,
+        "variable_types": {
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "fruit1": "str",
+          "fruit2": "str",
+          "n1": "int",
+          "n2": "int",
+          "spill": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: ({n1} + {n2} - {spill}) / 2",
+      "expression": "sanity case: ({n1} + {n2} - {spill}) / 2",
+      "group_id": 28,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 28,
+      "scorer_metadata": {
+        "split_row_index": 28,
+        "variable_types": {
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "fruit1": "str",
+          "fruit2": "str",
+          "n1": "int",
+          "n2": "int",
+          "spill": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "(100 + p) * n1 * (100 + p) * n1 * (100 + p) * n1 * (100 + p) * n1 * (100 + p) * n1 * (100 + p)",
+      "expression": "(100 + p) * n1 * (100 + p) * n1 * (100 + p) * n1 * (100 + p) * n1 * (100 + p) * n1 * (100 + p)",
+      "group_id": 29,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 29,
+      "scorer_metadata": {
+        "split_row_index": 29,
+        "variable_types": {
+          "c1": "str",
+          "c2": "str",
+          "c3": "str",
+          "item": "str",
+          "n1": "int",
+          "p": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n * m / k",
+      "expression": "n * m / k",
+      "group_id": 30,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 30,
+      "scorer_metadata": {
+        "split_row_index": 30,
+        "variable_types": {
+          "container": "str",
+          "food": "str",
+          "item": "str",
+          "k": "int",
+          "location": "str",
+          "m": "int",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: n * m / k, Candidate B: reverse check: n * m / k, Candidate C: grouping: (n * m) / k, Candidate D: unit operation: n * m / k, Candidate E: minimal form: n * m / k, Candidate F: sanity case: n * m / k.",
+      "expression": "direct equation: n * m / k, Candidate B: reverse check: n * m / k, Candidate C: grouping: (n * m) / k, Candidate D: unit operation: n * m / k, Candidate E: minimal form: n * m / k, Candidate F: sanity case: n * m / k.",
+      "group_id": 30,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 30,
+      "scorer_metadata": {
+        "split_row_index": 30,
+        "variable_types": {
+          "container": "str",
+          "food": "str",
+          "item": "str",
+          "k": "int",
+          "location": "str",
+          "m": "int",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "l1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p",
+      "expression": "l1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p",
+      "group_id": 31,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 31,
+      "scorer_metadata": {
+        "split_row_index": 31,
+        "variable_types": {
+          "l": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "p": "int",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: $\\frac{n_1 \\cdot l \\cdot t}{p \\cdot 60}$",
+      "expression": "direct equation: $\\frac{n_1 \\cdot l \\cdot t}{p \\cdot 60}$",
+      "group_id": 31,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 31,
+      "scorer_metadata": {
+        "split_row_index": 31,
+        "variable_types": {
+          "l": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "p": "int",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: $n_1 \\cdot l \\cdot \\frac{t}{p \\cdot 60}$",
+      "expression": "reverse check: $n_1 \\cdot l \\cdot \\frac{t}{p \\cdot 60}$",
+      "group_id": 31,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 31,
+      "scorer_metadata": {
+        "split_row_index": 31,
+        "variable_types": {
+          "l": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "p": "int",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: $\\frac{n_1 \\cdot l \\cdot t}{p \\cdot 60}$",
+      "expression": "grouping: $\\frac{n_1 \\cdot l \\cdot t}{p \\cdot 60}$",
+      "group_id": 31,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 31,
+      "scorer_metadata": {
+        "split_row_index": 31,
+        "variable_types": {
+          "l": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "p": "int",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: $n_1 \\cdot l \\cdot t / (p \\cdot 60)$",
+      "expression": "unit operation: $n_1 \\cdot l \\cdot t / (p \\cdot 60)$",
+      "group_id": 31,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 31,
+      "scorer_metadata": {
+        "split_row_index": 31,
+        "variable_types": {
+          "l": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "p": "int",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: $\\frac{n_1 \\cdot<<l1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p>>",
+      "expression": "minimal form: $\\frac{n_1 \\cdot<<l1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p * 60 * n1 * l * t / p>>",
+      "group_id": 31,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 31,
+      "scorer_metadata": {
+        "split_row_index": 31,
+        "variable_types": {
+          "l": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "p": "int",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "(n1 + n2 + n3)",
+      "expression": "(n1 + n2 + n3)",
+      "group_id": 33,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 33,
+      "scorer_metadata": {
+        "split_row_index": 33,
+        "variable_types": {
+          "c1": "str",
+          "c2": "str",
+          "c3": "str",
+          "cur": "str",
+          "n1": "int",
+          "n2": "int",
+          "n3": "int",
+          "p1": "int",
+          "p2": "int",
+          "p3": "int",
+          "place": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "011111111111111111111111111111111111111111111111111111111111111",
+      "expression": "011111111111111111111111111111111111111111111111111111111111111",
+      "group_id": 34,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 34,
+      "scorer_metadata": {
+        "split_row_index": 34,
+        "variable_types": {
+          "cur": "str",
+          "day": "str",
+          "fish": "str",
+          "n": "int",
+          "name": "str",
+          "price": "float",
+          "unit": "str",
+          "w1": "int",
+          "w2": "int",
+          "w3": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: ${m} - ({n} * {cur}{price})",
+      "expression": "direct equation: ${m} - ({n} * {cur}{price})",
+      "group_id": 34,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 34,
+      "scorer_metadata": {
+        "split_row_index": 34,
+        "variable_types": {
+          "cur": "str",
+          "day": "str",
+          "fish": "str",
+          "n": "int",
+          "name": "str",
+          "price": "float",
+          "unit": "str",
+          "w1": "int",
+          "w2": "int",
+          "w3": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: ${m} - ({n} * {cur}{price})",
+      "expression": "reverse check: ${m} - ({n} * {cur}{price})",
+      "group_id": 34,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 34,
+      "scorer_metadata": {
+        "split_row_index": 34,
+        "variable_types": {
+          "cur": "str",
+          "day": "str",
+          "fish": "str",
+          "n": "int",
+          "name": "str",
+          "price": "float",
+          "unit": "str",
+          "w1": "int",
+          "w2": "int",
+          "w3": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: ${m} - ({n} * {cur}{price})",
+      "expression": "grouping: ${m} - ({n} * {cur}{price})",
+      "group_id": 34,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 34,
+      "scorer_metadata": {
+        "split_row_index": 34,
+        "variable_types": {
+          "cur": "str",
+          "day": "str",
+          "fish": "str",
+          "n": "int",
+          "name": "str",
+          "price": "float",
+          "unit": "str",
+          "w1": "int",
+          "w2": "int",
+          "w3": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: ${m} - ({n} * {cur}{price})",
+      "expression": "unit operation: ${m} - ({n} * {cur}{price})",
+      "group_id": 34,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 34,
+      "scorer_metadata": {
+        "split_row_index": 34,
+        "variable_types": {
+          "cur": "str",
+          "day": "str",
+          "fish": "str",
+          "n": "int",
+          "name": "str",
+          "price": "float",
+          "unit": "str",
+          "w1": "int",
+          "w2": "int",
+          "w3": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: ${m} - ({n} * {cur}{price})",
+      "expression": "minimal form: ${m} - ({n} * {cur}{price})",
+      "group_id": 34,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 34,
+      "scorer_metadata": {
+        "split_row_index": 34,
+        "variable_types": {
+          "cur": "str",
+          "day": "str",
+          "fish": "str",
+          "n": "int",
+          "name": "str",
+          "price": "float",
+          "unit": "str",
+          "w1": "int",
+          "w2": "int",
+          "w3": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: ${m} - ({n} * {cur}{price})",
+      "expression": "sanity case: ${m} - ({n} * {cur}{price})",
+      "group_id": 34,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 34,
+      "scorer_metadata": {
+        "split_row_index": 34,
+        "variable_types": {
+          "cur": "str",
+          "day": "str",
+          "fish": "str",
+          "n": "int",
+          "name": "str",
+          "price": "float",
+          "unit": "str",
+          "w1": "int",
+          "w2": "int",
+          "w3": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "(1 - frac) * n - frac * n + frac * n - frac * n + frac * n - frac * n + frac * n - frac * n + frac * n - frac * n + frac * n - frac * n + frac * n - frac * n + frac",
+      "expression": "(1 - frac) * n - frac * n + frac * n - frac * n + frac * n - frac * n + frac * n - frac * n + frac * n - frac * n + frac * n - frac * n + frac * n - frac * n + frac",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct subtraction of the fraction from the total: {n} - {frac} * {n}.",
+      "expression": "direct subtraction of the fraction from the total: {n} - {frac} * {n}.",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check, ensuring the fraction is multiplied by the total: {n} * (1 - {frac}).",
+      "expression": "reverse check, ensuring the fraction is multiplied by the total: {n} * (1 - {frac}).",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping the terms to show the remaining portion: {n} - {frac} * {n}.",
+      "expression": "grouping the terms to show the remaining portion: {n} - {frac} * {n}.",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation, treating the fraction as a multiplier: {n} * (1 - {frac}).",
+      "expression": "unit operation, treating the fraction as a multiplier: {n} * (1 - {frac}).",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form, simplifying the expression: {n} * (1 - {frac}).",
+      "expression": "minimal form, simplifying the expression: {n} * (1 - {frac}).",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case, verifying with a small number (e.g., n=10, frac=0.5): 10 - 5 = 5.",
+      "expression": "sanity case, verifying with a small number (e.g., n=10, frac=0.5): 10 - 5 = 5.",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "{n} - {frac} * {n}",
+      "expression": "{n} - {frac} * {n}",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "{n} * (1 - {frac})",
+      "expression": "{n} * (1 - {frac})",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "{n} * (1 - {frac})",
+      "expression": "{n} * (1 - {frac})",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "{n} * (1 - {frac})",
+      "expression": "{n} * (1 - {frac})",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "{n} - {frac} * {n}",
+      "expression": "{n} - {frac} * {n}",
+      "group_id": 35,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 35,
+      "scorer_metadata": {
+        "split_row_index": 35,
+        "variable_types": {
+          "document": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "1/6",
+      "expression": "1/6",
+      "group_id": 36,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.7,
+      "sample_index": 36,
+      "scorer_metadata": {
+        "split_row_index": 36,
+        "variable_types": {
+          "d": "int",
+          "frac": "float",
+          "n1": "int",
+          "n2": "int",
+          "name": "str",
+          "t": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "1 + n2 1 + n2",
+      "expression": "1 + n2 1 + n2",
+      "group_id": 37,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 37,
+      "scorer_metadata": {
+        "split_row_index": 37,
+        "variable_types": {
+          "frac": "float between 0 and 1",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "$1 + {n_2}$",
+      "expression": "$1 + {n_2}$",
+      "group_id": 37,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 37,
+      "scorer_metadata": {
+        "split_row_index": 37,
+        "variable_types": {
+          "frac": "float between 0 and 1",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "$1 + {n_2}$",
+      "expression": "$1 + {n_2}$",
+      "group_id": 37,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 37,
+      "scorer_metadata": {
+        "split_row_index": 37,
+        "variable_types": {
+          "frac": "float between 0 and 1",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "$1 + {n_2}$",
+      "expression": "$1 + {n_2}$",
+      "group_id": 37,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 37,
+      "scorer_metadata": {
+        "split_row_index": 37,
+        "variable_types": {
+          "frac": "float between 0 and 1",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "$1 + {n_2}$",
+      "expression": "$1 + {n_2}$",
+      "group_id": 37,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 37,
+      "scorer_metadata": {
+        "split_row_index": 37,
+        "variable_types": {
+          "frac": "float between 0 and 1",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "$1 + {n_2}$",
+      "expression": "$1 + {n_2}$",
+      "group_id": 37,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 37,
+      "scorer_metadata": {
+        "split_row_index": 37,
+        "variable_types": {
+          "frac": "float between 0 and 1",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "$1 + {n_2}$",
+      "expression": "$1 + {n_2}$",
+      "group_id": 37,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 37,
+      "scorer_metadata": {
+        "split_row_index": 37,
+        "variable_types": {
+          "frac": "float between 0 and 1",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "total - 2 * n",
+      "expression": "total - 2 * n",
+      "group_id": 38,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 38,
+      "scorer_metadata": {
+        "split_row_index": 38,
+        "variable_types": {
+          "event": "str",
+          "family": "str",
+          "item": "str",
+          "m": "int",
+          "n": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "`total - 2 * n`",
+      "expression": "`total - 2 * n`",
+      "group_id": 38,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 38,
+      "scorer_metadata": {
+        "split_row_index": 38,
+        "variable_types": {
+          "event": "str",
+          "family": "str",
+          "item": "str",
+          "m": "int",
+          "n": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "`total - 2 * n`",
+      "expression": "`total - 2 * n`",
+      "group_id": 38,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 38,
+      "scorer_metadata": {
+        "split_row_index": 38,
+        "variable_types": {
+          "event": "str",
+          "family": "str",
+          "item": "str",
+          "m": "int",
+          "n": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "`total - 2 * n`",
+      "expression": "`total - 2 * n`",
+      "group_id": 38,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 38,
+      "scorer_metadata": {
+        "split_row_index": 38,
+        "variable_types": {
+          "event": "str",
+          "family": "str",
+          "item": "str",
+          "m": "int",
+          "n": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "`total - 2 * n`",
+      "expression": "`total - 2 * n`",
+      "group_id": 38,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 38,
+      "scorer_metadata": {
+        "split_row_index": 38,
+        "variable_types": {
+          "event": "str",
+          "family": "str",
+          "item": "str",
+          "m": "int",
+          "n": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "`total - 2 * n`",
+      "expression": "`total - 2 * n`",
+      "group_id": 38,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 38,
+      "scorer_metadata": {
+        "split_row_index": 38,
+        "variable_types": {
+          "event": "str",
+          "family": "str",
+          "item": "str",
+          "m": "int",
+          "n": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "`total - 2 * n`",
+      "expression": "`total - 2 * n`",
+      "group_id": 38,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 38,
+      "scorer_metadata": {
+        "split_row_index": 38,
+        "variable_types": {
+          "event": "str",
+          "family": "str",
+          "item": "str",
+          "m": "int",
+          "n": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "total - n1 - n2+1000000000000000000000000000000000000000000000000000000",
+      "expression": "total - n1 - n2+1000000000000000000000000000000000000000000000000000000",
+      "group_id": 39,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 39,
+      "scorer_metadata": {
+        "split_row_index": 39,
+        "variable_types": {
+          "family": "str",
+          "flavor1": "str",
+          "flavor2": "str",
+          "flavor3": "str",
+          "item": "str",
+          "n1": "int",
+          "n2": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: {total} - {n1} - {n2}",
+      "expression": "direct equation: {total} - {n1} - {n2}",
+      "group_id": 39,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 39,
+      "scorer_metadata": {
+        "split_row_index": 39,
+        "variable_types": {
+          "family": "str",
+          "flavor1": "str",
+          "flavor2": "str",
+          "flavor3": "str",
+          "item": "str",
+          "n1": "int",
+          "n2": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: {total} - ({n1} + {n2})",
+      "expression": "reverse check: {total} - ({n1} + {n2})",
+      "group_id": 39,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 39,
+      "scorer_metadata": {
+        "split_row_index": 39,
+        "variable_types": {
+          "family": "str",
+          "flavor1": "str",
+          "flavor2": "str",
+          "flavor3": "str",
+          "item": "str",
+          "n1": "int",
+          "n2": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: ({total} - {n1}) - {n2}",
+      "expression": "grouping: ({total} - {n1}) - {n2}",
+      "group_id": 39,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 39,
+      "scorer_metadata": {
+        "split_row_index": 39,
+        "variable_types": {
+          "family": "str",
+          "flavor1": "str",
+          "flavor2": "str",
+          "flavor3": "str",
+          "item": "str",
+          "n1": "int",
+          "n2": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: {total} - {n1} - {n2}",
+      "expression": "unit operation: {total} - {n1} - {n2}",
+      "group_id": 39,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 39,
+      "scorer_metadata": {
+        "split_row_index": 39,
+        "variable_types": {
+          "family": "str",
+          "flavor1": "str",
+          "flavor2": "str",
+          "flavor3": "str",
+          "item": "str",
+          "n1": "int",
+          "n2": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: {total} - {n1} - {n2}",
+      "expression": "minimal form: {total} - {n1} - {n2}",
+      "group_id": 39,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 39,
+      "scorer_metadata": {
+        "split_row_index": 39,
+        "variable_types": {
+          "family": "str",
+          "flavor1": "str",
+          "flavor2": "str",
+          "flavor3": "str",
+          "item": "str",
+          "n1": "int",
+          "n2": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: {total} - {n1} - {n2}",
+      "expression": "sanity case: {total} - {n1} - {n2}",
+      "group_id": 39,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 39,
+      "scorer_metadata": {
+        "split_row_index": 39,
+        "variable_types": {
+          "family": "str",
+          "flavor1": "str",
+          "flavor2": "str",
+          "flavor3": "str",
+          "item": "str",
+          "n1": "int",
+          "n2": "int",
+          "total": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n * (1 + r1/100) * (1 - r2/100) * p * n * r1/100 * r2/100 * p * n * r1/100 * r2/100 * p * n",
+      "expression": "n * (1 + r1/100) * (1 - r2/100) * p * n * r1/100 * r2/100 * p * n * r1/100 * r2/100 * p * n",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "Direct calculation of the final value: $n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$.",
+      "expression": "Direct calculation of the final value: $n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$.",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "Reverse check (working backwards from final value to initial): $n \\times cur \\times p \\times (1 - r2/100) / (1 + r1/100)$.",
+      "expression": "Reverse check (working backwards from final value to initial): $n \\times cur \\times p \\times (1 - r2/100) / (1 + r1/100)$.",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "Grouping the terms: $n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$.",
+      "expression": "Grouping the terms: $n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$.",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "Unit operation (multiplication of factors): $n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$.",
+      "expression": "Unit operation (multiplication of factors): $n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$.",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "Minimal form (simplified algebraic structure): $n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$.",
+      "expression": "Minimal form (simplified algebraic structure): $n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$.",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "Sanity case (e.g., if $r1=0, r2=0$, result should be $n \\times cur \\times p$): $n \\times cur \\times p \\times (1 + 0/100) \\times (1 - 0/100)$.",
+      "expression": "Sanity case (e.g., if $r1=0, r2=0$, result should be $n \\times cur \\times p$): $n \\times cur \\times p \\times (1 + 0/100) \\times (1 - 0/100)$.",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "$n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$",
+      "expression": "$n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "$n \\times cur \\times p \\times (1 - r2/100) / (1 + r1/100)$",
+      "expression": "$n \\times cur \\times p \\times (1 - r2/100) / (1 + r1/100)$",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "$n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$",
+      "expression": "$n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "$n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$",
+      "expression": "$n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "$n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$",
+      "expression": "$n \\times cur \\times p \\times (1 + r1/100) \\times (1 - r2/100)$",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "$n \\times cur \\times p \\times (1 + 0/100) \\times (1 - 0/100)$",
+      "expression": "$n \\times cur \\times p \\times (1 + 0/100) \\times (1 - 0/100)$",
+      "group_id": 40,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 40,
+      "scorer_metadata": {
+        "split_row_index": 40,
+        "variable_types": {
+          "cur": "str",
+          "n": "int",
+          "name": "str",
+          "p": "int",
+          "r1": "int",
+          "r2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "p2 + 1/2*p3 + p4 - d + 2*p1 + p2 + 1/2*p3 + p4 - d + 2*p1 + p2 + 1/2*p3 + p4 - d + 2*p1 + p2",
+      "expression": "p2 + 1/2*p3 + p4 - d + 2*p1 + p2 + 1/2*p3 + p4 - d + 2*p1 + p2 + 1/2*p3 + p4 - d + 2*p1 + p2",
+      "group_id": 41,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.7,
+      "sample_index": 41,
+      "scorer_metadata": {
+        "split_row_index": 41,
+        "variable_types": {
+          "cur": "str",
+          "d": "int",
+          "frac": "float between 0 and 1",
+          "item1": "str",
+          "item2": "str",
+          "item3": "str",
+          "item4": "str",
+          "name": "str",
+          "p1": "int",
+          "p2": "int",
+          "p3": "int",
+          "p4": "int",
+          "sport": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "Direct sum of all parts.",
+      "expression": "Direct sum of all parts.",
+      "group_id": 41,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 41,
+      "scorer_metadata": {
+        "split_row_index": 41,
+        "variable_types": {
+          "cur": "str",
+          "d": "int",
+          "frac": "float between 0 and 1",
+          "item1": "str",
+          "item2": "str",
+          "item3": "str",
+          "item4": "str",
+          "name": "str",
+          "p1": "int",
+          "p2": "int",
+          "p3": "int",
+          "p4": "int",
+          "sport": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "Reverse check (grouping terms).",
+      "expression": "Reverse check (grouping terms).",
+      "group_id": 41,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 41,
+      "scorer_metadata": {
+        "split_row_index": 41,
+        "variable_types": {
+          "cur": "str",
+          "d": "int",
+          "frac": "float between 0 and 1",
+          "item1": "str",
+          "item2": "str",
+          "item3": "str",
+          "item4": "str",
+          "name": "str",
+          "p1": "int",
+          "p2": "int",
+          "p3": "int",
+          "p4": "int",
+          "sport": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "Grouping Item 1 and Item 2 first.",
+      "expression": "Grouping Item 1 and Item 2 first.",
+      "group_id": 41,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 41,
+      "scorer_metadata": {
+        "split_row_index": 41,
+        "variable_types": {
+          "cur": "str",
+          "d": "int",
+          "frac": "float between 0 and 1",
+          "item1": "str",
+          "item2": "str",
+          "item3": "str",
+          "item4": "str",
+          "name": "str",
+          "p1": "int",
+          "p2": "int",
+          "p3": "int",
+          "p4": "int",
+          "sport": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "Unit operation (combining Item 1 and Item 2).",
+      "expression": "Unit operation (combining Item 1 and Item 2).",
+      "group_id": 41,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 41,
+      "scorer_metadata": {
+        "split_row_index": 41,
+        "variable_types": {
+          "cur": "str",
+          "d": "int",
+          "frac": "float between 0 and 1",
+          "item1": "str",
+          "item2": "str",
+          "item3": "str",
+          "item4": "str",
+          "name": "str",
+          "p1": "int",
+          "p2": "int",
+          "p3": "int",
+          "p4": "int",
+          "sport": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "Minimal form (simplified).",
+      "expression": "Minimal form (simplified).",
+      "group_id": 41,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 41,
+      "scorer_metadata": {
+        "split_row_index": 41,
+        "variable_types": {
+          "cur": "str",
+          "d": "int",
+          "frac": "float between 0 and 1",
+          "item1": "str",
+          "item2": "str",
+          "item3": "str",
+          "item4": "str",
+          "name": "str",
+          "p1": "int",
+          "p2": "int",
+          "p3": "int",
+          "p4": "int",
+          "sport": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "Sanity case (check with simple numbers).",
+      "expression": "Sanity case (check with simple numbers).",
+      "group_id": 41,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 41,
+      "scorer_metadata": {
+        "split_row_index": 41,
+        "variable_types": {
+          "cur": "str",
+          "d": "int",
+          "frac": "float between 0 and 1",
+          "item1": "str",
+          "item2": "str",
+          "item3": "str",
+          "item4": "str",
+          "name": "str",
+          "p1": "int",
+          "p2": "int",
+          "p3": "int",
+          "p4": "int",
+          "sport": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "(1 + (end_time - start_time - free_hours - 1) * multiplier) * first_hour_cost * (1 + (end_time - start_time - free_hours - 1) * multiplier) * first_hour_cost",
+      "expression": "(1 + (end_time - start_time - free_hours - 1) * multiplier) * first_hour_cost * (1 + (end_time - start_time - free_hours - 1) * multiplier) * first_hour_cost",
+      "group_id": 42,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 42,
+      "scorer_metadata": {
+        "split_row_index": 42,
+        "variable_types": {
+          "end_time": "int",
+          "first_hour_cost": "int",
+          "free_hours": "int",
+          "multiplier": "int",
+          "name": "str",
+          "start_time": "int",
+          "vehicle": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "{cur}${first_hour_cost} + ({end_time} - {start_time} - {free_hours} - 1) * {multiplier} * {cur}${first_hour_cost}",
+      "expression": "{cur}${first_hour_cost} + ({end_time} - {start_time} - {free_hours} - 1) * {multiplier} * {cur}${first_hour_cost}",
+      "group_id": 42,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 42,
+      "scorer_metadata": {
+        "split_row_index": 42,
+        "variable_types": {
+          "end_time": "int",
+          "first_hour_cost": "int",
+          "free_hours": "int",
+          "multiplier": "int",
+          "name": "str",
+          "start_time": "int",
+          "vehicle": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "{cur}${first_hour_cost} + ({end_time} - {start_time} - {free_hours} - 1) * {multiplier} * {cur}${first_hour_cost<< (1 + (end_time - start_time - free_hours - 1) * multiplier) * first_hour_cost",
+      "expression": "{cur}${first_hour_cost} + ({end_time} - {start_time} - {free_hours} - 1) * {multiplier} * {cur}${first_hour_cost<< (1 + (end_time - start_time - free_hours - 1) * multiplier) * first_hour_cost",
+      "group_id": 42,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 42,
+      "scorer_metadata": {
+        "split_row_index": 42,
+        "variable_types": {
+          "end_time": "int",
+          "first_hour_cost": "int",
+          "free_hours": "int",
+          "multiplier": "int",
+          "name": "str",
+          "start_time": "int",
+          "vehicle": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "frac2 * mult1 * frac1 * n1/100000000000000000000000000000000000000000000000000",
+      "expression": "frac2 * mult1 * frac1 * n1/100000000000000000000000000000000000000000000000000",
+      "group_id": 43,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 43,
+      "scorer_metadata": {
+        "split_row_index": 43,
+        "variable_types": {
+          "creature": "str",
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "mult1": "int",
+          "n1": "int",
+          "name1": "str",
+          "name2": "str",
+          "name3": "str",
+          "name4": "str",
+          "weapon1": "str",
+          "weapon2": "str",
+          "weapon3": "str",
+          "weapon4": "str",
+          "weapon5": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: {frac2} * {mult1} * {frac1} * {n1}",
+      "expression": "direct equation: {frac2} * {mult1} * {frac1} * {n1}",
+      "group_id": 43,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 43,
+      "scorer_metadata": {
+        "split_row_index": 43,
+        "variable_types": {
+          "creature": "str",
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "mult1": "int",
+          "n1": "int",
+          "name1": "str",
+          "name2": "str",
+          "name3": "str",
+          "name4": "str",
+          "weapon1": "str",
+          "weapon2": "str",
+          "weapon3": "str",
+          "weapon4": "str",
+          "weapon5": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: {frac2} * {mult1} * {frac1} * {n1}",
+      "expression": "reverse check: {frac2} * {mult1} * {frac1} * {n1}",
+      "group_id": 43,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 43,
+      "scorer_metadata": {
+        "split_row_index": 43,
+        "variable_types": {
+          "creature": "str",
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "mult1": "int",
+          "n1": "int",
+          "name1": "str",
+          "name2": "str",
+          "name3": "str",
+          "name4": "str",
+          "weapon1": "str",
+          "weapon2": "str",
+          "weapon3": "str",
+          "weapon4": "str",
+          "weapon5": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: {frac2} * {mult1} * {frac1} * {n1}",
+      "expression": "grouping: {frac2} * {mult1} * {frac1} * {n1}",
+      "group_id": 43,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 43,
+      "scorer_metadata": {
+        "split_row_index": 43,
+        "variable_types": {
+          "creature": "str",
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "mult1": "int",
+          "n1": "int",
+          "name1": "str",
+          "name2": "str",
+          "name3": "str",
+          "name4": "str",
+          "weapon1": "str",
+          "weapon2": "str",
+          "weapon3": "str",
+          "weapon4": "str",
+          "weapon5": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: {frac2} * {mult1} * {frac1} * {n1}",
+      "expression": "unit operation: {frac2} * {mult1} * {frac1} * {n1}",
+      "group_id": 43,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 43,
+      "scorer_metadata": {
+        "split_row_index": 43,
+        "variable_types": {
+          "creature": "str",
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "mult1": "int",
+          "n1": "int",
+          "name1": "str",
+          "name2": "str",
+          "name3": "str",
+          "name4": "str",
+          "weapon1": "str",
+          "weapon2": "str",
+          "weapon3": "str",
+          "weapon4": "str",
+          "weapon5": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: {frac2} * {mult1} * {frac1} * {n1}",
+      "expression": "minimal form: {frac2} * {mult1} * {frac1} * {n1}",
+      "group_id": 43,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 43,
+      "scorer_metadata": {
+        "split_row_index": 43,
+        "variable_types": {
+          "creature": "str",
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "mult1": "int",
+          "n1": "int",
+          "name1": "str",
+          "name2": "str",
+          "name3": "str",
+          "name4": "str",
+          "weapon1": "str",
+          "weapon2": "str",
+          "weapon3": "str",
+          "weapon4": "str",
+          "weapon5": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: {frac2} * {mult1} * {frac1} * {n1}",
+      "expression": "sanity case: {frac2} * {mult1} * {frac1} * {n1}",
+      "group_id": 43,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 43,
+      "scorer_metadata": {
+        "split_row_index": 43,
+        "variable_types": {
+          "creature": "str",
+          "frac1": "float between 0 and 1",
+          "frac2": "float between 0 and 1",
+          "mult1": "int",
+          "n1": "int",
+          "name1": "str",
+          "name2": "str",
+          "name3": "str",
+          "name4": "str",
+          "weapon1": "str",
+          "weapon2": "str",
+          "weapon3": "str",
+          "weapon4": "str",
+          "weapon5": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "10000000000000000000000000000000000000000000000000000000000000",
+      "expression": "10000000000000000000000000000000000000000000000000000000000000",
+      "group_id": 45,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.7,
+      "sample_index": 45,
+      "scorer_metadata": {
+        "split_row_index": 45,
+        "variable_types": {
+          "company": "str",
+          "frac": "float between 0 and 1",
+          "n": "int",
+          "p1": "int",
+          "p2": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "n1 + mult + n2 + n3",
+      "expression": "n1 + mult + n2 + n3",
+      "group_id": 46,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 46,
+      "scorer_metadata": {
+        "split_row_index": 46,
+        "variable_types": {
+          "mult": "int",
+          "n1": "int",
+          "n2": "int",
+          "n3": "int",
+          "sport1": "str",
+          "sport2": "str",
+          "sport3": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "7*n*(mult+1)",
+      "expression": "7*n*(mult+1)",
+      "group_id": 47,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 1.0,
+      "sample_index": 47,
+      "scorer_metadata": {
+        "split_row_index": 47,
+        "variable_types": {
+          "mult": "int",
+          "n": "int",
+          "name1": "str",
+          "name2": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1",
+      "expression": "1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1",
+      "group_id": 48,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 48,
+      "scorer_metadata": {
+        "split_row_index": 48,
+        "variable_types": {
+          "d": "int",
+          "disease": "str",
+          "n0": "int",
+          "r": "int"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h64_gsm2b_named_route_t0",
+      "equivalence_key": "(n1 * d1) + (n2 * d2) / 12",
+      "expression": "(n1 * d1) + (n2 * d2) / 12",
+      "group_id": 49,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.8,
+      "sample_index": 49,
+      "scorer_metadata": {
+        "split_row_index": 49,
+        "variable_types": {
+          "d1": "int",
+          "d2": "int",
+          "d3": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:A",
+      "equivalence_key": "direct equation: ({n1 * d1} + {n2 * d2}) / 12",
+      "expression": "direct equation: ({n1 * d1} + {n2 * d2}) / 12",
+      "group_id": 49,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 49,
+      "scorer_metadata": {
+        "split_row_index": 49,
+        "variable_types": {
+          "d1": "int",
+          "d2": "int",
+          "d3": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:B",
+      "equivalence_key": "reverse check: ({n1 * d1} + {n2 * d2}) / 12",
+      "expression": "reverse check: ({n1 * d1} + {n2 * d2}) / 12",
+      "group_id": 49,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 49,
+      "scorer_metadata": {
+        "split_row_index": 49,
+        "variable_types": {
+          "d1": "int",
+          "d2": "int",
+          "d3": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:C",
+      "equivalence_key": "grouping: ({n1 * d1} + {n2 * d2}) / 12",
+      "expression": "grouping: ({n1 * d1} + {n2 * d2}) / 12",
+      "group_id": 49,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 49,
+      "scorer_metadata": {
+        "split_row_index": 49,
+        "variable_types": {
+          "d1": "int",
+          "d2": "int",
+          "d3": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:D",
+      "equivalence_key": "unit operation: ({n1 * d1} + {n2 * d2}) / 12",
+      "expression": "unit operation: ({n1 * d1} + {n2 * d2}) / 12",
+      "group_id": 49,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 49,
+      "scorer_metadata": {
+        "split_row_index": 49,
+        "variable_types": {
+          "d1": "int",
+          "d2": "int",
+          "d3": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:E",
+      "equivalence_key": "minimal form: ({n1 * d1} + {n2 * d2}) / 12",
+      "expression": "minimal form: ({n1 * d1} + {n2 * d2}) / 12",
+      "group_id": 49,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 49,
+      "scorer_metadata": {
+        "split_row_index": 49,
+        "variable_types": {
+          "d1": "int",
+          "d2": "int",
+          "d3": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h64_gsm2b_named_route_t0:candidate_line:F",
+      "equivalence_key": "sanity case: ({n1 * d1} + {n2 * d2}) / 12",
+      "expression": "sanity case: ({n1 * d1} + {n2 * d2}) / 12",
+      "group_id": 49,
+      "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+      "quality_score": 0.75,
+      "sample_index": 49,
+      "scorer_metadata": {
+        "split_row_index": 49,
+        "variable_types": {
+          "d1": "int",
+          "d2": "int",
+          "d3": "int",
+          "n1": "int",
+          "n2": "int",
+          "name": "str"
+        }
+      },
+      "source_family": "h64_gsm2b_named_route:candidate_lines",
+      "source_id": "h64_gsm2b_named_route_t0"
+    }
+  ],
+  "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+  "postprocess": {
+    "include_candidate_lines": true,
+    "selection_uses_gold": false,
+    "source_report": "/home/aadivyar/csd-generation/outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/direct_eval_success.json",
+    "split_file": "/home/aadivyar/csd-generation/environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json",
+    "split_name": "train"
+  },
+  "selection_uses_gold": false,
+  "source_id": "h64_gsm2b_named_route_t0"
+}

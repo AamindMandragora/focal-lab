@@ -1,0 +1,3 @@
+
+  ⚠ Delimiter check FAILED: none of the evaluated outputs contained a complete << >> span, but spans are required. 2/5 outputs show that a `<<` span was opened but the strategy never produced the closing `>>` — the step budget ran out before the span was exited. This means `<<` IS being emitted, but the strategy does not successfully reach and emit `>>` for any example.
+    What to reconsider: this is a decoding-mechanism issue with how the strategy behaves *inside* a span — specifically, how it makes forward progress through the span content and how it recognizes that a span is complete and should be closed. The strategy needs a reliable path from span-open to span-close within the step budget. (General direction only — the specific mechanism is yours to design.)

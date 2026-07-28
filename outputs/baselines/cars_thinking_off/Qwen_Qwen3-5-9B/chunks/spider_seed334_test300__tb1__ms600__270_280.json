@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.2,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 861.2786,
+    "mean_generation_seconds_per_example": 86.127858,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 880.3171,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 270,
+    "eval_end_index": 280
+  },
+  "answers": [
+    {
+      "question": "Which professionals live in the state of Indiana or have done treatment on more than 2 treatments? List his or her id, last name and cell phone.",
+      "generated_answer": "SELECT professional_id, last_name, cell_number FROM professionals WHERE state = 'Indiana' OR professional_id IN (SELECT DISTINCT professional_id FROM treatments GROUP BY professional_id HAVING COUNT(treatment_id) > 2)",
+      "generation_seconds": 79.350415
+    },
+    {
+      "question": "Which dogs have not cost their owner more than 1000 for treatment ? List the dog names .",
+      "generated_answer": "SELECT DOG.NAME FROM DOGS INNER JOIN TREATMENTS ON DOGS.DOG_ID = TREATMENTS.DOG_ID INNER JOIN OWNERS ON DOGS.OWNER_ID = OWNERS.OWNER_ID GROUP BY DOGS.DOG_ID HAVING SUM(TREATMENTS.COST_OF_TREATMENT) <= 1000",
+      "generation_seconds": 263.230365
+    },
+    {
+      "question": "Give me the description of the treatment type whose total cost is the lowest.",
+      "generated_answer": "Select treatment_type_description from treatment_types join treatments on treatment_types.treatment_type_code = treatments.treatment_type_code group by treatment_type_description having sum(cost_of_treatment) = (select min(sum(cost_of_treatment)) from (select treatment_type_code, sum(cost_of_treatment) as total_cost from treatments group by treatment_type_code) as sub)",
+      "generation_seconds": 66.884026
+    },
+    {
+      "question": "Which professionals have operated a treatment that costs less than the average? Give me theor first names and last names.",
+      "generated_answer": "Select p.First_name, P.Last_name From Professionals P Where P.Professional_id in (Select T.Professional_id From Treatments T Where T.Cost_of_treatment < (Select avg(Cost_of_treatment) From Treatments))",
+      "generation_seconds": 108.038995
+    },
+    {
+      "question": "What are the cost and treatment type description of each treatment?",
+      "generated_answer": "SELECT ct.cost_of_treatment AS cost,tt.treatment_type_description FROM treatments ct,treatment_types tt WHERE ct.treatment_type_code = tt.treatment_type_code",
+      "generation_seconds": 120.700759
+    },
+    {
+      "question": "Which dogs are of the rarest breed? Show their names and treatment dates.",
+      "generated_answer": "SELECT d.name, t.date_of_treatment FROM dogs d JOIN treatments t ON d.dog_id = t.dog_id JOIN breeds b ON d.breed_code = b.breed_code WHERE b.breed_code = ( SELECT breed_code FROM breeds GROUP BY breed_code HAVING COUNT(*) = MIN(COUNT(*)) )",
+      "generation_seconds": 107.580678
+    },
+    {
+      "question": "Find the first names of owners living in Virginia and the names of dogs they own.",
+      "generated_answer": "SELECT DISTINCT FIRST_NAME FROM OWNERS WHERE STATE = 'VA'",
+      "generation_seconds": 38.971428
+    },
+    {
+      "question": "List the last name of the owner owning the youngest dog.",
+      "generated_answer": "SELECT first_name, last_name FROM owners WHERE owner_id = (SELECT MIN(age) FROM dogs)",
+      "generation_seconds": 15.730218
+    },
+    {
+      "question": "Count the number of dogs that went through a treatment.",
+      "generated_answer": "SELECT COUNT(DISTINCT d.dog_id) FROM dogs d INNER JOIN treatments t ON d.dog_id = t.dog_id",
+      "generation_seconds": 28.011441
+    },
+    {
+      "question": "Find the role, street, city and state of the professionals living in a city that contains the substring 'West'.",
+      "generated_answer": "SELECT role_code, street, city, state FROM professionals WHERE city LIKE '%West%'",
+      "generation_seconds": 32.780253
+    }
+  ]
+}

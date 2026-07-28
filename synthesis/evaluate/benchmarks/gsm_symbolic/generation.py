@@ -12,7 +12,52 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
 
+import os
+
 from synthesis.evaluate.benchmarks.common.dafny_tokens import dafny_seq_to_str
+
+
+
+
+def _call_my_csd_strategy(
+    GeneratedCSD,
+    _dafny,
+    lm,
+    parser,
+    generated_prefix,
+    start_inside_constrained,
+    current_constrained,
+    max_steps,
+    step_token_budget,
+    valid_token_groups_dafny,
+    valid_tokens_dafny,
+    eos_token_dafny,
+    param_names,
+    n_params,
+):
+    if "validTokenGroups" in param_names:
+        return GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            start_inside_constrained, current_constrained,
+            max_steps, step_token_budget, valid_token_groups_dafny, eos_token_dafny,
+        )
+    if "validTokens" in param_names or n_params >= 10:
+        return GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            start_inside_constrained, current_constrained,
+            max_steps, step_token_budget, valid_tokens_dafny, eos_token_dafny,
+        )
+    if n_params >= 9:
+        return GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            start_inside_constrained, current_constrained,
+            max_steps, step_token_budget, eos_token_dafny,
+        )
+    return GeneratedCSD.default__.MyCSDStrategy(
+        lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+        start_inside_constrained, current_constrained,
+        max_steps, eos_token_dafny,
+    )
 
 
 def _enforce_max_steps(result_tokens: List[str], max_steps: int) -> None:
@@ -35,6 +80,7 @@ def run_crane_csd(
     valid_token_groups: Optional[List[List[str]]] = None,
     max_seconds: Optional[float] = None,
     completion_mode: bool = False,
+    early_stop_on_answer: bool = False,
 ) -> Tuple[str, int, float, List[Tuple[str, bool]], List[dict]]:
     """
     Run generation using the Dafny-verified CSD strategy.
@@ -57,6 +103,10 @@ def run_crane_csd(
             prompt_text string with no chat template applied. Required for base
             (non-instruction-tuned) completion models, which must see the prompt
             as a raw continuation rather than ChatML-wrapped.
+        early_stop_on_answer: When True, stop generation as soon as the output
+            contains a finished final-answer span ('final answer' followed by a
+            complete <<...>> span), mirroring CRANE's answer stopping. The
+            output-so-far is returned and scored through the normal path.
 
     Returns:
         Tuple of (output_text, token_count, time_seconds, constrained_segments)
@@ -105,6 +155,25 @@ def run_crane_csd(
         runtime_deadline = time.monotonic() + max_seconds
     if hasattr(lm, "SetRuntimeDeadline"):
         lm.SetRuntimeDeadline(runtime_deadline)
+    if early_stop_on_answer and hasattr(lm, "SetAnswerEarlyStop"):
+        lm.SetAnswerEarlyStop(True)
+
+    # IterGen length parity: HF MaxLengthCriteria is applied to GENERATED tokens
+    # only (session[:, start_from:]), while max_length = prompt_len + max_new_tokens.
+    # Effective generated ceiling is therefore prompt_len + max_new_tokens
+    # (spider adapter: max_new_tokens = min(512, eval_max_steps)).
+    _mnt = os.environ.get("CSD_ITERGEN_MAX_NEW_TOKENS", "").strip()
+    if _mnt:
+        _prompt_len = len(
+            lm.tokenizer.encode(getattr(lm, "instruction_text", "") or "", add_special_tokens=False)
+        )
+        _old = int(max_steps)
+        max_steps = int(_mnt) + int(_prompt_len)
+        print(
+            f"  [ITERGEN-LEN] max_steps {_old} -> {max_steps} "
+            f"(max_new_tokens={_mnt} + prompt_len={_prompt_len})",
+            flush=True,
+        )
 
     eos_token_str = lm.tokenizer.eos_token or "<|endoftext|>"
     eos_token_dafny = _dafny.Seq(eos_token_str)
@@ -136,31 +205,72 @@ def run_crane_csd(
     _sig = inspect.signature(GeneratedCSD.default__.MyCSDStrategy)
     _param_names = list(_sig.parameters.keys())
     _n_params = len(_param_names)
+    # CARS get_sample: up to N full attempts, keep first stop_after successes.
+    # CSD_CARS_SEARCH_STEPS mirrors --cars-search-steps (default 1 = single pass).
+    cars_steps = max(1, int(os.environ.get(
+        "CSD_CARS_SEARCH_STEPS",
+        os.environ.get("CSD_CARS_SAMPLES_PER_PROMPT", "1"),
+    )))
+    cars_stop_after = max(1, int(os.environ.get("CSD_CARS_STOP_AFTER", "1")))
+    from synthesis.evaluate.benchmarks.common.model_utils import AnswerCompleteStop
+
+    answer_early_stopped = False
     try:
-        if "validTokenGroups" in _param_names:
-            result = GeneratedCSD.default__.MyCSDStrategy(
-                lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
-                start_inside_constrained, current_constrained,
-                max_steps, step_token_budget, valid_token_groups_dafny, eos_token_dafny,
+        result = None
+        _successes = 0
+        for _attempt in range(cars_steps):
+            if os.environ.get("CSD_PARITY_SEED_PER_ATTEMPT", "0") == "1":
+                _raw = os.environ.get("CSD_PARITY_SEED", "").strip()
+                if _raw:
+                    import random as _random
+                    _base = int(_raw)
+                    _ex = int(os.environ.get("CSD_PARITY_EXAMPLE_INDEX", "0"))
+                    _seed = _base + _ex * 1_000_003 + int(_attempt) * 9176
+                    _random.seed(_seed)
+                    try:
+                        import numpy as _np
+                        _np.random.seed(_seed % (2**32 - 1))
+                    except Exception:
+                        pass
+                    try:
+                        import torch as _torch
+                        _torch.manual_seed(_seed)
+                        if _torch.cuda.is_available():
+                            _torch.cuda.manual_seed_all(_seed)
+                    except Exception:
+                        pass
+            result = _call_my_csd_strategy(
+                GeneratedCSD,
+                _dafny,
+                lm,
+                parser,
+                generated_prefix,
+                start_inside_constrained,
+                current_constrained,
+                max_steps,
+                step_token_budget,
+                valid_token_groups_dafny,
+                valid_tokens_dafny,
+                eos_token_dafny,
+                _param_names,
+                _n_params,
             )
-        elif "validTokens" in _param_names or _n_params >= 10:
-            result = GeneratedCSD.default__.MyCSDStrategy(
-                lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
-                start_inside_constrained, current_constrained,
-                max_steps, step_token_budget, valid_tokens_dafny, eos_token_dafny,
-            )
-        elif _n_params >= 9:
-            result = GeneratedCSD.default__.MyCSDStrategy(
-                lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
-                start_inside_constrained, current_constrained,
-                max_steps, step_token_budget, eos_token_dafny,
-            )
-        else:
-            result = GeneratedCSD.default__.MyCSDStrategy(
-                lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
-                start_inside_constrained, current_constrained,
-                max_steps, eos_token_dafny,
-            )
+            # Success ≈ CARS generation_ended accepting: non-empty complete prefix.
+            _out = result[0] if isinstance(result, tuple) else result
+            _toks = [dafny_seq_to_str(t) for t in _out] if _out is not None else []
+            _eos = dafny_seq_to_str(eos_token_dafny) if eos_token_dafny is not None else ""
+            _body = "".join(t for t in _toks if t != _eos)
+            _ok = bool(_body) and bool(getattr(parser, "is_complete", lambda s: False)(_body))
+            if _ok:
+                _successes += 1
+                if _successes >= cars_stop_after:
+                    break
+            # else: failed attempt; oracle trie already updated via RejectLastInTrie
+    except AnswerCompleteStop:
+        # Generation-complete signal, not a failure: the final answer span is
+        # finished. The per-step hook stashed the tokens generated so far;
+        # return them through the normal scoring path below.
+        answer_early_stopped = True
     finally:
         if hasattr(lm, "ClearRuntimeDeadline"):
             lm.ClearRuntimeDeadline()
@@ -168,15 +278,24 @@ def run_crane_csd(
     final_inside_constrained = False
     final_current_constrained = _dafny.SeqWithoutIsStrInference([])
 
-    if isinstance(result, tuple) and len(result) == 4:
+    if answer_early_stopped:
+        result_tokens = list(getattr(lm, "_early_stop_tokens", None) or [])
+        total_cost = len(result_tokens)
+    elif isinstance(result, tuple) and len(result) == 4:
         csd_output, final_inside_constrained, final_current_constrained, total_cost = result
+        result_tokens = [dafny_seq_to_str(t) for t in csd_output]
     elif isinstance(result, tuple):
         csd_output, total_cost = result
+        result_tokens = [dafny_seq_to_str(t) for t in csd_output]
     else:
         csd_output = result
         total_cost = 0
+        result_tokens = [dafny_seq_to_str(t) for t in csd_output]
 
-    result_tokens = [dafny_seq_to_str(t) for t in csd_output]
+    if early_stop_on_answer and hasattr(lm, "SetAnswerEarlyStop"):
+        # Clear AFTER harvesting the stash so the flag cannot leak into the
+        # next example's generation.
+        lm.SetAnswerEarlyStop(False)
     _enforce_max_steps(result_tokens, max_steps)
     output_text = "".join(result_tokens)
     execution_time = time.time() - start_time

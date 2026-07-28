@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.6,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 550.1352,
+    "mean_generation_seconds_per_example": 55.013523,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 568.4997,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 200,
+    "eval_end_index": 210
+  },
+  "answers": [
+    {
+      "question": "How many states are there?",
+      "generated_answer": "SELECT DISTINCT COUNT(s.state) FROM area_code_state s",
+      "generation_seconds": 9.981973
+    },
+    {
+      "question": "What is last date created of votes from the state 'CA'?",
+      "generated_answer": "SELECT MAX(votes.created) FROM votes WHERE votes.state = 'CA'",
+      "generation_seconds": 45.139365
+    },
+    {
+      "question": "How many contestants did not get voted?",
+      "generated_answer": "select count(*) from contestants c left join votes v on c.contestant_number = v.contestant_number where v.contestant_number is null",
+      "generation_seconds": 140.219758
+    },
+    {
+      "question": "List the area codes in which voters voted both for the contestant 'Tabatha Gehling' and the contestant 'Kelly Clauss'.",
+      "generated_answer": "SELECT DISTINCT v1.state FROM votes v1 INNER JOIN contestants c1 ON v1.contestant_number = c1.contestant_number INNER JOIN votes v2 ON v1.state = v2.state INNER JOIN contestants c2 ON v2.contestant_number = c2.contestant_number WHERE c1.contestant_name = 'Tabatha Gehling' AND c2.contestant_name = 'Kelly Clauss'",
+      "generation_seconds": 46.587178
+    },
+    {
+      "question": "Give the names of the nations that were founded after 1950.",
+      "generated_answer": "SELECT name FROM country WHERE year > 1950",
+      "generation_seconds": 16.632824
+    },
+    {
+      "question": "How many countries have governments that are republics?",
+      "generated_answer": "SELECT COUNT(*) FROM country WHERE governmentform = 'Republic'",
+      "generation_seconds": 25.52957
+    },
+    {
+      "question": "How much surface area do the countires in the Carribean cover together?",
+      "generated_answer": "SELECT SUM(surfacearea) FROM country WHERE region = 'Caribbean'",
+      "generation_seconds": 31.361306
+    },
+    {
+      "question": "What region is Kabul in?",
+      "generated_answer": "SELECT region FROM country WHERE capital = (SELECT id FROM city WHERE name = 'Kabul')",
+      "generation_seconds": 62.621489
+    },
+    {
+      "question": "What are the region and population of Angola?",
+      "generated_answer": "SELECT region, population FROM country WHERE name = 'Angola'",
+      "generation_seconds": 30.46745
+    },
+    {
+      "question": "How long is the people's average life expectancy in Central Africa?",
+      "generated_answer": "SELECT AVG(lifeexpectancy) FROM country WHERE continent = 'Central Africa'",
+      "generation_seconds": 141.594312
+    }
+  ]
+}

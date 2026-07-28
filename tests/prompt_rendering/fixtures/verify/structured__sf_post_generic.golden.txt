@@ -1,0 +1,6 @@
+Structured verification analysis:
+1. Postcondition failure at F.dfy:12
+   Message: msg
+   Relevant contract excerpt:
+     > ensures SomeOtherClause(x)
+   Remediation: identify which ensures clause is cited at the Related location, then make every return path establish it — bind any helper result to a local variable first, then prove the clause holds on that path.

@@ -1,0 +1,517 @@
+{
+  "accuracy": 0.45,
+  "syntax_rate": 0.93,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 311.3704,
+    "mean_generation_seconds_per_example": 3.113704,
+    "examples_with_generation_timing": 100,
+    "run_wall_time_seconds": 1495.5803,
+    "adapter": "crane_shared_evaluator",
+    "dataset_source": "synthesis.evaluate",
+    "split_file": "environment/benchmark_splits/spider_dev_proportional_100x100_seed123.json",
+    "split_name": "eval"
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM singer>>",
+      "generation_seconds": 0.687025
+    },
+    {
+      "question": "What is the total number of singers?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM singer>>",
+      "generation_seconds": 0.296096
+    },
+    {
+      "question": "Find the number of concerts happened in the stadium with the highest capacity .",
+      "generated_answer": "Let's think step by step. We need to find the stadium with the highest capacity. SQL: <<SELECT stadium_id FROM stadium WHERE capacity = (SELECT MAX(capacity) FROM stadium)>>",
+      "generation_seconds": 1.121985
+    },
+    {
+      "question": "How many pets have a greater weight than 10?",
+      "generated_answer": "Let's think step by step. We need to join the `pets` table with the `has_pet` table to get the pet IDs. Then we need to filter the pets with a weight greater than 10. SQL: <<SELECT COUNT(*) FROM pets INNER JOIN has_pet ON pets.petid = has_pet.petid WHERE pets.weight > 10>>",
+      "generation_seconds": 2.201681
+    },
+    {
+      "question": "Find the weight of the youngest dog.",
+      "generated_answer": "Let's think step by step. We need to find the youngest dog, which means we need to find the minimum age of the dogs. SQL: <<SELECT MIN(pets.weight) FROM pets_1 AS pets INNER JOIN has_pet ON pets.petid = has_pet.petid INNER JOIN student ON has_pet.stuid = student.stuid WHERE pets.pettype = 'dog'>>",
+      "generation_seconds": 2.423559
+    },
+    {
+      "question": "Find number of pets owned by students who are older than 20.",
+      "generated_answer": "Let's break this down step by step:\n\n1. We need to find students who are older than 20.\n2. We need to find the pets owned by these students.\n3. We need to count the number of pets.\n\nSQL query:\n```sql\nSELECT COUNT(*) \nFROM has_pet \nJOIN student ON has_pet.stuid = student.stuid \nWHERE student.age > 20;\n```\n\nThis query joins the `has_pet` table with the `student` table on the `stuid` column. It then filters the results to only include students who are older than 20. Finally, it counts the number of rows in the result set, which gives us the number of pets owned by students who are older than 20.",
+      "generation_seconds": 4.24612
+    },
+    {
+      "question": "What type of pet is the youngest animal, and how much does it weigh?",
+      "generated_answer": "Let's break this down step by step:\n\n1. We need to find the youngest animal in the database.\n2. We need to find the type of pet that corresponds to the youngest animal.\n3. We need to find the weight of the youngest animal.\n\nSQL query:\n```sql\nSELECT \n    pets.pettype AS pet_type,\n    pets.weight AS weight\nFROM \n    pets\nJOIN \n    has_pet ON pets.petid = has_pet.petid\nJOIN \n    student ON has_pet.stuid = student.stuid\nWHERE \n    student.age = (SELECT MIN(age) FROM student)\nORDER BY \n    pets.weight ASC\nLIMIT 1;\n```\n\nThis query joins the `pets`, `has_pet`, and `student` tables to find the youngest animal and its type and weight. It then orders the results by weight in ascending order and limits the result to the first row, which will be the youngest animal.",
+      "generation_seconds": 5.123091
+    },
+    {
+      "question": "What is the average and maximum age for each pet type?",
+      "generated_answer": "Let's break this down step by step:\n\n1. We need to join the `student` table with the `has_pet` table to get the pet IDs.\n2. We then need to join the `has_pet` table with the `pets` table to get the pet details.\n3. We need to group the results by `pettype` to calculate the average and maximum age for each pet type.\n\nSQL: <<SELECT pets.pettype, AVG(pets.pet_age) AS average_age, MAX(pets.pet_age) AS max_age FROM pets INNER JOIN has_pet ON pets.petid = has_pet.petid INNER JOIN student ON has_pet.stuid = student.stuid GROUP BY pets.pettype>>",
+      "generation_seconds": 4.217982
+    },
+    {
+      "question": "How many countries exist?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM countries>>",
+      "generation_seconds": 0.31138
+    },
+    {
+      "question": "Find the make and production time of the cars that were produced in the earliest year?",
+      "generated_answer": "Let's think step by step. We need to find the make and production time of the cars that were produced in the earliest year. SQL: <<SELECT car_makers.maker, cars_data.year FROM car_makers JOIN model_list ON car_makers.id = model_list.maker JOIN car_names ON model_list.maker = car_names.model JOIN cars_data ON car_names.makeid = cars_data.id WHERE cars_data.year = (SELECT MIN(year) FROM cars_data) GROUP BY car_makers.maker, cars_data.year>>",
+      "generation_seconds": 3.659693
+    },
+    {
+      "question": "What are the different models for the cards produced after 1980?",
+      "generated_answer": "Let's think step by step. We need to join the tables to get the models. SQL: <<SELECT DISTINCT model FROM cars_data WHERE year > 1980>>",
+      "generation_seconds": 1.038558
+    },
+    {
+      "question": "What is the number of makers of care in France?",
+      "generated_answer": "Let's think step by step. We need to join the tables to get the count of makers. SQL: <<SELECT count(*) FROM car_makers JOIN countries ON car_makers.country = countries.countryid JOIN continents ON countries.continent = continents.contid JOIN car_makers AS cm ON cm.id = car_makers.id JOIN model_list ON cm.id = model_list.maker JOIN car_names ON model_list.maker = car_names.maker JOIN cars_data ON cars_data.id = car_names.makeid WHERE continents.contid = 'France'>>",
+      "generation_seconds": 3.924704
+    },
+    {
+      "question": "Which countries in europe have at least 3 car manufacturers?",
+      "generated_answer": "Let's break this down step by step:\n\n1. We need to find countries in Europe.\n2. For each country, we need to count the number of car manufacturers.\n3. We need to filter for countries with at least 3 car manufacturers.\n\nSQL query:\n```sql\nSELECT c.countryname, COUNT(cm.id) as num_manufacturers\nFROM countries c\nJOIN continents cont ON c.continent = cont.contid\nJOIN car_makers cm ON c.country = cm.country\nWHERE cont.continent = 'Europe'\nGROUP BY c.countryname\nHAVING num_manufacturers >= 3;\n```\n\nThis query joins the `countries` table with the `continents` table to filter for countries in Europe. It then joins the `car_makers` table to get the count of manufacturers for each country. Finally, it groups the results by country name and filters for countries with at least 3 manufacturers.",
+      "generation_seconds": 5.177627
+    },
+    {
+      "question": "What is the average horsepower for all cars produced before 1980 ?",
+      "generated_answer": "Let's think step by step. We need to join the tables to get the horsepower of cars produced before 1980. SQL: <<SELECT AVG(cars_data.horsepower) FROM cars_data JOIN car_makers ON cars_data.makeid = car_makers.id JOIN model_list ON car_makers.id = model_list.maker JOIN countries ON car_makers.country = countries.countryid JOIN continents ON countries.continent = continents.contid WHERE cars_data.year < 1980>>",
+      "generation_seconds": 3.42175
+    },
+    {
+      "question": "Which distinctive models are produced by maker with the full name General Motors or weighing more than 3500?",
+      "generated_answer": "Let's break down the steps:\n\n1. We need to find the distinct models produced by General Motors.\n2. We also need to find the models that weigh more than 3500.\n\nSQL: <<SELECT DISTINCT model FROM model_list WHERE maker = 'General Motors' OR weight > 3500>>",
+      "generation_seconds": 1.876953
+    },
+    {
+      "question": "What are the different years in which there were cars produced that weighed less than 4000 and also cars that weighted more than 3000 ?",
+      "generated_answer": "Let's break this down step by step:\n\n1. We need to find cars that weigh less than 4000 and cars that weigh more than 3000.\n2. We need to find the years in which these cars were produced.\n3. We need to combine these conditions to get the distinct years.\n\nSQL query:\n```sql\nSELECT DISTINCT YEAR\nFROM cars_data\nWHERE WEIGHT < 4000 OR WEIGHT > 3000;\n```\n\nThis query selects distinct years from the `cars_data` table where the weight of the car is either less than 4000 or more than 3000.",
+      "generation_seconds": 3.673222
+    },
+    {
+      "question": "For a volvo model, how many cylinders does the version with least accelerate have?",
+      "generated_answer": "Let's break this down step by step:\n\n1. We need to find the model with the least accelerate for a Volvo model.\n2. We need to find the number of cylinders for that model.\n\nSQL query:\n```sql\nSELECT COUNT(cylinders) \nFROM cars_data \nWHERE model = (SELECT model FROM model_list WHERE maker = 'Volvo' AND model IN (SELECT model FROM car_names WHERE make = 'Volvo'))\nORDER BY accelerate ASC\nLIMIT 1;\n```",
+      "generation_seconds": 2.716644
+    },
+    {
+      "question": "What are the names of the countries with no car makers?",
+      "generated_answer": "Let's think step by step. We need to find countries that do not have any car makers. SQL: <<SELECT countryname FROM countries WHERE countryid NOT IN (SELECT countryid FROM car_makers)>>",
+      "generation_seconds": 1.222198
+    },
+    {
+      "question": "Which country does Airline \"JetBlue Airways\" belong to?",
+      "generated_answer": "Let's think step by step. We need to join the airlines table with the flights table to get the airline name, and then join the flights table with the airports table to get the country. SQL: <<SELECT T2.country FROM flights AS T1 JOIN airlines AS T2 ON T1.airline = T2.airline WHERE T1.airline = 'JetBlue Airways'>>",
+      "generation_seconds": 2.299172
+    },
+    {
+      "question": "How many airports do we have?",
+      "generated_answer": "Let's think step by step. We only need the airports table. SQL: <<SELECT count(*) FROM airports>>",
+      "generation_seconds": 0.668439
+    },
+    {
+      "question": "Which airline has abbreviation 'UAL'?",
+      "generated_answer": "Let's think step by step. We need to join the airlines table with the flights table to get the airline name. SQL: <<SELECT airlines.airline FROM airlines JOIN flights ON airlines.uid = flights.airline WHERE airlines.abbreviation = 'UAL'>>",
+      "generation_seconds": 1.501805
+    },
+    {
+      "question": "Return the name of the airport with code 'AKO'.",
+      "generated_answer": "SQL: <<SELECT airportname FROM airports WHERE airportcode = 'AKO'>>",
+      "generation_seconds": 0.525174
+    },
+    {
+      "question": "Give the number of Jetblue Airways flights.",
+      "generated_answer": "Let's think step by step. We need to join the flights table with the airlines table to get the airline name. SQL: <<SELECT count(*) FROM flights JOIN airlines ON flights.airline = airlines.uid WHERE airlines.airline = 'Jetblue Airways'>>",
+      "generation_seconds": 1.527155
+    },
+    {
+      "question": "Count the number of United Airlines flights that arrive in Aberdeen.",
+      "generated_answer": "Let's think step by step. We need to join the flights table with the airports table to get the destination airport. Then we need to filter for United Airlines and Aberdeen. SQL: <<SELECT count(*) FROM flights INNER JOIN airports ON flights.destairport = airports.airportcode WHERE airports.airportname = 'Aberdeen' AND flights.airline = 'United Airlines'>>",
+      "generation_seconds": 2.270194
+    },
+    {
+      "question": "What is the code of airport that has fewest number of flights?",
+      "generated_answer": "Let's think step by step. We need to find the airport with the fewest number of flights. SQL: <<SELECT airportcode FROM airports WHERE airportcode IN (SELECT destairport FROM flights GROUP BY destairport ORDER BY COUNT(*) LIMIT 1)>>",
+      "generation_seconds": 1.497914
+    },
+    {
+      "question": "Find the abbreviation and country of the airline that has fewest number of flights?",
+      "generated_answer": "Let's think step by step. We need to find the airline with the fewest number of flights. SQL: <<SELECT airline , country FROM airlines WHERE airline IN (SELECT airline FROM flights GROUP BY airline ORDER BY COUNT(*) LIMIT 1)>>",
+      "generation_seconds": 1.434786
+    },
+    {
+      "question": "Find the names of employees who never won any award in the evaluation.",
+      "generated_answer": "Let's think step by step. We need to find employees who have never won any award. SQL: <<SELECT name FROM employee WHERE employee_id NOT IN (SELECT employee_id FROM evaluation)>>",
+      "generation_seconds": 1.092212
+    },
+    {
+      "question": "What is the name of the shop that is hiring the largest number of employees?",
+      "generated_answer": "Let's think step by step. We need to find the shop with the largest number of employees. SQL: <<SELECT shop.name FROM shop INNER JOIN hiring ON shop.shop_id = hiring.shop_id GROUP BY shop.name ORDER BY COUNT(hiring.employee_id) DESC LIMIT 1>>",
+      "generation_seconds": 1.690387
+    },
+    {
+      "question": "How many documents do we have?",
+      "generated_answer": "Let's think step by step. We only need the documents table. SQL: <<SELECT count(*) FROM documents>>",
+      "generation_seconds": 0.66888
+    },
+    {
+      "question": "What is the document name and template id for document with description with the letter 'w' in it?",
+      "generated_answer": "Let's think step by step. We need to find the document name and template id. SQL: <<SELECT documents.document_name , templates.template_id FROM documents JOIN templates ON documents.template_id = templates.template_id WHERE documents.document_description LIKE '%w%>>",
+      "generation_seconds": 1.530402
+    },
+    {
+      "question": "Return the document id, template id, and description for the document with the name Robbin CV.",
+      "generated_answer": "SQL: <<SELECT documents.document_id, templates.template_id, ref_template_types.template_type_description FROM documents INNER JOIN templates ON documents.template_id = templates.template_id INNER JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code WHERE documents.document_name = 'Robbin CV'>>",
+      "generation_seconds": 1.990269
+    },
+    {
+      "question": "Return the ids of templates that have the code PP or PPT.",
+      "generated_answer": "SQL: <<SELECT template_id FROM templates WHERE template_type_code IN ('PP', 'PPT')>>",
+      "generation_seconds": 0.646401
+    },
+    {
+      "question": "What is the version number and template type code for the template with version number later than 5?",
+      "generated_answer": "Let's think step by step. We need to join the tables to get the version number and template type code. SQL: <<SELECT templates.version_number , ref_template_types.template_type_code FROM templates INNER JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code WHERE templates.version_number > 5>>",
+      "generation_seconds": 1.939428
+    },
+    {
+      "question": "Which template type code has most number of templates?",
+      "generated_answer": "Let's think step by step. We need to find the template type code with the most number of templates. SQL: <<SELECT template_type_code FROM templates GROUP BY template_type_code ORDER BY COUNT(*) DESC LIMIT 1>>",
+      "generation_seconds": 1.284089
+    },
+    {
+      "question": "Show all template type codes with less than three templates.",
+      "generated_answer": "SQL: <<SELECT template_type_code FROM ref_template_types WHERE template_type_code IN (SELECT template_type_code FROM templates WHERE template_id IN (SELECT template_id FROM documents WHERE document_id IN (SELECT document_id FROM paragraphs))) GROUP BY template_type_code HAVING count(*) < 3>>",
+      "generation_seconds": 1.894382
+    },
+    {
+      "question": "What the smallest version number and its template type code?",
+      "generated_answer": "Let's think step by step. We need to find the minimum version number and its corresponding template type code. SQL: <<SELECT min(version_number), template_type_code FROM templates INNER JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code>>",
+      "generation_seconds": 1.585831
+    },
+    {
+      "question": "Return the different descriptions for templates that have been used in a document.",
+      "generated_answer": "Let's think step by step. We need to join the tables to get the descriptions. SQL: <<SELECT DISTINCT ref_template_types.template_type_description FROM ref_template_types INNER JOIN templates ON ref_template_types.template_type_code = templates.template_type_code INNER JOIN documents ON templates.template_id = documents.template_id INNER JOIN paragraphs ON documents.document_id = paragraphs.document_id>>",
+      "generation_seconds": 2.214164
+    },
+    {
+      "question": "What are the template ids with template type description \"Presentation\".",
+      "generated_answer": "SQL: <<SELECT template_id FROM templates WHERE template_type_code = (SELECT template_type_code FROM ref_template_types WHERE template_type_description = 'Presentation')>>",
+      "generation_seconds": 0.974193
+    },
+    {
+      "question": "How many paragraphs in total?",
+      "generated_answer": "Let's think step by step. We need to count the number of paragraphs. SQL: <<SELECT count(*) FROM paragraphs>>",
+      "generation_seconds": 0.716531
+    },
+    {
+      "question": "Show all document ids, names and the number of paragraphs in each document.",
+      "generated_answer": "SQL: <<SELECT documents.document_id, documents.document_name, COUNT(paragraphs.paragraph_id) FROM documents JOIN paragraphs ON documents.document_id = paragraphs.document_id JOIN templates ON documents.template_id = templates.template_id JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code GROUP BY documents.document_id, documents.document_name>>",
+      "generation_seconds": 2.462343
+    },
+    {
+      "question": "Return the id and name of the document with the most paragraphs.",
+      "generated_answer": "SQL: <<SELECT documents.document_id, ref_template_types.template_type_description FROM templates INNER JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code INNER JOIN documents ON templates.template_id = documents.template_id INNER JOIN paragraphs ON documents.document_id = paragraphs.document_id GROUP BY documents.document_id, ref_template_types.template_type_description ORDER BY COUNT(paragraphs.paragraph_id) DESC LIMIT 1>>",
+      "generation_seconds": 3.347868
+    },
+    {
+      "question": "What are the age and hometown of teachers?",
+      "generated_answer": "Let's think step by step. We need the teacher table. SQL: <<SELECT teacher_id , name , age , hometown FROM teacher>>",
+      "generation_seconds": 0.815269
+    },
+    {
+      "question": "Show different hometown of teachers and the number of teachers from each hometown.",
+      "generated_answer": "Let's think step by step. We need to join the teacher and course_arrange tables to get the hometown of each teacher. SQL: <<SELECT teacher.hometown , count(*) FROM teacher JOIN course_arrange ON teacher.teacher_id = course_arrange.teacher_id GROUP BY teacher.hometown>>",
+      "generation_seconds": 1.717385
+    },
+    {
+      "question": "Show the name of the teacher for the math course.",
+      "generated_answer": "Let's think step by step. We need to join the teacher and course_arrange tables to get the teacher's name for the math course. SQL: <<SELECT teacher.name FROM teacher INNER JOIN course_arrange ON teacher.teacher_id = course_arrange.teacher_id INNER JOIN course ON course_arrange.course_id = course.course_id WHERE course.course = 'math'>>",
+      "generation_seconds": 2.234339
+    },
+    {
+      "question": "Show names of teachers and the number of courses they teach.",
+      "generated_answer": "SQL: <<SELECT teacher.name , count(*) FROM teacher JOIN course_arrange ON teacher.teacher_id = course_arrange.teacher_id GROUP BY teacher.name>>",
+      "generation_seconds": 0.964795
+    },
+    {
+      "question": "Find the average number of staff working for the museums that were open before 2009.",
+      "generated_answer": "Let's think step by step. We need to join the museum and visit tables to get the number of staff for each museum. Then we filter the museums that were open before 2009. Finally, we calculate the average number of staff. SQL: <<SELECT AVG(m.num_of_staff) FROM museum AS m JOIN visit AS v ON m.museum_id = v.museum_id WHERE v.open_year < 2009>>",
+      "generation_seconds": 2.652873
+    },
+    {
+      "question": "What is the name of the museum that had no visitor yet?",
+      "generated_answer": "Let's think step by step. We need to find the museum that has no visit. SQL: <<SELECT name FROM museum WHERE museum_id NOT IN (SELECT museum_id FROM visit) >>",
+      "generation_seconds": 1.110465
+    },
+    {
+      "question": "List the first name and birth date of all players from the country with code USA.",
+      "generated_answer": "Let's think step by step. We need the players table. We need to filter by country code USA. SQL: <<SELECT first_name , birth_date FROM players WHERE country_code = 'USA'>>",
+      "generation_seconds": 1.18586
+    },
+    {
+      "question": "What are the names of tournaments that have more than 10 matches?",
+      "generated_answer": "Let's think step by step. We need to join the `matches` and `tournaments` tables to get the tournament names. We also need to filter the matches to only include those with more than 10 matches. SQL: <<SELECT DISTINCT T1.tourney_name FROM tournaments AS T1 JOIN matches AS T2 ON T1.tourney_id = T2.tourney_id WHERE T2.match_num > 10>>",
+      "generation_seconds": 2.615869
+    },
+    {
+      "question": "List the number of all matches who played in years of 2013 or 2016.",
+      "generated_answer": "Let's think step by step. We need to join the `matches` table with the `tournaments` table to get the year of the tournament. SQL: <<SELECT COUNT(*) FROM matches JOIN tournaments ON matches.tourney_id = tournaments.tourney_id WHERE tournaments.year IN (2013, 2016)>>",
+      "generation_seconds": 2.040692
+    },
+    {
+      "question": "Find the first name and country code of the oldest player.",
+      "generated_answer": "Let's think step by step. We need the player table. SQL: <<SELECT first_name , country_code FROM players WHERE player_id = (SELECT winner_id FROM matches ORDER BY winner_age DESC LIMIT 1)>>",
+      "generation_seconds": 1.296008
+    },
+    {
+      "question": "List the first and last name of all players who are left / L hand in the order of birth date.",
+      "generated_answer": "Let's think step by step. We need the players table. We need to filter by hand = 'L'. We need to order by birth_date. SQL: <<SELECT first_name, last_name FROM players WHERE hand = 'L' ORDER BY birth_date>>",
+      "generation_seconds": 1.53534
+    },
+    {
+      "question": "What is the first name and country code of the player with the most tours?",
+      "generated_answer": "Let's think step by step. We need the player table. SQL: <<SELECT first_name , country_code FROM players WHERE player_id = (SELECT winner_id FROM matches WHERE winner_id = players.player_id GROUP BY winner_id ORDER BY COUNT(*) DESC LIMIT 1)>>",
+      "generation_seconds": 1.664872
+    },
+    {
+      "question": "Find the codes of countries that have more than 50 players.",
+      "generated_answer": "Let's think step by step. We need to join the players table with the matches table to get the winner and loser ids. Then we join the matches table with the tournaments table to get the tourney_id. We then join the tournaments table with the countries table to get the country_code. We filter the countries table to only include countries with more than 50 players. SQL: <<SELECT countries.country_code FROM countries INNER JOIN tournaments ON countries.tournament_id = tournaments.tournament_id INNER JOIN matches ON tournaments.tournament_id = matches.tournament_id INNER JOIN players ON matches.winner_id = players.player_id OR matches.loser_id = players.player_id WHERE COUNT(players.player_id) > 50>>",
+      "generation_seconds": 4.489091
+    },
+    {
+      "question": "Find the name and rank of the 3 youngest winners across all matches.",
+      "generated_answer": "Let's break this down step by step:\n\n1. We need to find the youngest winners across all matches.\n2. We can use the `min` function to find the minimum age among all winners.\n3. We need to join the `matches` table with the `players` table to get the names and ranks of the winners.\n4. We need to filter the results to only include the youngest winners.\n\nSQL: <<SELECT players.first_name, players.last_name, rankings.ranking_points FROM players INNER JOIN matches ON players.player_id = matches.winner_id INNER JOIN rankings ON players.player_id = rankings.player_id WHERE players.age = (SELECT min(age) FROM matches) ORDER BY rankings.ranking_points DESC LIMIT 3>>",
+      "generation_seconds": 4.511894
+    },
+    {
+      "question": "What is the average number of injuries caused each time?",
+      "generated_answer": "Let's think step by step. We need to join the death table with the battle table to get the number of injuries. SQL: <<SELECT AVG(T2.killed + T2.injured) FROM death AS T1 JOIN battle AS T2 ON T1.caused_by_ship_id = T2.id>>",
+      "generation_seconds": 1.888832
+    },
+    {
+      "question": "What are the distinct battle names which are between bulgarian commander 'Kaloyan' and latin commander 'Baldwin I'?",
+      "generated_answer": "Let's think step by step. We need to join the battle, ship, and death tables. We need to filter by the bulgarian commander 'Kaloyan' and the latin commander 'Baldwin I'. SQL: <<SELECT DISTINCT b.name FROM battle b JOIN ship s ON b.id = s.lost_in_battle JOIN death d ON s.id = d.caused_by_ship_id WHERE b.bulgarian_commander = 'Kaloyan' AND b.latin_commander = 'Baldwin I'>>",
+      "generation_seconds": 3.415435
+    },
+    {
+      "question": "How many degrees does the engineering department offer?",
+      "generated_answer": "Let's break down the steps:\n\n1. We need to find the number of degrees offered by the engineering department.\n2. We can join the `departments` table with the `degree_programs` table on the `department_id` to get the department name.\n3. We need to filter the results to only include degrees offered by the engineering department.\n4. We can use a WHERE clause to filter the results based on the department name.\n\nSQL: <<SELECT COUNT(*) FROM degree_programs WHERE department_id = (SELECT department_id FROM departments WHERE department_name = 'Engineering')>>",
+      "generation_seconds": 3.291243
+    },
+    {
+      "question": "What are the names and ids of every course with less than 2 sections?",
+      "generated_answer": "SQL: <<SELECT courses.course_name, courses.course_id FROM courses WHERE courses.course_id IN (SELECT course_id FROM sections WHERE sections.section_id IN (SELECT student_enrolment_courses.student_enrolment_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.semester_id IN (SELECT semester_id FROM semesters WHERE semesters.semester_id IN (SELECT semester_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student_enrolment.student_id IN (SELECT student_id FROM students WHERE students.student_id IN (SELECT student_id FROM student_enrolment_courses WHERE student_enrolment_courses.student_enrolment_id IN (SELECT student_enrolment_id FROM student_enrolment WHERE student",
+      "generation_seconds": 111.555792
+    },
+    {
+      "question": "Which student has enrolled for the most times in any program? List the id, first name, middle name, last name, the number of enrollments and student id.",
+      "generated_answer": "SQL: <<SELECT s.student_id, s.first_name, s.middle_name, s.last_name, COUNT(te.degree_program_id) AS num_enrollments FROM students s JOIN student_enrolment te ON s.student_id = te.student_id GROUP BY s.student_id ORDER BY num_enrollments DESC LIMIT 1>>",
+      "generation_seconds": 2.307215
+    },
+    {
+      "question": "What are the last name of the students who live in North Carolina but have not registered in any degree programs?",
+      "generated_answer": "SQL: <<SELECT DISTINCT last_name FROM students WHERE permanent_address_id IN (SELECT address_id FROM addresses WHERE state_province_county = 'North Carolina') AND student_id NOT IN (SELECT student_id FROM student_enrolment WHERE degree_program_id IS NOT NULL)>>",
+      "generation_seconds": 1.716368
+    },
+    {
+      "question": "Show the date and id of the transcript with at least 2 course results.",
+      "generated_answer": "SQL: <<SELECT T1.transcript_date, T1.transcript_id FROM transcripts AS T1 JOIN transcript_contents AS T2 ON T1.transcript_id = T2.transcript_id WHERE T2.student_course_id IN (SELECT student_course_id FROM student_enrolment_courses WHERE course_id IN (SELECT course_id FROM sections WHERE course_id IN (SELECT course_id FROM courses))) GROUP BY T1.transcript_date, T1.transcript_id HAVING COUNT(T2.student_course_id) >= 2>>",
+      "generation_seconds": 3.898367
+    },
+    {
+      "question": "What is the id, line 1, and line 2 of the address with the most students?",
+      "generated_answer": "SQL: <<SELECT addresses.address_id, addresses.line_1, addresses.line_2 FROM addresses JOIN student_enrolment ON addresses.address_id = student_enrolment.permanent_address_id WHERE student_enrolment.student_id IN (SELECT student_id FROM student_enrolment GROUP BY student_id ORDER BY COUNT(*) DESC LIMIT 1) ORDER BY addresses.address_id ASC LIMIT 1>>",
+      "generation_seconds": 2.63717
+    },
+    {
+      "question": "How many times at most can a course enrollment result show in different transcripts? Also show the course enrollment id.",
+      "generated_answer": "SQL: <<SELECT COUNT(DISTINCT student_enrolment_id) FROM student_enrolment_courses>>",
+      "generation_seconds": 0.655404
+    },
+    {
+      "question": "How many cartoons were written by \"Joseph Kuhr\"?",
+      "generated_answer": "Let's think step by step. We need to join the `cartoon` table with the `tv_channel` table to get the channel information. Then we need to join the `tv_series` table to get the channel information. Finally, we can filter the results to find the cartoons written by \"Joseph Kuhr\". SQL: <<SELECT COUNT(*) FROM cartoon AS T1 JOIN tv_channel AS T2 ON T1.channel = T2.id JOIN tv_series AS T3 ON T2.id = T3.channel WHERE T1.directed_by = 'Joseph Kuhr'>>",
+      "generation_seconds": 3.477671
+    },
+    {
+      "question": "How many TV Channel using language English?",
+      "generated_answer": "Let's think step by step. We need to count the number of TV channels that use English as their language. SQL: <<SELECT count(*) FROM tv_channel WHERE language = 'English'>>",
+      "generation_seconds": 1.124759
+    },
+    {
+      "question": "For each language, list the number of TV Channels that use it.",
+      "generated_answer": "Let's think step by step. We need to count the number of TV Channels for each language. SQL: <<SELECT language , count(*) FROM tv_channel GROUP BY language>>",
+      "generation_seconds": 1.006626
+    },
+    {
+      "question": "Find the series name and country of the tv channel that is playing some cartoons directed by Ben Jones and Michael Chang?",
+      "generated_answer": "Let's think step by step. We need to find the series name and country of the TV channel that is playing some cartoons directed by Ben Jones and Michael Chang. SQL: <<SELECT T1.series_name, T1.country FROM tv_channel AS T1 JOIN tv_series AS T2 ON T1.id = T2.channel JOIN cartoon AS T3 ON T1.id = T3.channel WHERE T3.directed_by = 'Ben Jones' AND T3.directed_by = 'Michael Chang'>>",
+      "generation_seconds": 3.199258
+    },
+    {
+      "question": "What are the names of poker players?",
+      "generated_answer": "Let's think step by step. We only need the poker_player table. SQL: <<SELECT name FROM poker_player>>",
+      "generation_seconds": 0.694421
+    },
+    {
+      "question": "List the names of poker players ordered by the final tables made in ascending order.",
+      "generated_answer": "Let's think step by step. We need the poker_player table. We need to join it with the people table. We need to filter by poker_player.people_id = people.people_id. We need to order by final_table_made in ascending order. SQL: <<SELECT name FROM poker_player INNER JOIN people ON poker_player.people_id = people.people_id ORDER BY final_table_made ASC>>",
+      "generation_seconds": 2.24978
+    },
+    {
+      "question": "What is the birth date of the poker player with the lowest earnings?",
+      "generated_answer": "Let's think step by step. We need to find the poker player with the lowest earnings. Then, we need to find the birth date of that poker player. SQL: <<SELECT birth_date FROM poker_player INNER JOIN people ON poker_player.people_id = people.people_id ORDER BY earnings LIMIT 1>>",
+      "generation_seconds": 1.743955
+    },
+    {
+      "question": "What is the average earnings of poker players with height higher than 200?",
+      "generated_answer": "Let's think step by step. We need the poker_player table. We need to join it with the people table. We need to filter by height > 200. We need to calculate the average earnings. SQL: <<SELECT AVG(earnings) FROM poker_player JOIN people ON poker_player.people_id = people.people_id WHERE people.height > 200>>",
+      "generation_seconds": 2.213649
+    },
+    {
+      "question": "What are different nationalities of people and the corresponding number of people from each nation?",
+      "generated_answer": "Let's think step by step. We need to join the poker_player table with the people table on the people_id column. Then we can use the GROUP BY clause to group the results by nationality. SQL: <<SELECT nationality , count(*) FROM poker_player JOIN people ON poker_player.people_id = people.people_id GROUP BY nationality>>",
+      "generation_seconds": 1.896572
+    },
+    {
+      "question": "How many people are there of each nationality?",
+      "generated_answer": "Let's think step by step. We need to join the poker_player table with the people table on the people_id column. Then we can use the GROUP BY clause to group the results by nationality. SQL: <<SELECT nationality , count(*) FROM poker_player JOIN people ON poker_player.people_id = people.people_id GROUP BY nationality>>",
+      "generation_seconds": 1.897287
+    },
+    {
+      "question": "List the names and birth dates of people in ascending alphabetical order of name.",
+      "generated_answer": "Let's think step by step. We need the people table. SQL: <<SELECT name , birth_date FROM people ORDER BY name ASC>>",
+      "generation_seconds": 0.814568
+    },
+    {
+      "question": "What are the contestant numbers and names of the contestants who had at least two votes?",
+      "generated_answer": "Let's think step by step. We need to join the `contestants` table with the `votes` table on the `contestant_number` column. We also need to filter the results to only include contestants who have at least two votes. SQL: <<SELECT contestants.contestant_number, contestants.contestant_name FROM contestants JOIN votes ON contestants.contestant_number = votes.contestant_number GROUP BY contestants.contestant_number, contestants.contestant_name HAVING COUNT(votes.vote_id) >= 2>>",
+      "generation_seconds": 3.225447
+    },
+    {
+      "question": "List the area codes in which voters voted both for the contestant 'Tabatha Gehling' and the contestant 'Kelly Clauss'.",
+      "generated_answer": "Let's think step by step. We need to join the tables to get the area codes where voters voted for both contestants. SQL: <<SELECT DISTINCT area_code FROM votes WHERE state = 'TX' AND contestant_number IN (SELECT contestant_number FROM contestants WHERE contestant_name = 'Tabatha Gehling') AND contestant_number IN (SELECT contestant_number FROM contestants WHERE contestant_name = 'Kelly Clauss')>>",
+      "generation_seconds": 2.465747
+    },
+    {
+      "question": "Which continent is Anguilla in?",
+      "generated_answer": "Let's think step by step. We need to find the continent of Anguilla. SQL: <<SELECT continent FROM country WHERE code = 'AGI'>>",
+      "generation_seconds": 0.944193
+    },
+    {
+      "question": "What region does Angola belong to and what is its population?",
+      "generated_answer": "Let's break this down step by step:\n\n1. We need to find the region of Angola.\n2. We need to find the population of Angola.\n\nSQL: <<SELECT region FROM country WHERE name = 'Angola'>>",
+      "generation_seconds": 1.289233
+    },
+    {
+      "question": "Which continent has the most diverse languages?",
+      "generated_answer": "Let's think step by step. We need to find the continent with the most diverse languages. SQL: <<SELECT continent FROM countrylanguage GROUP BY continent ORDER BY count(*) DESC LIMIT 1>>",
+      "generation_seconds": 1.11052
+    },
+    {
+      "question": "What is the number of nations that use English and Dutch?",
+      "generated_answer": "Let's think step by step. We need to join the `countrylanguage` table with the `country` table to filter for English and Dutch. Then we can count the number of unique countries that use English and Dutch. SQL: <<SELECT count(DISTINCT countrycode) FROM countrylanguage WHERE language IN ('English', 'Dutch') AND countrycode IN (SELECT code FROM country WHERE language IN ('English', 'Dutch'))>>",
+      "generation_seconds": 2.574901
+    },
+    {
+      "question": "What are the Asian countries which have a population larger than that of any country in Africa?",
+      "generated_answer": "Let's break this down step by step:\n\n1. We need to find countries in Asia.\n2. We need to compare the population of these Asian countries with the population of any country in Africa.\n3. We need to find the country in Africa with the largest population.\n\nSQL query:\n```sql\nSELECT countrycode, name, continent, region, surfacearea, indepyear, population, lifeexpectancy, gnp, gnpold, localname, governmentform, headofstate, capital, code2\nFROM country\nWHERE continent = 'Asia'\nAND population > (\n    SELECT MAX(population)\n    FROM country\n    WHERE continent = 'Africa'\n);\n```\n\nThis query selects the country code, name, continent, region, surface area, independence year, population, life expectancy, GNP, GNP old, local name, government form, head of state, capital, and code 2 for countries in Asia that have a population larger than the largest population in Africa.",
+      "generation_seconds": 5.458599
+    },
+    {
+      "question": "Return the different names of cities that are in Asia and for which Chinese is the official language.",
+      "generated_answer": "Let's think step by step. We need the city table. We need to join it with the country table. We need to filter by the continent column. We need to filter by the language column. SQL: <<SELECT DISTINCT name FROM city WHERE continent = 'Asia' AND language = 'Chinese' AND countrycode = country.code AND countrylanguage.isofficial = 1>>",
+      "generation_seconds": 2.234258
+    },
+    {
+      "question": "Give the name, population, and head of state for the country that has the largest area.",
+      "generated_answer": "Let's think step by step. We need to find the country with the largest area. SQL: <<SELECT country.name , population , headofstate FROM country WHERE surfacearea = (SELECT MAX(surfacearea) FROM country)>>",
+      "generation_seconds": 1.363148
+    },
+    {
+      "question": "Count the number of countries in Asia.",
+      "generated_answer": "Let's think step by step. We need the country table. SQL: <<SELECT count(*) FROM country WHERE continent = 'Asia'>>",
+      "generation_seconds": 0.812447
+    },
+    {
+      "question": "What is the total number of countries where Spanish is spoken by the largest percentage of people?",
+      "generated_answer": "Let's break down the steps:\n\n1. We need to find countries where Spanish is spoken by the largest percentage of people.\n2. We can use the `countrylanguage` table to filter countries where Spanish is spoken.\n3. We need to find the country with the highest percentage of people speaking Spanish.\n4. We can use the `country` table to get the total number of countries.\n\nSQL: <<SELECT COUNT(*) FROM country WHERE countrycode IN (SELECT countrycode FROM countrylanguage WHERE language = 'Spanish')>>",
+      "generation_seconds": 2.938919
+    },
+    {
+      "question": "How many orchestras does each record company manage?",
+      "generated_answer": "Let's think step by step. We need to count the number of orchestras for each record company. SQL: <<SELECT record_company, COUNT(*) FROM orchestra GROUP BY record_company>>",
+      "generation_seconds": 1.056872
+    },
+    {
+      "question": "List the record company shared by the most number of orchestras.",
+      "generated_answer": "Let's think step by step. We need to find the record company shared by the most number of orchestras. SQL: <<SELECT record_company FROM orchestra GROUP BY record_company ORDER BY COUNT(*) DESC LIMIT 1>>",
+      "generation_seconds": 1.253813
+    },
+    {
+      "question": "What is the record company used by the greatest number of orchestras?",
+      "generated_answer": "Let's think step by step. We need to find the record company used by the greatest number of orchestras. SQL: <<SELECT record_company FROM orchestra GROUP BY record_company ORDER BY COUNT(*) DESC LIMIT 1>>",
+      "generation_seconds": 1.263286
+    },
+    {
+      "question": "What are the record companies that are used by both orchestras founded before 2003 and those founded after 2003?",
+      "generated_answer": "Let's break this down step by step:\n\n1. We need to find all record companies used by orchestras founded before 2003.\n2. We need to find all record companies used by orchestras founded after 2003.\n3. We need to find the intersection of these two sets.\n\nSQL query:\n```sql\nSELECT DISTINCT o.record_company\nFROM orchestra o\nJOIN performance p ON o.orchestra_id = p.orchestra_id\nJOIN show s ON p.performance_id = s.performance_id\nJOIN conductor c ON o.conductor_id = c.conductor_id\nWHERE o.year_of_founded < 2003\nINTERSECT\nSELECT DISTINCT o.record_company\nFROM orchestra o\nJOIN performance p ON o.orchestra_id = p.orchestra_id\nJOIN show s ON p.performance_id = s.performance_id\nJOIN conductor c ON o.conductor_id = c.conductor_id\nWHERE o.year_of_founded > 2003;\n```\n\nThis query joins the necessary tables to get the record companies used by orchestras founded before and after 2003, then uses the INTERSECT operator to find the common record companies.",
+      "generation_seconds": 6.693415
+    },
+    {
+      "question": "Show the ids of high schoolers who have friends and are also liked by someone else.",
+      "generated_answer": "Let's think step by step. We need to join the highschooler table with the friend and likes tables. SQL: <<SELECT highschooler.id FROM highschooler INNER JOIN friend ON highschooler.id = friend.student_id INNER JOIN likes ON highschooler.id = likes.liked_id WHERE friend.friend_id = highschooler.id AND likes.student_id = highschooler.id>>",
+      "generation_seconds": 2.541995
+    },
+    {
+      "question": "List each owner's first name, last name, and the size of his for her dog.",
+      "generated_answer": "SQL: <<SELECT owners.first_name, owners.last_name, sizes.size_description FROM dogs JOIN owners ON dogs.owner_id = owners.owner_id JOIN sizes ON dogs.size_code = sizes.size_code>>",
+      "generation_seconds": 1.270521
+    },
+    {
+      "question": "What are each owner's first name, last name, and the size of their dog?",
+      "generated_answer": "Let's think step by step. We need the owners table and the dogs table. We need to join these tables on the owner_id and dog_id columns. SQL: <<SELECT owners.first_name, owners.last_name, dogs.size_code FROM owners JOIN dogs ON owners.owner_id = dogs.owner_id>>",
+      "generation_seconds": 1.758868
+    },
+    {
+      "question": "List pairs of the owner's first name and the dogs's name.",
+      "generated_answer": "Let's think step by step. We need to join the `owners` table with the `dogs` table on the `owner_id` column. SQL: <<SELECT owners.first_name, dogs.name FROM owners JOIN dogs ON owners.owner_id = dogs.owner_id>>",
+      "generation_seconds": 1.541038
+    },
+    {
+      "question": "How many dogs have an age below the average?",
+      "generated_answer": "Let's think step by step. We need to find the average age of dogs. SQL: <<SELECT AVG(dogs.age) FROM dogs>>",
+      "generation_seconds": 0.8256
+    },
+    {
+      "question": "How much does each charge type costs? List both charge type and amount.",
+      "generated_answer": "Let's think step by step. We need to join the charges table with the treatments table to get the charge type and amount. SQL: <<SELECT charge_type, charge_amount FROM charges JOIN treatments ON charges.charge_id = treatments.charge_id>>",
+      "generation_seconds": 1.448775
+    },
+    {
+      "question": "List each charge type and its amount.",
+      "generated_answer": "SQL: <<SELECT charge_type , charge_amount FROM charges>>",
+      "generation_seconds": 0.380274
+    },
+    {
+      "question": "List the email, cell phone and home phone of all the professionals.",
+      "generated_answer": "SQL: <<SELECT email_address, home_phone, cell_number FROM professionals>>",
+      "generation_seconds": 0.466086
+    },
+    {
+      "question": "List the name of singers whose citizenship is not \"France\".",
+      "generated_answer": "Let's think step by step. We only need the singer table. SQL: <<SELECT name FROM singer WHERE citizenship != 'France'>>",
+      "generation_seconds": 0.800408
+    },
+    {
+      "question": "For each citizenship, how many singers are from that country?",
+      "generated_answer": "Let's think step by step. We need to join the singer table with the song table to get the citizenship information. Then we can use a GROUP BY clause to group by citizenship and count the number of singers for each citizenship. SQL: <<SELECT citizenship , count(*) FROM singer JOIN song ON singer.singer_id = song.singer_id GROUP BY citizenship>>",
+      "generation_seconds": 2.030649
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "billed_api_calls": 0,
+  "checked_at_utc": "2026-06-29T20:51:39.260989+00:00",
+  "conclusion": "provenance_risk_needs_isolation_or_prelaunch_snapshot",
+  "current_heldout_subset": {
+    "accuracy": 0.27,
+    "syntax_rate": 0.97
+  },
+  "exists": {
+    "h70_dry": true,
+    "h70_launcher": true,
+    "heldout": true,
+    "old_generated_root": true,
+    "pilot": true
+  },
+  "gpu_calls": 0,
+  "h70_dry_run": {
+    "account_record": "887730490125",
+    "billed_api_calls": 0,
+    "class": "acrylates",
+    "dry_run": true,
+    "eval_model": "Qwen/Qwen3.5-2B",
+    "gpu_calls": 0,
+    "h65_guard": "real launch refuses while H65 pid is alive unless ALLOW_WHILE_H65_RUNNING=yes",
+    "hypothesis": "H70",
+    "max_iterations": 40,
+    "min_acc": 0.36,
+    "min_syn": 0.5,
+    "model_calls": 0,
+    "planned_command": "./pilot_smiles_uv_qwen35_i40.shQwen/Qwen3.5-2Bqwen35_2bacrylates00.200.360.50",
+    "planned_generated_root": "outputs/generated/smiles_qwen35_2b_acrylates_uv_qwen35_0627",
+    "planned_output_json": "outputs/controlled_comparison/smiles_qwen35_2b/acrylates/metadecode_uv.json",
+    "requires_real_launch_env": [
+      "DRY_RUN=0",
+      "SAFE_GPU_ID=<gpu>",
+      "CONFIRM_BEDROCK_ACCOUNT_887730490125=yes"
+    ],
+    "scientific_single_variable": "min_acc raised to live CARS UV bar 0.36",
+    "util": 0.2
+  },
+  "heldout_mtime_utc": "2026-06-28T18:13:01.144309+00:00",
+  "hypothesis": "H72",
+  "model_calls": 0,
+  "old_generated_root_entries": [
+    {
+      "mtime_utc": "2026-06-28T17:48:51.895562+00:00",
+      "name": "latest",
+      "size": 4096,
+      "type": "dir"
+    },
+    {
+      "mtime_utc": "2026-06-28T17:48:51.899562+00:00",
+      "name": "latest_run.txt",
+      "size": 125,
+      "type": "file"
+    },
+    {
+      "mtime_utc": "2026-06-28T17:14:31.136851+00:00",
+      "name": "smiles_qwen35_2b_acrylates_uv_qwen35_0627_20260628_171431_17f198",
+      "size": 4096,
+      "type": "dir"
+    },
+    {
+      "mtime_utc": "2026-06-28T17:48:51.895562+00:00",
+      "name": "smiles_qwen35_2b_acrylates_uv_qwen35_0627_20260628_174851_2fa73d",
+      "size": 4096,
+      "type": "dir"
+    }
+  ],
+  "old_latest_path_is_symlink": true,
+  "old_latest_path_target_or_resolved": "smiles_qwen35_2b_acrylates_uv_qwen35_0627_20260628_174851_2fa73d",
+  "old_latest_run_txt": "outputs/generated/smiles_qwen35_2b_acrylates_uv_qwen35_0627/smiles_qwen35_2b_acrylates_uv_qwen35_0627_20260628_174851_2fa73d",
+  "overwrites_or_updates_current_heldout_path": true,
+  "paid_credential_key_name_hits": [],
+  "paths": {
+    "h70_dry": "outputs/generated/h70_smiles_qwen35_2b_acrylates_livebar_materialization_20260629/h70_dry_run.json",
+    "h70_launcher": "outputs/generated/h70_smiles_qwen35_2b_acrylates_livebar_materialization_20260629/launch_h70_smiles_qwen35_2b_acrylates_livebar.sh",
+    "heldout": "outputs/controlled_comparison/smiles_qwen35_2b/acrylates/metadecode_uv.json",
+    "old_generated_root": "outputs/generated/smiles_qwen35_2b_acrylates_uv_qwen35_0627",
+    "pilot": "pilot_smiles_uv_qwen35_i40.sh"
+  },
+  "pilot_lines_of_interest": [
+    "OUT=\"outputs/controlled_comparison/smiles_${TAG}/${CLASS}\"",
+    "mkdir -p \"$OUT\"",
+    "\"$PY\" -m synthesis.run_synthesis \\",
+    "  --output-name \"$NAME\" --output-dir \"outputs/generated/$NAME\" \\",
+    "RUNDIR=$(cat \"outputs/generated/$NAME/latest_run.txt\" 2>/dev/null)",
+    "    --output-json \"$OUT/metadecode_uv.json\""
+  ],
+  "pilot_mentions_controlled_comparison": true,
+  "pilot_mentions_fixed_generated_root": false,
+  "pilot_mentions_latest_run": true,
+  "pilot_mentions_latest_symlink_or_dir": false,
+  "pilot_run_synthesis_output_name_lines": [
+    "--output-name \"$NAME\" --output-dir \"outputs/generated/$NAME\" \\"
+  ],
+  "planned_generated_root_matches_old_root": true,
+  "planned_heldout_matches_current_heldout": true,
+  "recommended_mitigation": [
+    "Before real H70 launch, snapshot current held-out JSON and latest_run metadata under the H70 artifact directory.",
+    "Prefer patching/materializing H70 to set or copy a unique H70 output root if pilot script supports it; otherwise record the prelaunch latest_run and heldout hash, then after launch record the new timestamped run dir and overwrite delta.",
+    "Do not claim H70 result unless the post-launch held-out JSON and train success report are copied into an H70-specific artifact folder."
+  ],
+  "uses_old_generated_root": true
+}

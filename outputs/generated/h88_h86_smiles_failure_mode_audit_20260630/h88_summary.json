@@ -1,0 +1,151 @@
+{
+  "anchors_tail": [
+    {
+      "accuracy_pct": 0.0,
+      "attempt": 1,
+      "syntax_pct": 100.0
+    },
+    {
+      "accuracy_pct": 0.0,
+      "attempt": 1,
+      "syntax_pct": 100.0
+    },
+    {
+      "accuracy_pct": 0.0,
+      "attempt": 1,
+      "syntax_pct": 100.0
+    },
+    {
+      "accuracy_pct": 0.0,
+      "attempt": 1,
+      "syntax_pct": 100.0
+    },
+    {
+      "accuracy_pct": 34.0,
+      "attempt": 8,
+      "syntax_pct": 41.0
+    },
+    {
+      "accuracy_pct": 34.0,
+      "attempt": 8,
+      "syntax_pct": 41.0
+    },
+    {
+      "accuracy_pct": 34.0,
+      "attempt": 8,
+      "syntax_pct": 41.0
+    },
+    {
+      "accuracy_pct": 34.0,
+      "attempt": 8,
+      "syntax_pct": 41.0
+    },
+    {
+      "accuracy_pct": 34.0,
+      "attempt": 8,
+      "syntax_pct": 41.0
+    },
+    {
+      "accuracy_pct": 34.0,
+      "attempt": 8,
+      "syntax_pct": 41.0
+    }
+  ],
+  "attempt_markers": {
+    "all_tail": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "count": 16,
+    "latest": 16
+  },
+  "audit_id": "H88",
+  "billed_api_calls": 0,
+  "classification": [
+    "span/control-output-budget",
+    "long-invalid-concatenated-smiles",
+    "duplicate/diversity"
+  ],
+  "evidence_snippets": {
+    "context_overflow": [
+      "// 1. The main failure mode (58/100 examples) is \"runtime_or_generation_error\" due to\n//    context length overflow: the unconstrained preamble causes the model to generate\n//    very long outputs before entering the constrained span, exceeding the 16384 token limit.",
+      "//    handle it, but the preamble itself is costly.\n// 3. The context overflow is caused by: (a) the long task guidance string being injected,\n//    and (b) the unconstrained preamble generating many tokens.",
+      "//\n// Key insight: The 58 failures are ALL due to context overflow. The 42 that succeed have\n// accuracy 40/41 = 97.6% when they produce valid output. So the strategy itself is correct",
+      "// accuracy 40/41 = 97.6% when they produce valid output. So the strategy itself is correct\n// when it runs - we just need to prevent the context overflow.\n//",
+      "// 2. ELIMINATE the unconstrained preamble entirely. Just open the constrained span immediately.\n//    The context overflow is triggered by the preamble generating long outputs.\n// 3. Open the constrained span immediately and use CloseSpanWithinBudget with the full budget."
+    ],
+    "entered_constrained_mode_too_early": [
+      "// Diagnosis: All three prior attempts produce \"tiny spans\" containing only \"C\"\n// (or similar minimal SMILES), and \"entered_constrained_mode_too_early\".\n// The model sees \"isocyanates\" as the prompt, immediately generates \"<<\" when",
+      "// We need to force the model to generate a more complex SMILES that actually\n// contains the isocyanate motif (N=C=O). The constrained span opens too early\n// before the model has any context to know what kind of SMILES to generate.",
+      "// model has context before entering the constrained SMILES span.\n// This prevents \"entered_constrained_mode_too_early\" and gives the LM a chance\n// to reason about what isocyanate SMILES to produce.",
+      "// Phase 3: Constrained SMILES generation\n// We track how many constrained tokens we have emitted to avoid closing too early.\nvar constrainedTokenCount: nat := |currentConstrainedOut|;",
+      "Strategy: // CSD_RATIONALE_BEGIN\n// The core problem is \"entered_constrained_mode_too_early\" and \"tiny_span_dominant\":\n// the model opens the constrained span immediately and generates only 1-2 tokens"
+    ],
+    "long_invalid_concatenated_smiles": [
+      "  [EVAL]   Generated 400 tokens in 46.47s\n[10:10:18] SMILES Parse Error: unclosed ring for input: 'C1=CC=C(C=C1)N=C=ON=C=O1.CCOC(CN=C=O)C(=O)N=C=O.CC1=CC=C(C=C1)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)'\n[10:10:18] SMILES Parse Error: unclosed ring for input: 'C1=CC=C(C=C1)N=C=ON=C=O1.CCOC(CN=C=O)C(=O)N=C=O.CC1=CC=C(C=C1)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(",
+      "[10:10:18] SMILES Parse Error: unclosed ring for input: 'C1=CC=C(C=C1)N=C=ON=C=O1.CCOC(CN=C=O)C(=O)N=C=O.CC1=CC=C(C=C1)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)'\n[10:10:18] SMILES Parse Error: unclosed ring for input: 'C1=CC=C(C=C1)N=C=ON=C=O1.CCOC(CN=C=O)C(=O)N=C=O.CC1=CC=C(C=C1)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(CN=C=O)C(=O)N=C=O.CC(",
+      "  [EVAL]   Generated 400 tokens in 46.19s\n[10:11:04] SMILES Parse Error: syntax error while parsing: C1=CC=C(C=C1)N=C=O.0=1C(=O)N2C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N\n[10:11:04] SMILES Parse Error: check for mistakes around position 20:",
+      "[10:11:04] ~~~~~~~~~~~~~~~~~~~~^\n[10:11:04] SMILES Parse Error: Failed parsing SMILES 'C1=CC=C(C=C1)N=C=O.0=1C(=O)N2C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N' for input: 'C1=CC=C(C=C1)N=C=O.0=1C(=O)N2C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N'\n[10:11:04] SMILES Parse Error: syntax err",
+      "[10:11:04] SMILES Parse Error: Failed parsing SMILES 'C1=CC=C(C=C1)N=C=O.0=1C(=O)N2C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N' for input: 'C1=CC=C(C=C1)N=C=O.0=1C(=O)N2C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N1C(=O)N(C)C(=O)N'\n[10:11:04] SMILES Parse Error: syntax error while parsing: C1=CC=C(C=C1)N="
+    ],
+    "prompt_duplicate_or_exemplar": [
+      "Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit)\nGenerating initial strategy for: Generate one new, valid, non-exemplar SMILES molecule for the isocyanates class. The answer contract is a single SMILES string and nothing else. Use the hidden parser-guided constrained chunk for that SMILES token sequence and avoid copying prompt exemplars.\n",
+      "// 1. Emit task guidance to steer the model toward generating a novel isocyanate\n//    SMILES (not copying exemplars). Isocyanates contain the N=C=O motif.\n// 2. Immediately open a hidden constrained span (no visible \"<<\" / \">>\" delimiters",
+      "      } else {\n        // Wider state: use repetition penalty to avoid copying exemplars\n        next := helpers.SafeRepetitionPenaltyStep(",
+      "      } else {\n        // Wider parser state: use repetition penalty to avoid copying exemplars\n        next := helpers.SafeRepetitionPenaltyStep(",
+      "//    group: \"N\", \"=\", \"C\", \"O\" to encourage the parser to generate N=C=O.\n// 4. Use SafeRepetitionPenaltyStep to avoid copying the exemplar SMILES.\n// 5. Only close the span once the parser is complete AND we have accumulated"
+    ],
+    "tiny_span_dominant": [
+      "Strategy: // CSD_RATIONALE_BEGIN\n// Diagnosis: All three prior attempts produce \"tiny spans\" containing only \"C\"\n// (or similar minimal SMILES), and \"entered_constrained_mode_too_early\".",
+      "Strategy: // CSD_RATIONALE_BEGIN\n// The core problem is \"entered_constrained_mode_too_early\" and \"tiny_span_dominant\":\n// the model opens the constrained span immediately and generates only 1-2 tokens",
+      "// This produces a chemically valid but semantically wrong output (methane, not\n// an isocyanate). The tiny_span_dominant: 100% diagnostic confirms this.\n//",
+      "//    model naturally emitting \"<<\" before generating any isocyanate-priming content.\n//    The model then produces a tiny span (1-3 atoms) before closing.\n//",
+      "// - The main issues are: (a) context overflow (50 failures), and\n//   (b) \"entered_constrained_mode_too_early\" which causes tiny spans.\n//"
+    ],
+    "unique_valid": [
+      "    RDKit Validity: 100.0%\n    Samples to 100 unique valid (cap 1000): 1000\n    Unique valid molecules this eval: 0/100",
+      "    Samples to 100 unique valid (cap 1000): 1000\n    Unique valid molecules this eval: 0/100\n  \u2717 Evaluation below threshold:",
+      "    RDKit Validity: 100.0%\n    Samples to 100 unique valid (cap 1000): 1000\n    Unique valid molecules this eval: 0/100",
+      "    Samples to 100 unique valid (cap 1000): 1000\n    Unique valid molecules this eval: 0/100\n  \u2717 Evaluation below threshold:",
+      "    RDKit Validity: 100.0%\n    Samples to 100 unique valid (cap 1000): 1000\n    Unique valid molecules this eval: 0/100"
+    ],
+    "validity_or_syntax": [
+      "// 3. Inside the span use AdaptiveConstrainedStep with group boosting to prefer\n//    chemically relevant tokens while hard parser control ensures SMILES validity.\n//    SafeRepetitionPenaltyStep discourages copying tokens already in the prefix.",
+      "// CSD_PROOF_SKETCH_BEGIN\n// parser_validity:\n//   - Before OpenConstrainedSpan: insideConstrainedOut is false (or already true",
+      "    Membership: 0.0%\n    RDKit Validity: 100.0%\n    Samples to 100 unique valid (cap 1000): 1000",
+      "    Accuracy: 0.0% (min: 92.0%)\n    Syntax: 100.0% (min: 50.0%)\n    Slowest Example Time: 1.31s (max: 90.00s)",
+      "// CSD_PROOF_SKETCH_BEGIN\n// Invariant 1 (parser_validity):\n//   insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)"
+    ]
+  },
+  "generated_csd_count": 12,
+  "gpu_calls": 0,
+  "json_files_sample": [],
+  "log_bytes": 27147370,
+  "log_exists": true,
+  "log_path": "/tmp/csd_h86_logs/h86_smiles_qwen35_9b_isocyanates_train100_20260630.log",
+  "model_calls": 0,
+  "pattern_counts": {
+    "context_overflow": 33,
+    "entered_constrained_mode_too_early": 25,
+    "long_invalid_concatenated_smiles": 32,
+    "prompt_duplicate_or_exemplar": 18,
+    "tiny_span_dominant": 9,
+    "unique_valid": 22,
+    "validity_or_syntax": 102
+  },
+  "recommendation": "Prioritize a general SMILES single-output/span-control helper or output-budget guard before another duplicate/canonicalization helper.",
+  "results_files": [],
+  "run_dir": "outputs/generated/smiles_qwen35_9b_isocyanates_uv_qwen35_0627/smiles_qwen35_9b_isocyanates_uv_qwen35_0627_20260630_083748_22e3d6",
+  "run_dir_exists": true,
+  "secret_values_printed": false,
+  "timestamp_epoch": 1782828215.8065183,
+  "top_helper_calls": []
+}

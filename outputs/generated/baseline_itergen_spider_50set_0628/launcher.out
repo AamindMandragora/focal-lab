@@ -1,0 +1,40 @@
+LOG=/home/aadivyar/csd-generation/outputs/generated/baseline_itergen_spider_50set_0628/run_20260628_130930.log
+=================================================================
+BASELINE_START itergen_spider_50set model=Qwen/Qwen3.5-2B gpu=2 Sun Jun 28 01:09:30 PM UTC 2026
+EVAL_DONE model=Qwen/Qwen3.5-2B exit=0 Sun Jun 28 01:13:35 PM UTC 2026
+--- Rescoring Qwen/Qwen3.5-2B on 50-set (results/sql_results/Qwen/Qwen3.5-2B/itergen_seed334_test300_tempt:None_seed:0_rp:0.3_maxiter_20_num:50.jsonl) ---
+[nltk_data] Downloading package punkt to /home/aadivyar/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/aadivyar/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+test_indices: 50 entries, range 9..994
+Full gold file: 1034 lines
+Subset gold: 50 lines
+Loaded 50 predictions
+
+===== CORRECTED RESULT =====
+Execution accuracy (all): 0.5
+By difficulty: [('easy', 0.417), ('medium', 0.571), ('hard', 0.333), ('extra', 0.625), ('all', 0.5)]
+Error types: {'Valid': 36, 'Other Error': 9, 'Syntax Error': 5}
+RESCORE_DONE model=Qwen/Qwen3.5-2B Sun Jun 28 01:13:41 PM UTC 2026
+=================================================================
+BASELINE_START itergen_spider_50set model=Qwen/Qwen3.5-4B gpu=2 Sun Jun 28 01:13:41 PM UTC 2026
+EVAL_DONE model=Qwen/Qwen3.5-4B exit=0 Sun Jun 28 01:17:49 PM UTC 2026
+--- Rescoring Qwen/Qwen3.5-4B on 50-set (results/sql_results/Qwen/Qwen3.5-4B/itergen_seed334_test300_tempt:None_seed:0_rp:0.3_maxiter_20_num:50.jsonl) ---
+[nltk_data] Downloading package punkt to /home/aadivyar/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+[nltk_data] Downloading package stopwords to
+[nltk_data]     /home/aadivyar/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+test_indices: 50 entries, range 9..994
+Full gold file: 1034 lines
+Subset gold: 50 lines
+Loaded 50 predictions
+
+===== CORRECTED RESULT =====
+Execution accuracy (all): 0.6
+By difficulty: [('easy', 0.833), ('medium', 0.619), ('hard', 0.667), ('extra', 0.125), ('all', 0.6)]
+Error types: {'Valid': 43, 'Other Error': 4, 'Syntax Error': 3}
+RESCORE_DONE model=Qwen/Qwen3.5-4B Sun Jun 28 01:17:55 PM UTC 2026
+ALL_SENTINEL_DONE itergen_spider_50set 2b+4b Sun Jun 28 01:17:55 PM UTC 2026

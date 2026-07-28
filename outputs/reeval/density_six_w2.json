@@ -1,0 +1,81 @@
+{
+  "accuracy": 0.125,
+  "syntax_rate": 0.625,
+  "metrics": {
+    "num_examples": 8,
+    "total_generation_seconds": 68.446,
+    "mean_generation_seconds_per_example": 8.555756,
+    "examples_with_generation_timing": 8,
+    "total_output_tokens": 1361,
+    "mean_output_tokens_per_example": 170.125,
+    "examples_with_token_counts": 8,
+    "evaluator_total_time_seconds": 132.9257,
+    "evaluator_max_sample_time_seconds": 22.818
+  },
+  "answers": [
+    {
+      "question": "A {item} has {n} {unit}. If {name1} can eat {x} {unit} a day while {name2} can eat {mult} as much, how many days will the {item} last?",
+      "generated_answer": "Let's think step by step. The total {unit} needed is <<x + mult * x>>. The {item} lasts <<n / (x + mult * x)>> days. The final answer is <<n / (x + mult * x)>>.",
+      "num_tokens": 54,
+      "generation_seconds": 2.583857,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "A {job} has to clean a {building} with {n} {room}s. They have {d} days to get it done. It takes them {t} minutes per {room}. If they work {h} hours each day, what percentage of their day, on average, ",
+      "generated_answer": "Let's think step by step. \nThe {job} has to clean <<n>> rooms. It takes <<t>> minutes to clean a {room}. There are <<d>> days to complete the {job}. It takes <<h>> hours each day to complete the {job}. \nThe building takes <<n * t>> minutes to clean. That is <<n * t/60>> on a daily basis. That is <<n * t/3600 * d>> for all <<d>> days. \nThe average => => numberOfJobs fraction of the time = 1 => number of work hours per day \n => (1 => total work time) / number of days => <<n * t / (3600 * h) * d>>/d => <<n * t / (3600 * h)>>.\n\n<<n * t / (3600 * h)>>>> \"percentage\" of a day is spent on cleaning/maintenance on {job}s.",
+      "num_tokens": 206,
+      "generation_seconds": 11.882435,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "A {structure} is made out of {n1} {color1} {obj}s, {mult} as many {color2} {obj}s, and an unknown number of {color3} {obj}s. If there are {total} {obj}s in the {structure} in total, how many {color3} ",
+      "generated_answer": "Let's think step by step. Initially, there are <<n1 + mult * n1 + 1>> {obj}s in the {structure}. The remaining number of {obj}s must have been <<-(n1 + mult * n1)>>. Since there are a total of {total} {obj}s, the number of {color3} {obj}s is <<total - n1 * (1 + mult) - 1>>. The final answer is <<total - n1 * (1 + mult) - 1>>.",
+      "num_tokens": 112,
+      "generation_seconds": 3.372129,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} goes to the store to buy some {item}. The normal brand of {item} he buys cost {cur}{price} per {unit}. He had to buy a more expensive brand that cost {percent}% more since his favorite brand wa",
+      "generated_answer": "Let's think step by step.\n\n   Initially, the normal brand of {item} cost {cur}{price} per unit.\n   [Let's say the initial cost per unit is <<cur{price}>>.] \n\n   The more expensive brand cost {percent}% more than the normal brand.\n   [Let's say the percentage increase is <<cur{percent}>>.] \n\n   So, the cost of the more expensive brand per unit is <<cur{price} * (1 + cur{percent} / 100)>>.\n   [We multiply the initial cost by (1 + percentage increase to find the new cost per unit).]\n\n   The week's worth of {item} for the regular brand would be <<7 * cur{price}>>.\n   [We multiply the new cost per unit by 7 to find the cost for the week.]\n\n   And for the more expensive brand, it would be <More expensive brand cost equation goes here>>\n   [We apply the same process as above but with the more expensive brand's rate.]\n\n   And for the extra {extra_item}, it's <Extra item amount and cost expression goes here>>\n   [We find the cost by multiplying the amount by the extra price.]\n\nFinally, sum the three, since we split up the cost of the extra item payment:\n  <<7 * cur{price} + cur{extra_price} + More elderly brand cost for week>>\n\nLet's now solve the cost for week's worth of the more expensive brand:\n`[More expensive brand cost equation]\n\n Summing up all the totals:\n`<Sum expression goes here>>\n\nThe final answer is <<Expensive brand cost of <<7 * cur{price} + cur{exp_amount} + cur{extra_price} + (More expensive brand cost for week)>> of the more expensive brand of item and the cost for week of the extra one>>.",
+      "num_tokens": 385,
+      "generation_seconds": 11.549372,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "There are {n} girls in the {place}. If there are {mult} the number of boys in the {place}, how many kids are in the {place}?",
+      "generated_answer": "Let's think step by step. Let <<n>> be the number of boys. There are <<n + mult*n>> children in total. The final answer is <<n + mult*n>>.",
+      "num_tokens": 40,
+      "generation_seconds": 1.347363,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} has a flower bed that is {length} {unit_length} long. {name} wants to fill her flower bed with plants. {name}'s flowers grow {plant_width} {unit_length} wide so she needs to leave {space} {unit",
+      "generated_answer": "Let's think step by step. {name} wants to fill her flower bed with plants. The length of the flower bed is {length} {unit_length}. The flowering plants grow {plant_width} {unit_length} wide. She needs to leave {space} {unit_length} between every plant. {name} already owns {owned} flowers. Each flowering plant costs {cur} {cost} at the store. First, calculate the total width of the flower bed. That is <<length * plant_width>>. Next, calculate the total space occupied by the existing flowers. That is <<owned * plant_width>>. Then, calculate the total space occupied by the remaining plants. That is <<total_width - owned * plant_width>>. Now, since there is {space} {unit_length} between plants, calculate the number of plants needed. That is <<total_width / (plant_width + space)>>. Next, calculate the total number of plants. That is <<total_width / (plant_width + space)>>. Then, calculate the cost to fill the flower bed. That is <<total_width * cost>>. The final answer is <<total_width * cost - owned * plant_width * cur* cost>>.",
+      "num_tokens": 248,
+      "generation_seconds": 7.711112,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} can peel {n1} {food}s a minute and saute {n2} {food}s in {t} minutes. How long will it take her to peel and saute {total} {food}s?",
+      "generated_answer": "Let's think step by step. name can peel <<n1>> food per minute and saute <<n2>> food per minute in <<t>> minutes. The time to peel <<total>> food is <<total >>/<<n1* t * n2* total >>>> minutes. The time to saute <<total>> food is <<total >>/<<n2*t*n2*total >>>!!!!!!!!!!!!!!!!!!!!!!!",
+      "num_tokens": 106,
+      "generation_seconds": 22.817985,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "{name} collects garbage from {n} different apartment complexes. The first {n_first} have {a} apartments each and the last one is {p}% bigger than the other {n_first} combined. {name} collects garbage ",
+      "generated_answer": "Let's think step by step. First, the first {n_first} apartment complexes have {n_first} apartments each. The total for them is <<n_first * a>> apartments. The last apartment complex is {p}% bigger than the {n_first} combined, so it has <<a * (1 + (p/100))>> apartments. Total apartments for {name} is <<n_first + a * (1 + (p/100))>> . {name} collects garbage {f} times a week, so the total number of collections per week is <<f * (n_first + a * (1 + (p/100)))>> . {name} gets paid {r} per collection, so the total money made per week is <<r * f * (n_first + a * (1 + (p/100)))>> . The final answer is <<r * f * (n_first + a * (1 + (p/100)))>>.",
+      "num_tokens": 210,
+      "generation_seconds": 7.181793,
+      "is_correct": false,
+      "is_syntax_valid": true
+    }
+  ]
+}

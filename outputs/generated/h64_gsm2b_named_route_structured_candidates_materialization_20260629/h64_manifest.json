@@ -1,0 +1,56 @@
+{
+  "hypothesis_id": "H64",
+  "created_at_utc": "2026-06-29T19:20:00Z",
+  "purpose": "Launch-readiness artifact for one future local no-billing GSM-2B named-route structured-candidate smoke; no run is launched by materializing this artifact.",
+  "cell": {
+    "dataset": "GSM",
+    "model": "Qwen/Qwen3.5-2B",
+    "split": "seed123 train49",
+    "source_id": "h64_gsm2b_named_route_t0"
+  },
+  "scientific_variable": "Replace the generic six-candidate guidance with parser-readable named derivation routes while keeping the same local model, split, max steps, one final constrained span, and H57 structured-candidate artifact path.",
+  "planned_command": [
+    "synthesis.evaluate.parameterized_direct_eval",
+    "--strategy-file",
+    "saved-results/2026-06-29-h64-gsm2b-named-route-candidates-body.dfy",
+    "--output-name",
+    "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+    "--source-id",
+    "h64_gsm2b_named_route_t0",
+    "--eval-model",
+    "Qwen/Qwen3.5-2B",
+    "--dataset",
+    "gsm_symbolic",
+    "--gsm-split-name",
+    "train",
+    "--sample-size",
+    "49",
+    "--max-steps",
+    "900",
+    "--max-seconds-per-example",
+    "600",
+    "--vllm-gpu-memory-utilization",
+    "0.20"
+  ],
+  "planned_outputs": {
+    "output_root": "outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0",
+    "success_json": "outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/direct_eval_success.json",
+    "failure_json": "outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/direct_eval_failure.json",
+    "structured_candidates_json": "outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/structured_candidates.json",
+    "pid_file": "/tmp/csd_h64_logs/h64_gsm2b_named_route_t0_20260629.pid",
+    "log_file": "/tmp/csd_h64_logs/h64_gsm2b_named_route_t0_20260629.log"
+  },
+  "safety": {
+    "dry_run_default": true,
+    "local_no_billing": true,
+    "requires_explicit_safe_gpu_id": true,
+    "min_free_mib_default": 12000,
+    "rejects_non_aadivyar_processes_on_selected_gpu": true,
+    "uses_runner_paid_env_strip": true,
+    "does_not_store_secret_values": true,
+    "h52_priority_warning": true
+  },
+  "repo_root_default": "/home/aadivyar/csd-generation",
+  "worktree_root_default": "/home/aadivyar/.config/superpowers/worktrees/csd-generation/h31-candidate-consensus",
+  "status": "materialized_not_launched"
+}

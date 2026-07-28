@@ -1,0 +1,141 @@
+{
+  "accuracy": 0.4,
+  "syntax_rate": 0.84,
+  "metrics": {
+    "num_examples": 25,
+    "total_generation_seconds": 3890.7737,
+    "mean_generation_seconds_per_example": 155.630948,
+    "examples_with_generation_timing": 25,
+    "run_wall_time_seconds": 3919.9642,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 175,
+    "eval_end_index": 200
+  },
+  "answers": [
+    {
+      "question": "What are the names of all cartoons directed by Ben Jones?",
+      "generated_answer": "SELECT name FROM cartoon WHERE directed_by = 'Ben Jones'",
+      "generation_seconds": 25.154414
+    },
+    {
+      "question": "list all cartoon titles and their directors ordered by their air date",
+      "generated_answer": "SELECT title, directed_by, original_air_date FROM cartoon ORDER BY original_air_date",
+      "generation_seconds": 61.910667
+    },
+    {
+      "question": "What are the Package Options of the TV Channels whose series names are Sky Radio?",
+      "generated_answer": "select package_option from tv_channel where series_name = 'Sky Radio'",
+      "generation_seconds": 6.587434
+    },
+    {
+      "question": "List the language used least number of TV Channel. List language and number of TV Channel.",
+      "generated_answer": "",
+      "generation_seconds": 217.95216
+    },
+    {
+      "question": "What are the languages used by the least number of TV Channels and how many channels use it?",
+      "generated_answer": "",
+      "generation_seconds": 234.139199
+    },
+    {
+      "question": "For each language, list the number of TV Channels that use it.",
+      "generated_answer": "",
+      "generation_seconds": 488.576857
+    },
+    {
+      "question": "List the title of all  Cartoons showed on TV Channel with series name \"Sky Radio\".",
+      "generated_answer": "select distinct c.title from cartoon c inner join tv_channel tc on c.channel = tc.id inner join tv_series ts on ts.channel = tc.id where ts.series_name = 'Sky Radio'",
+      "generation_seconds": 102.37416
+    },
+    {
+      "question": "What is the maximum and minimum share for the TV series?",
+      "generated_answer": "SELECT MAX(share) AS max_share, MIN(share) AS min_share FROM tv_series",
+      "generation_seconds": 45.856596
+    },
+    {
+      "question": "What is the air date of TV series with Episode \"A Love of a Lifetime\"?",
+      "generated_answer": "SELECT air_date FROM tv_series WHERE episode = 'A Love of a Lifetime'",
+      "generation_seconds": 191.005839
+    },
+    {
+      "question": "List the Episode of all  TV series showed on TV Channel with series name \"Sky Radio\".",
+      "generated_answer": "select episode from tv_series where tv_series.channel = (select id from tv_channel where series_name = 'Sky Radio')",
+      "generation_seconds": 399.122046
+    },
+    {
+      "question": "Find the number of cartoons directed by each of the listed directors.",
+      "generated_answer": "",
+      "generation_seconds": 686.176637
+    },
+    {
+      "question": "which countries' tv channels are playing some cartoon written by Todd Casey?",
+      "generated_answer": "SELECT country FROM tv_channel WHERE id IN (SELECT channel FROM tv_series AS child1 JOIN tv_channel AS child2 ON tv_series.channel = child2.id JOIN tv_series AS child3 ON tv_series.air_date = (SELECT air_date FROM tv_series WHERE channel = child2.id AND id = child3.channel AND id IN (SELECT id FROM cartoon WHERE written_by = 'Todd Casey' AND id IN (SELECT child4.id FROM cartoon AS child4 JOIN tv_channel AS child5 ON cartoon.channel = child5.id AND written_by = 'Todd Casey'))))",
+      "generation_seconds": 177.713829
+    },
+    {
+      "question": "What are the countries that are not playing cartoons written by Todd Casey?",
+      "generated_answer": "SELECT country FROM tv_channel WHERE id IN (SELECT channel FROM cartoon WHERE written_by = 'Todd Casey')",
+      "generation_seconds": 370.752015
+    },
+    {
+      "question": "Count the number of poker players.",
+      "generated_answer": "SELECT COUNT(*) FROM poker_player",
+      "generation_seconds": 4.762601
+    },
+    {
+      "question": "What are the earnings of poker players, ordered descending by value?",
+      "generated_answer": "SELECT final_table_made, name, height FROM people AS people",
+      "generation_seconds": 116.672842
+    },
+    {
+      "question": "Return the money rank of the player with the greatest earnings.",
+      "generated_answer": "SELECT money_rank FROM poker_player WHERE earnings = (SELECT MAX(earnings) FROM poker_player)",
+      "generation_seconds": 13.396733
+    },
+    {
+      "question": "What are the names of poker players whose earnings is higher than 300000?",
+      "generated_answer": "SELECT DISTINCT name FROM people WHERE people_id IN (SELECT people_id FROM poker_player WHERE earnings > 300000)",
+      "generation_seconds": 145.656712
+    },
+    {
+      "question": "What is the average earnings of poker players with height higher than 200?",
+      "generated_answer": "SELECT AVG(final_table_made.money_rank * final_table_made.money_rank) FROM final_table_made",
+      "generation_seconds": 141.420497
+    },
+    {
+      "question": "Give average earnings of poker players who are taller than 200.",
+      "generated_answer": "SELECT AVG(p.pe) FROM poker_player p, people pe WHERE p.people_id = pe.people_id AND h = 200",
+      "generation_seconds": 107.614683
+    },
+    {
+      "question": "Return the names of poker players sorted by their earnings descending.",
+      "generated_answer": "SELECT t2.name FROM poker_player t1 JOIN people t2 ON t1.people_id = t2.people_id ORDER BY t1.earnings DESC",
+      "generation_seconds": 56.105665
+    },
+    {
+      "question": "Give the nationality that is most common across all people.",
+      "generated_answer": "SELECT nat FROM people GROUP BY nat ORDER BY COUNT(nat) DESC LIMIT 1",
+      "generation_seconds": 22.971873
+    },
+    {
+      "question": "Return the nationalities for which there are two or more people.",
+      "generated_answer": "SELECT nat FROM people WHERE (nat) > 1",
+      "generation_seconds": 56.702731
+    },
+    {
+      "question": "List the names and birth dates of people in ascending alphabetical order of name.",
+      "generated_answer": "SELECT name, birth_date FROM people",
+      "generation_seconds": 114.422251
+    },
+    {
+      "question": "What are the names of people who are not from Russia?",
+      "generated_answer": "select name from people where nationality != 'Russia' and people_id in (select people_id from poker_player)",
+      "generation_seconds": 12.432744
+    },
+    {
+      "question": "Count the number of different nationalities.",
+      "generated_answer": "SELECT COUNT(DISTINCT nationality) FROM people",
+      "generation_seconds": 91.292523
+    }
+  ]
+}

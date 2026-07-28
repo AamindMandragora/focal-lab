@@ -1,0 +1,52 @@
+{
+  "alive": true,
+  "allow_while_h65_running": true,
+  "artifact_root": "outputs/generated/h81_smiles_qwen35_2b_acrylates_uv36_syn085_materialization_20260630",
+  "command": "./pilot_smiles_uv_qwen35_i40.sh Qwen/Qwen3.5-2B qwen35_2b acrylates 3 0.20 0.36 0.85",
+  "gpu_compute_apps": [
+    "GPU-6a419462-d373-6953-bab8-3a63b7793dec, 464438, /apps/conda/aadivyar/envs/csd/bin/python, 516",
+    "GPU-6a419462-d373-6953-bab8-3a63b7793dec, 467177, VLLM::EngineCore, 21878",
+    "GPU-05cfea15-9b80-b71e-5076-0a4a04a8e348, 383623, VLLM::EngineCore, 35756",
+    "GPU-05cfea15-9b80-b71e-5076-0a4a04a8e348, 562798, python, 1322",
+    "GPU-347b3458-4295-b456-7225-3d33552bd08f, 1696534, VLLM::EngineCore, 37068"
+  ],
+  "gpu_memory_csv": [
+    "0, 22415, 18027",
+    "1, 37099, 3343",
+    "2, 37084, 3358",
+    "3, 4, 40438"
+  ],
+  "hypothesis": "H81",
+  "launch_time_checked_utc": "2026-06-30T06:07:50.253349+00:00",
+  "log_file": "/tmp/csd_h81_logs/h81_smiles_qwen35_2b_acrylates_uv36_syn085_20260630.log",
+  "log_mtime_utc": "2026-06-30T06:07:43.710875+00:00",
+  "log_tail": [
+    "",
+    "[3/4] Evaluating compiled strategy (runtime smoke test removed).",
+    "",
+    "[4/4] Evaluating on dataset sample...",
+    "  [synthesis] eval seed for this iteration: None",
+    "Loading model: Qwen/Qwen3.5-2B on cuda with vLLM...",
+    "INFO 06-30 06:07:41 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-2B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.2, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-2B'}",
+    "INFO 06-30 06:07:42 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration",
+    "INFO 06-30 06:07:42 [model.py:1678] Using max model len 16384",
+    "INFO 06-30 06:07:42 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=8192.",
+    "WARNING 06-30 06:07:42 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled",
+    "INFO 06-30 06:07:42 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.",
+    "`Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.",
+    "INFO 06-30 06:07:43 [config.py:281] Setting attention block size to 544 tokens to ensure that attention page size is >= mamba page size.",
+    "INFO 06-30 06:07:43 [config.py:312] Padding mamba page size by 2.64% to ensure that mamba page size and attention page size are exactly equal.",
+    "INFO 06-30 06:07:43 [vllm.py:790] Asynchronous scheduling is enabled.",
+    "WARNING 06-30 06:07:43 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none",
+    "WARNING 06-30 06:07:43 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.",
+    "INFO 06-30 06:07:43 [vllm.py:1025] Cudagraph is disabled under eager mode",
+    "INFO 06-30 06:07:43 [compilation.py:292] Enabled custom fusions: norm_quant, act_quant"
+  ],
+  "max_iterations": 40,
+  "min_acc": 0.36,
+  "min_syn": 0.85,
+  "pid": "2470293",
+  "pid_file": "/tmp/csd_h81_logs/h81_smiles_qwen35_2b_acrylates_uv36_syn085_20260630.pid",
+  "provenance_dir": "outputs/generated/h81_smiles_qwen35_2b_acrylates_uv36_syn085_materialization_20260630/provenance_20260630T060702Z",
+  "recorded_aws_account": "887730490125"
+}

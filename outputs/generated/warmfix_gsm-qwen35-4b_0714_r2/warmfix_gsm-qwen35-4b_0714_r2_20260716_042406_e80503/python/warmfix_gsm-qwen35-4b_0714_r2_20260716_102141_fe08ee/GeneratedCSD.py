@@ -1,0 +1,77 @@
+import sys
+from typing import Callable, Any, TypeVar, NamedTuple
+from math import floor
+from itertools import count
+
+import module_ as module_
+import _dafny as _dafny
+import System_ as System_
+import VerifiedDecoderAgent as VerifiedDecoderAgent
+
+# Module: GeneratedCSD
+
+class default__:
+    def  __init__(self):
+        pass
+
+    @staticmethod
+    def MyCSDStrategy(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, stepTokenBudget, validTokenGroups, eosToken):
+        generated: _dafny.Seq = _dafny.Seq({})
+        insideConstrainedOut: bool = False
+        currentConstrainedOut: _dafny.Seq = _dafny.Seq({})
+        cost: int = int(0)
+        out0_: _dafny.Seq
+        out1_: bool
+        out2_: _dafny.Seq
+        out3_: int
+        out0_, out1_, out2_, out3_ = default__.AuthorBody(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, stepTokenBudget, validTokenGroups, eosToken)
+        generated = out0_
+        insideConstrainedOut = out1_
+        currentConstrainedOut = out2_
+        cost = out3_
+        if ((maxSteps) > (0)) and ((cost) <= (0)):
+            cost = 1
+        return generated, insideConstrainedOut, currentConstrainedOut, cost
+
+    @staticmethod
+    def AuthorBody(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, stepTokenBudget, validTokenGroups, eosToken):
+        generated: _dafny.Seq = _dafny.Seq({})
+        insideConstrainedOut: bool = False
+        currentConstrainedOut: _dafny.Seq = _dafny.Seq({})
+        cost: int = int(0)
+        d_0_helpers_: VerifiedDecoderAgent.CSDHelpers
+        nw0_ = VerifiedDecoderAgent.CSDHelpers()
+        nw0_.ctor__()
+        d_0_helpers_ = nw0_
+        generated = generatedPrefix
+        insideConstrainedOut = insideConstrained
+        currentConstrainedOut = currentConstrained
+        cost = 0
+        generated = generatedPrefix
+        insideConstrainedOut = insideConstrained
+        currentConstrainedOut = currentConstrained
+        cost = 0
+        if (maxSteps) == (0):
+            pass
+        elif True:
+            (d_0_helpers_).AppendTaskGuidance(lm, (((_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "Solve this math problem step by step. At the very end, write your answer as <<expr>> "))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "where expr uses only: variable names (no curly braces), integers, +, -, *, /, //, %, (, ), int(). ")))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "ALWAYS wrap integer results in int(). No LaTeX, no {braces}, no ** operator. ")))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "Keep the expression short. One <<expr>> at the very end only."))))
+            d_1_prefixBudget_: int
+            d_1_prefixBudget_ = _dafny.euclidian_division((maxSteps) * (72), 100)
+            if (d_1_prefixBudget_) >= (maxSteps):
+                d_1_prefixBudget_ = (maxSteps) - (1)
+            d_2_g_: _dafny.Seq
+            d_3_ic_: bool
+            d_4_cc_: _dafny.Seq
+            out0_: _dafny.Seq
+            out1_: bool
+            out2_: _dafny.Seq
+            out0_, out1_, out2_ = (d_0_helpers_).GenerateWithPrefixAndManagedSpan(lm, parser, prompt, generated, insideConstrainedOut, currentConstrainedOut, maxSteps, d_1_prefixBudget_, validTokenGroups, _dafny.BigRational('1e1'), 6, eosToken)
+            d_2_g_ = out0_
+            d_3_ic_ = out1_
+            d_4_cc_ = out2_
+            generated = d_2_g_
+            insideConstrainedOut = d_3_ic_
+            currentConstrainedOut = d_4_cc_
+            cost = maxSteps
+        return generated, insideConstrainedOut, currentConstrainedOut, cost
+

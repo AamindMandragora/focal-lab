@@ -1,0 +1,138 @@
+// CSD_RATIONALE_BEGIN
+// DIAGNOSIS: accuracy=8%, syntax=86%. The dominant failure is valid-but-wrong.
+// The body is OVER-CONSTRAINING: every token inside a << >> span is hard-masked,
+// forcing the model onto valid-but-wrong paths when its preferred token is already
+// grammar-valid.
+//
+// FIX: Replace hard-masked steps inside the constrained span with ConfidenceGatedStep.
+// ConfidenceGatedStep keeps the model's own top token when it is already EOS or
+// parser-valid, and only falls back to hard-masking when the model's choice would
+// break the grammar. This restores the model's reasoning while still guaranteeing
+// structural validity.
+//
+// Outside the span: use UnconstrainedChunk with a moderate chunk size (40) to let
+// the model reason freely before opening a << >> span.
+//
+// Guidance: encourage step-by-step reasoning with multiple << >> spans, with the
+// LAST << >> being the final answer. Keep it concise to avoid pushing the model
+// toward mode_L (too little reasoning).
+//
+// The ConfidenceGatedStep approach addresses the evaluator's direct feedback:
+// "The model's own reasoning is being overridden even where its top token would
+// have been grammar-valid." This should move accuracy up significantly while
+// maintaining syntax near current levels.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Outside-span / UnconstrainedChunk branch: when stoppedOnOpenSpan=true,
+//   generated already ends with "<<". EnterObservedConstrainedSpan sets
+//   currentConstrainedOut := [] which satisfies IsValidPrefix([]) by precondition,
+//   and insideConstrainedOut := true. When stoppedOnOpenSpan=false,
+//   insideConstrainedOut stays false, so the implication is vacuously true.
+//   Complete-prefix branch: CloseConstrainedSpan sets insideConstrainedOut := false,
+//   making the implication vacuously true.
+//   Active-constrained branch (ConfidenceGatedStep): ConfidenceGatedStep returns
+//   either EOS or a token that keeps parser.IsValidPrefix(currentConstrainedOut+[next])
+//   true. AppendConstrainedToken then preserves IsValidPrefix by contract.
+//   EOS rollback: RollbackConstrainedSuffix returns a valid prefix by contract.
+//   If IsCompletePrefix after rollback, CloseConstrainedSpan sets
+//   insideConstrainedOut := false. Otherwise we exit the span cleanly.
+// progress:
+//   UnconstrainedChunk branch: steps += stepsUsed (>= 1). Generated grows by at
+//   most stepsUsed tokens (one per step in the chunk). |generated| <=
+//   |generatedPrefix| + steps preserved.
+//   Complete-prefix branch: steps += 1, CloseConstrainedSpan appends ">>": at most 1.
+//   Active-constrained branch: steps += 1, AppendConstrainedToken appends 1 token.
+//   EOS rollback: steps already incremented by the ConfidenceGatedStep call;
+//   rollback only removes tokens from generated (decreases or leaves unchanged),
+//   so the bound |generated| <= |generatedPrefix| + steps still holds. An optional
+//   CloseConstrainedSpan costs +1, guarded by steps < maxSteps check.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+helpers.AppendTaskGuidance(lm, "Solve this math word problem step by step using symbolic variables. Wrap EACH intermediate calculation in << >> (e.g., <<n1 * c1>>, <<n1 * c1 + n2 * c2>>). The LAST << >> expression must be the complete final answer computation - it will be evaluated as your answer. Show all reasoning steps before the final << >>.");
+
+var steps: nat := 0;
+var chunkSize: nat := 40;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    var remainingSteps := maxSteps - steps;
+    var thisChunk := if remainingSteps < chunkSize then remainingSteps else chunkSize;
+    if thisChunk == 0 {
+      break;
+    }
+    var generatedOut, stoppedOnOpenSpan, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(
+      lm, prompt, generated, thisChunk, "<<", eosToken
+    );
+    generated := generatedOut;
+    steps := steps + stepsUsed;
+    if stoppedOnEos {
+      break;
+    } else if stoppedOnOpenSpan {
+      var g2, i2, c2 := helpers.EnterObservedConstrainedSpan(lm, generated);
+      generated := g2;
+      insideConstrainedOut := i2;
+      currentConstrainedOut := c2;
+    }
+  } else if parser.IsCompletePrefix(currentConstrainedOut) {
+    if steps < maxSteps {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+        lm, parser, generated, currentConstrainedOut
+      );
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      break;
+    }
+  } else {
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var next, wasConstrained := helpers.ConfidenceGatedStep(
+      lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
+    );
+    steps := steps + 1;
+    if next == eosToken {
+      // Rollback to a valid prefix, then close if complete, else exit span
+      var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
+        parser, generated, currentConstrainedOut
+      );
+      generated := rolledGenerated;
+      currentConstrainedOut := rolledCurrent;
+      if parser.IsCompletePrefix(currentConstrainedOut) && steps < maxSteps {
+        var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+          lm, parser, generated, currentConstrainedOut
+        );
+        generated := closedGenerated;
+        insideConstrainedOut := closedInside;
+        currentConstrainedOut := closedCurrent;
+        steps := steps + 1;
+      } else {
+        insideConstrainedOut := false;
+        currentConstrainedOut := [];
+        break;
+      }
+    } else {
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }
+  }
+}
+
+cost := steps;

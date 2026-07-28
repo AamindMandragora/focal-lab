@@ -26,7 +26,7 @@ author-visible menu. The dead methods that no win calls remain in the .dfy
 #15 RegenerateUnitOnGroundingFailure.
 
 Universe: 72 before; #7 was already library-only (not in the universe), so 9 of
-the 10 actually leave -> 63 after.
+the 10 actually leave -> 73 after.
 
 Run:  python -m pytest tests/fairness_cloud/test_helper_menu_prune.py -q
 """

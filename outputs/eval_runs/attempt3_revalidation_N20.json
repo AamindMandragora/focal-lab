@@ -1,0 +1,137 @@
+{
+  "accuracy": 0.25,
+  "syntax_rate": 0.9,
+  "metrics": {
+    "num_examples": 20,
+    "total_generation_seconds": 1098.3798,
+    "mean_generation_seconds_per_example": 54.91899,
+    "examples_with_generation_timing": 20,
+    "total_output_tokens": 2903,
+    "mean_output_tokens_per_example": 145.15,
+    "examples_with_token_counts": 20,
+    "evaluator_total_time_seconds": 1163.0111,
+    "evaluator_max_sample_time_seconds": 394.9652
+  },
+  "answers": [
+    {
+      "question": "{n} saw a {x}-foot {big_fish} with {k} {y}-inch remoras attached to it. What percentage of the {big_fish}'s body length is the combined length of the remoras?",
+      "generated_answer": "Let's think step by step. The total length of the remoras is <<k * y / 12 >>>> feet (since there are 12 inches in a foot). The combined length of the remoras as a percentage of the big fish's body length is <<(k * y / 12) / x * 100 >>>>%. The final answer is <<(k * y / 12) / x * 100 >>>>%.",
+      "num_tokens": 103,
+      "generation_seconds": 22.980771
+    },
+    {
+      "question": "A fog bank rolls in from the ocean to cover a city. It takes {t} minutes to cover every {d} miles of the city. If the city is {y} miles across from the oceanfront to the opposite inland edge, how many",
+      "generated_answer": "Let's think step by step. The fog bank takes {t} minutes to cover every {d} miles of the city. The city is {y} miles across. To find out how many minutes it will take to cover the whole city, we need to divide the total distance by the distance covered per minute and then multiply by the time taken per mile. This gives us <<y//d*t >>>> minutes. The final answer is <<y//d*t >>>> minutes.",
+      "num_tokens": 100,
+      "generation_seconds": 6.80572
+    },
+    {
+      "question": "{name} is rolling a {sides} die. How much more likely is it (expressed as a percentage) that he rolls a number greater than {target} than that he rolls two even numbers in a row?",
+      "generated_answer": "Let's think step by step. When rolling a {sides} die, there are {sides} possible outcomes. The number of outcomes greater than {target} is <<sides - target - 1 >>>> (since {target} is inclusive, we subtract 1). The probability of rolling a number greater than {target} is <<(sides - target - 1) / sides * 100 >>>> (expressed as a percentage).\n\nThe probability of rolling two even numbers in a row is <<(sides // 2) / sides * (sides // 2) / sides * 100 >>>",
+      "num_tokens": 136,
+      "generation_seconds": 26.999891
+    },
+    {
+      "question": "A {g} of {n} students has various hobbies. {n_1} like to {h_1}, {n_2} like to play {h_2}, and the rest like to either {h_3} or {h_4}. How many like to {h_3} if the number that like to {h_4} is twice t",
+      "generated_answer": "Let's think step by step. We know that the number of students who like to {h_4} is twice the number that like to play {h_2}. Therefore, the number of students who like to {h_4} is <<2 * n2 >>>> The total number of students is {n}. The number of students who like to {h_3} is the total number of students minus the number of students who like to {h_1}, {h_2}, and {h_4}. So, the number of students who like to {h_3} is <<n - n1 - n2 - 2 * n2 >>>> Simplifying this expression, we get <<n - n1 - 3 * n2 >>>",
+      "num_tokens": 161,
+      "generation_seconds": 18.031866
+    },
+    {
+      "question": "{name} is popping popcorn for a snack. As the {p} of kernels heats up, the kernels start popping faster. {n} pop in the first {s} seconds of cooking, then {k_2} times that amount in the next {s} secon",
+      "generated_answer": "Let's think step by step. In the first {s} seconds, {n} kernels pop. In the next {s} seconds, {k_2} times that amount pop, which is <<k_2 * n >>>> kernels. In the next {s} seconds, {k_3} times the initial popping rate pop, which is <<k_3 * n >>>",
+      "num_tokens": 82,
+      "generation_seconds": 8.076676
+    },
+    {
+      "question": "{name} makes {drink} using teaspoons of sugar and cups of water in the ratio of {m}:{n}. If she used a total of {x} teaspoons of sugar and cups of water, calculate the number of teaspoonfuls of sugar ",
+      "generated_answer": "Let's think step by step. The ratio of sugar to water is {m}:{n}. This means for every {m} teaspoons of sugar, there are {n} cups of water. The total parts of the ratio are <<m + n >>>> The number of teaspoons of sugar used is <<x * m // (m + n)>>>> The final answer is <<x * m // (m + n)>>>>",
+      "num_tokens": 89,
+      "generation_seconds": 12.308806
+    },
+    {
+      "question": "{name} has {x} {area} of {fruit} field. There are {k} {fruit} per {area}. {name} can harvest his {fruit} every {n} months. How many {fruit} can {name} harvest within a year?",
+      "generated_answer": "Let's think step by step. {name} has {x} {area} of {fruit} field. There are {k} {fruit} per {area}. So, the total number of {fruit} is <<x * k >>>> {name} can harvest his {fruit} every {n} months. In a year, there are 12 months. The number of harvests in a year is <<12 // n >>>> The total number of {fruit} harvested in a year is <<x * k * (12 // n)>>>> #### <<x * k * (12 // n)>>>>",
+      "num_tokens": 134,
+      "generation_seconds": 17.622653
+    },
+    {
+      "question": "A farmer is buying feed for his {animals}. He buys a variety of {o1}, {o2}, {o3} and {o4}. Since {o4} are a rare treat, he only buys {n4} {w4}-{unit} boxes of them for the whole stable. He only wants ",
+      "generated_answer": "Let's think step by step. The farmer buys:\n- {n1} {w1}-bales of {o1}\n- {n2} {w2}-sacks of {o2}\n- {n3} {w3}-bags of {o3}\n- {n4} {w4}-{unit} boxes of {o4}\n\nThe total weight of the feed is:\n<<n1 * w1 + n2 * w2 + n3 * w3 + n4 * w4 * unit!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "num_tokens": 900,
+      "generation_seconds": 387.209831
+    },
+    {
+      "question": "A juggler can juggle {n} balls. {frac_1} of the balls are {ball_type} balls, and {frac_2} of the {ball_type} balls are {color}. How many {color} {ball_type} balls are there?",
+      "generated_answer": "Let's think step by step. The juggler can juggle {n} balls. {frac_1} of the balls are {ball_type} balls, and {frac_2} of the {ball_type} balls are {color}. First, we need to find out how many {ball_type} balls there are. This is <<n * frac_1 >>>> Then, we need to find out how many of those {ball_type} balls are {color}. This is <<n * frac_1 * frac_2 >>>",
+      "num_tokens": 112,
+      "generation_seconds": 10.479373
+    },
+    {
+      "question": "When {name} watches her {family}, she gets out a variety of toys for him. The bag of building blocks has {x} blocks in it. The bin of stuffed animals has {y} stuffed animals inside. The tower of stack",
+      "generated_answer": "Let's think step by step. Initially, there are {x} building blocks, {y} stuffed animals, and {z} stacking rings. The total number of toys before buying the bouncy balls is <<x + y + z >>>> The total number of toys after buying the bouncy balls is {total}. The number of bouncy balls is the difference between the total number of toys after buying and the total number of toys before buying, which is <<total - (x + y + z)>>>>. The final answer is <<total - (x + y + z)>>>>.",
+      "num_tokens": 124,
+      "generation_seconds": 14.465987
+    },
+    {
+      "question": "To make a call from a {dev}, you must pay {currency} {frac1} for each minute of your call. After {t} minutes, that price drops to {currency} {frac2} per minute. How much would a {total}-minute call co",
+      "generated_answer": "Let's think step by step. The cost for the first <<t1 - t2 + 1 >>>> minutes is <<frac1 * (t1 - t2 + 1)>>>>. The cost for the remaining <<t - t1 + 1 >>>!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "num_tokens": 193,
+      "generation_seconds": 79.159992
+    },
+    {
+      "question": "{name} wants to make different sized ice cubes with {n} {unit}s of water. He can make giant cubes that use {w1} {unit}s per cube, medium cubes that use {w2} {unit}s, and small cubes that use {w3} of {",
+      "generated_answer": "Let's think step by step. Initially, {name} has {n} {unit}s of water. He makes {n1} giant cubes, each using {w1} {unit}s, so he uses <<n1 * w1 >>>> {unit}s. He makes {n2} medium cubes, each using {w2} {unit}s, so he uses <<n2 * w2 >>>!",
+      "num_tokens": 88,
+      "generation_seconds": 8.414644
+    },
+    {
+      "question": "{name} places {obj} on some {surface}s. Each {surface} can hold {x} {obj}s. If he has {n} {obj}s and {k} {surface}s, how many {obj}s won't he be able to place on the {surface}?",
+      "generated_answer": "Let's think step by step. Initially, there are {n} {obj}s. Each {surface} can hold {x} {obj}s. If {name} has {k} {surface}s, the total capacity is <<k * x >>>> {obj}s. The number of {obj}s that won't be able to be placed is <<n - k * x if!!!!!!!!!!!!!!!!!!!",
+      "num_tokens": 100,
+      "generation_seconds": 16.01911
+    },
+    {
+      "question": "{name} is an avid gardener. {time}, she received {x} new potted plants from her favorite plant nursery. She already has {r} potted plants on each of the {w} window ledges of her large country home. Fe",
+      "generated_answer": "Let's think step by step. Initially, {name} has {r} potted plants on each of the {w} window ledges, so she has <<r * w >>>> potted plants in total. She received {x} new potted plants, so now she has <<r * w + x >>>!",
+      "num_tokens": 69,
+      "generation_seconds": 7.497864
+    },
+    {
+      "question": "{n1} and {n2} have {t} minutes to walk to the {loc1} together. It takes them {t1} minutes to get to the corner where the {loc2} is. It takes them another {t2} minutes to get to the {loc3}. How much lo",
+      "generated_answer": "Let's think step by step. Initially, {n1} and {n2} have {t} minutes to walk to the {loc1} together. It takes them {t1} minutes to get to the corner where the {loc2} is. It takes them another {t2} minutes to get to the {loc3}. The total time spent walking to the {loc3} is <<t1 + t2 >>>> minutes. The time they have left to get to {loc1} without being late is <<t - (t1 + t2)>>>> minutes. The final answer is <<t - (t1 + t2)>>>>.",
+      "num_tokens": 141,
+      "generation_seconds": 14.079607
+    },
+    {
+      "question": "{name1}'s dog has {n1} puppies, {k1} of which have spots. {name2}'s dog has {n2} puppies, {k2} of which have spots. What percentage of all the puppies have spots?",
+      "generated_answer": "Let's think step by step. First, we need to find the total number of puppies. This is the sum of the puppies from both dogs: <<n1 + n2 >>>> Next, we need to find the total number of spotted puppies. This is the sum of the spotted puppies from both dogs: <<k1 + k2 >>>",
+      "num_tokens": 72,
+      "generation_seconds": 7.174245
+    },
+    {
+      "question": "{name} is selling {food} and {fruit} pie for a fundraiser. On {d1}, he sold {n1} boxes of {food} and {m1} fewer boxes of {fruit} pie, than on {d2}. On {d2}, he sold {n2} more boxes of {food}s than on ",
+      "generated_answer": "Let's think step by step. On {d1}, {name} sold {n1} boxes of {food} and {n1 - m1} boxes of {fruit} pie. On {d2}, {name} sold {n1 + n2} boxes of {food} and {m2} boxes of {fruit} pie. The total earnings from {food} pie are <<(n1 + n1 + n2) * cn >>>> and from {fruit} pie are <<(n1 - m1 + m2) * cm >>>",
+      "num_tokens": 120,
+      "generation_seconds": 14.99573
+    },
+    {
+      "question": "{name} walks {n} {unit} every day on her favorite walking trail, which includes {m} {unit} of walking on the beach and {k} {unit} of walking on the sidewalk. On the sidewalk, {name} walks at {mult} th",
+      "generated_answer": "",
+      "num_tokens": 0,
+      "generation_seconds": 394.965184
+    },
+    {
+      "question": "{name} went to buy some school supplies. He bought {n1} {obj1} which cost {cur} {c1} each, {n2} {obj2} which cost {cur} {c2} each, and a rim of bond paper which cost {cur} {c3}. How much did {name} sp",
+      "generated_answer": "Let's think step by step. The total cost of {n1} {obj1} is <<n1 * c1 >>>> The total cost of {n2} {obj2} is <<n2 * c2 >>>",
+      "num_tokens": 50,
+      "generation_seconds": 7.712089
+    },
+    {
+      "question": "In a {n}-item quiz, {p1}% of the questions are {s1}, and the rest are equally divided as {s2} and {s3} questions. If {name} is sure to get {r1}% of the {s1} questions, and {frac} of the {s2} and {s3} ",
+      "generated_answer": "Let's think step by step. In a {n}-item quiz, {p1}% of the questions are {s1}, and the rest are equally divided as {s2} and {s3} questions. This means there are <<n * p1 // 100 >>>> {s1} questions, and the remaining questions are <<n - n * p1 // 100 >>>> questions. Since the remaining questions are equally divided between {s2} and {s3}, there are <<(n - n * p1 // 100) // 2 >>>!",
+      "num_tokens": 129,
+      "generation_seconds": 23.379758
+    }
+  ]
+}

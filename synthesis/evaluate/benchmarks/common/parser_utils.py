@@ -92,13 +92,14 @@ def _load_grammar_text(grammar_source: str) -> str:
     return grammar_source
 
 
-def _get_parser_components(grammar_text: str, start: str):
+def _get_parser_components(grammar_text: str, start: str, complete_start: str | None = None):
     _ensure_syncode_import_path()
     from lark import Lark
     from syncode.parsers.grammars import Grammar
     from syncode.parsers import create_base_parser
 
-    component_key = (grammar_text, start)
+    complete_rule = complete_start if complete_start is not None else "start"
+    component_key = (grammar_text, start, complete_rule)
     cached_components = _PARSER_COMPONENT_CACHE.get(component_key)
     if cached_components is None:
         grammar = Grammar(grammar_text)
@@ -116,13 +117,13 @@ def _get_parser_components(grammar_text: str, start: str):
         # changes the generation loop's completeness signal -- it does NOT touch scoring:
         # the syntax-rate metric uses a separate start="syncode" parser (eval_logic) that
         # still requires the literal "<<...>>".
-        complete_lark_parser = Lark(grammar_text, start="start", parser='lalr')
+        complete_lark_parser = Lark(grammar_text, start=complete_rule, parser='lalr')
         cached_components = (grammar, base_parser, lark_parser, complete_lark_parser)
         _PARSER_COMPONENT_CACHE[component_key] = cached_components
     return cached_components
 
 
-def _get_cached_dfa_mask_store(grammar_text: str, grammar, tokenizer):
+def _get_cached_dfa_mask_store(grammar_text: str, grammar, tokenizer, dfa_mode: str = "grammar_mask"):
     if tokenizer is None:
         return None
 
@@ -130,7 +131,7 @@ def _get_cached_dfa_mask_store(grammar_text: str, grammar, tokenizer):
     from syncode.dfa_mask_store import DFAMaskStore
     import syncode.common as common
 
-    mask_key = (grammar_text, _tokenizer_cache_fingerprint(tokenizer))
+    mask_key = (grammar_text, _tokenizer_cache_fingerprint(tokenizer), dfa_mode)
     dfa_mask_store = _DFA_MASK_STORE_CACHE.get(mask_key)
     if dfa_mask_store is None:
         dfa_mask_store = DFAMaskStore.load_dfa_mask_store(
@@ -138,7 +139,7 @@ def _get_cached_dfa_mask_store(grammar_text: str, grammar, tokenizer):
             tokenizer=tokenizer,
             use_cache=True,
             logger=common.EmptyLogger(),
-            mode='grammar_mask',
+            mode=dfa_mode,
         )
         _DFA_MASK_STORE_CACHE[mask_key] = dfa_mask_store
     return dfa_mask_store
@@ -150,6 +151,12 @@ def create_lark_dafny_parser(
     _dafny,
     start: str = "start",
     tokenizer=None,
+    *,
+    dfa_mode: str = "grammar_mask",
+    apply_forbidden_token_filter: bool = True,
+    constrained_span_opener: str | None = None,
+    complete_start: str | None = None,
+    accept_mask_backend: str = "syncode",
 ):
     """
     Create a Dafny-compatible parser using syncode's DFA mask store.
@@ -160,6 +167,13 @@ def create_lark_dafny_parser(
         _dafny: The Dafny runtime module
         start: Start rule name in the grammar
         tokenizer: HuggingFace tokenizer (required for DFA mask store)
+        dfa_mode: SynCode DFAMaskStore mode (CRANE adaptive uses grammar_strict)
+        apply_forbidden_token_filter: When False, do not hard-block { } ** tokens
+        constrained_span_opener: If set (e.g. "<<"), prepend to constrained prefix
+            text for mask/validity (CRANE structured_gen includes opening delimiter)
+        complete_start: Lark start rule for IsCompletePrefix (default "start")
+        accept_mask_backend: ``syncode`` (default) or ``llguidance`` (CARS SMILES).
+            Validity/completeness still use Lark; only next-token accept masks switch.
 
     Returns:
         A SyncodeDafnyParser class that can be instantiated with a token list
@@ -170,8 +184,35 @@ def create_lark_dafny_parser(
     from syncode.parsers.incremental_parser import IncrementalParser
 
     grammar_text = _load_grammar_text(grammar_source)
-    grammar, base_parser, lark_parser, complete_lark_parser = _get_parser_components(grammar_text, start)
-    dfa_mask_store = _get_cached_dfa_mask_store(grammar_text, grammar, tokenizer)
+    grammar, base_parser, lark_parser, complete_lark_parser = _get_parser_components(
+        grammar_text, start, complete_start=complete_start
+    )
+    import os as _os
+    _env_mode = _os.environ.get("CSD_DFA_MODE", "").strip()
+    if _env_mode:
+        dfa_mode = _env_mode
+    _backend = (accept_mask_backend or "syncode").strip().lower()
+    _env_backend = _os.environ.get("CSD_ACCEPT_MASK_BACKEND", "").strip().lower()
+    if _env_backend:
+        _backend = _env_backend
+    dfa_mask_store = _get_cached_dfa_mask_store(
+        grammar_text, grammar, tokenizer, dfa_mode=dfa_mode
+    )
+    llguidance_mask_store = None
+    # SMILES/CARS: llguidance at empty prefix only (allows multi-atom BPE like ``CC``).
+    # Non-empty prefixes keep Syncode — full-text/piece re-encode into llguidance can
+    # shortfall-consume and return n=0, which trips cars.dfy stop
+    # (IsCompletePrefix && ValidNextTokenCount==0) on incomplete rings.
+    if _backend == "llguidance":
+        if tokenizer is None:
+            raise ValueError("accept_mask_backend=llguidance requires a tokenizer")
+        from synthesis.evaluate.benchmarks.smiles.llguidance_mask import (
+            SmilesLlguidanceMaskStore,
+        )
+
+        llguidance_mask_store = SmilesLlguidanceMaskStore(grammar_text, tokenizer)
+    _span_opener = constrained_span_opener
+    _use_forbidden_filter = apply_forbidden_token_filter
 
     class SyncodeDafnyParser(VerifiedDecoderAgent.Parser):
         """Parser using syncode's DFA mask store for fast token validity checks."""
@@ -187,9 +228,12 @@ def create_lark_dafny_parser(
             # Per-instance incremental parser (reset for each generation)
             self._inc_parser = IncrementalParser(base_parser, ignore_whitespace=False)
             self._dfa_mask_store = dfa_mask_store
+            self._llguidance_mask_store = llguidance_mask_store
             self._UnexpectedCharacters = UnexpectedCharacters
             self._UnexpectedToken = UnexpectedToken
             self._UnexpectedEOF = UnexpectedEOF
+            self._span_opener = _span_opener
+            self._use_forbidden_filter = _use_forbidden_filter
 
             # Precompute token string -> index mapping
             self._token_str_to_idx = {}
@@ -226,17 +270,6 @@ def create_lark_dafny_parser(
             self._complete_cache = {}
             self._valid_next_mask_cache = {}
             self._valid_next_indices_cache = {}
-            self._valid_next_count_cache = {}
-            # Dafny Seq objects are immutable in the generated runtime, but
-            # converting one to text is O(len(prefix)). Cache by object identity
-            # before conversion so repeated helper checks on the same prefix do
-            # not rescan the token sequence.
-            self._prefix_text_cache = {}
-            self._valid_prefix_by_prefix_cache = {}
-            self._complete_by_prefix_cache = {}
-            self._valid_next_mask_by_prefix_cache = {}
-            self._valid_next_count_by_prefix_cache = {}
-            self._dead_prefix_by_prefix_cache = {}
 
         def _tokens_to_text(self, tokens) -> str:
             """Convert Dafny token sequence to text."""
@@ -245,52 +278,28 @@ def create_lark_dafny_parser(
             except (TypeError, AttributeError, IndexError):
                 return str(tokens)
 
-        def _prefix_cache_key(self, prefix):
-            """Return a stable-enough cache key for one immutable Dafny prefix."""
-            try:
-                return (id(prefix), len(prefix))
-            except (TypeError, AttributeError):
-                return None
+        def _structured_text(self, prefix) -> str:
+            """Text for mask/validity; CRANE prepends opening << to expr-only prefix."""
+            inner = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+            if self._span_opener:
+                return self._span_opener + inner
+            return inner
 
-        def _prefix_cache_get(self, cache, prefix):
-            key = self._prefix_cache_key(prefix)
-            if key is None:
-                return None
-            cached = cache.get(key)
-            if cached is None:
-                return None
-            cached_prefix, cached_value = cached
-            if cached_prefix is prefix:
-                return cached_value
-            return None
-
-        def _prefix_cache_set(self, cache, prefix, value):
-            key = self._prefix_cache_key(prefix)
-            if key is not None:
-                cache[key] = (prefix, value)
-
-        def _prefix_to_text(self, prefix) -> str:
-            """Convert prefix to text once per prefix object."""
-            if len(prefix) == 0:
-                return ""
-            cached = self._prefix_cache_get(self._prefix_text_cache, prefix)
-            if cached is not None:
-                return cached
-            text = self._tokens_to_text(prefix)
-            self._prefix_cache_set(self._prefix_text_cache, prefix, text)
-            return text
+        def _complete_text(self, prefix) -> str:
+            """Text for IsCompletePrefix (expression body without delimiters)."""
+            return self._tokens_to_text(prefix) if len(prefix) > 0 else ""
 
         def _is_valid_prefix(self, text: str) -> bool:
-            """Check if text is a valid prefix of the grammar.
+            """CRANE-aligned token validity (IterGen ``_is_valid``).
 
-            Uses Syncode's IncrementalParser — which caches parser states
-            keyed by lexer-token prefixes and only feeds the delta — instead
-            of re-running Lark end-to-end. The call still lexes the current
-            text, so prefix-object caches avoid repeated Dafny-prefix scans
-            before this fast path is reached.
+            Drive Syncode's IncrementalParser, then:
+              - COMPLETE / MAYBE_COMPLETE remainder -> accept
+              - otherwise accept iff ``dfa_mask_store.is_valid_prefix(r)``
+              - parse exceptions -> reject
 
-            Falls back to full Lark.parse on unexpected exceptions so we
-            never silently return a wrong answer.
+            Matches CRANE ``itergen`` opportunistic gating so illegal whole
+            tokens (e.g. ``mx``, ``{``) are not accepted merely because the
+            incremental parser returned without raising.
             """
             with _parser_timed("is_valid_prefix.total"):
                 if not text:
@@ -299,29 +308,27 @@ def create_lark_dafny_parser(
                 if cached is not None:
                     return cached
                 try:
-                    # Drive the live incremental parser. It handles lexer-incomplete
-                    # and final-token-unexpected cases internally as "still a valid
-                    # prefix"; structural mismatches re-raise.
+                    from syncode.parse_result import RemainderState
+
                     with _parser_timed("is_valid_prefix.inc_parser"):
-                        self._inc_parser.get_acceptable_next_terminals(text)
-                    result = True
+                        r = self._inc_parser.get_acceptable_next_terminals(text)
+                    if r.remainder_state in (
+                        RemainderState.COMPLETE,
+                        RemainderState.MAYBE_COMPLETE,
+                    ):
+                        result = True
+                    elif self._dfa_mask_store is not None:
+                        with _parser_timed("is_valid_prefix.dfa"):
+                            result = bool(self._dfa_mask_store.is_valid_prefix(r))
+                    else:
+                        # No DFA store: cannot apply CRANE's second check; reject
+                        # incomplete remainders rather than over-accepting.
+                        result = False
                 except (self._UnexpectedToken, self._UnexpectedCharacters, self._UnexpectedEOF):
                     result = False
                 except Exception:
-                    # Unknown failure inside the inc parser — fall back to full
-                    # Lark parse so correctness is never compromised by the fast path.
-                    with _parser_timed("is_valid_prefix.lark_fallback"):
-                        try:
-                            self._lark.parse(text)
-                            result = True
-                        except self._UnexpectedEOF:
-                            result = True
-                        except self._UnexpectedToken as e:
-                            result = e.token.type == '$END'
-                        except self._UnexpectedCharacters:
-                            result = False
-                        except Exception:
-                            result = False
+                    # CRANE ``_is_valid`` returns False on parse exceptions.
+                    result = False
                 self._valid_prefix_cache[text] = result
                 return result
 
@@ -333,25 +340,10 @@ def create_lark_dafny_parser(
             if cached is not None:
                 return cached
             try:
-                with _parser_timed("is_complete.inc_parser"):
-                    parse_result = self._inc_parser.get_acceptable_next_terminals(text)
-                remainder_state = getattr(parse_result, "remainder_state", None)
-                remainder_state_name = getattr(remainder_state, "name", str(remainder_state))
-                result = bool(
-                    getattr(parse_result, "function_end", False)
-                    and remainder_state_name in {"COMPLETE", "MAYBE_COMPLETE"}
-                )
-            except (self._UnexpectedToken, self._UnexpectedCharacters, self._UnexpectedEOF):
-                result = False
+                self._complete_lark.parse(text)
+                result = True
             except Exception:
-                # Unknown failure inside the incremental path: keep the old full
-                # parse behavior as a correctness fallback.
-                with _parser_timed("is_complete.lark_fallback"):
-                    try:
-                        self._complete_lark.parse(text)
-                        result = True
-                    except Exception:
-                        result = False
+                result = False
             self._complete_cache[text] = result
             return result
 
@@ -362,6 +354,17 @@ def create_lark_dafny_parser(
                 if cached is not None:
                     _PARSER_TIMINGS["accept_mask.cache_hit"][1] += 1
                     return cached
+                # llguidance only at empty prefix (CARS constrain_first surface).
+                if self._llguidance_mask_store is not None and current_text == "":
+                    with _parser_timed("accept_mask.llguidance"):
+                        accept_mask = self._llguidance_mask_store.accept_mask_for_text(
+                            current_text
+                        )
+                    if self._use_forbidden_filter:
+                        if accept_mask.numel() == self._forbidden_allow_mask.numel():
+                            accept_mask = accept_mask & self._forbidden_allow_mask
+                    self._valid_next_mask_cache[current_text] = accept_mask
+                    return accept_mask
                 if self._dfa_mask_store is None:
                     # Fallback: brute force (slow but correct)
                     with _parser_timed("accept_mask.brute_force_fallback"):
@@ -372,7 +375,8 @@ def create_lark_dafny_parser(
                             if token_str and self._is_valid_prefix(current_text + token_str):
                                 accept_mask[idx] = True
                     # Apply hard-block: remove forbidden-char tokens.
-                    accept_mask = accept_mask & self._forbidden_allow_mask
+                    if self._use_forbidden_filter:
+                        accept_mask = accept_mask & self._forbidden_allow_mask
                     self._valid_next_mask_cache[current_text] = accept_mask
                     return accept_mask
 
@@ -402,7 +406,8 @@ def create_lark_dafny_parser(
                             accept_mask = accept_mask.to(dtype=accept_mask.dtype, device='cpu')
                     # Apply hard-block: remove forbidden-char tokens that slipped
                     # through syncode's over-approximation.
-                    accept_mask = accept_mask & self._forbidden_allow_mask
+                    if self._use_forbidden_filter:
+                        accept_mask = accept_mask & self._forbidden_allow_mask
                     self._valid_next_mask_cache[current_text] = accept_mask
                     return accept_mask
                 except Exception:
@@ -412,13 +417,7 @@ def create_lark_dafny_parser(
 
         def _get_accept_mask_for_prefix(self, prefix):
             """Get boolean accept mask for a Dafny prefix sequence."""
-            cached = self._prefix_cache_get(self._valid_next_mask_by_prefix_cache, prefix)
-            if cached is not None:
-                return cached
-            current_text = self._prefix_to_text(prefix)
-            accept_mask = self._get_accept_mask_for_text(current_text)
-            self._prefix_cache_set(self._valid_next_mask_by_prefix_cache, prefix, accept_mask)
-            return accept_mask
+            return self._get_accept_mask_for_text(self._structured_text(prefix))
 
         def _get_valid_token_indices(self, current_text: str):
             """Get list of valid token indices using a cached accept mask."""
@@ -430,16 +429,6 @@ def create_lark_dafny_parser(
             self._valid_next_indices_cache[current_text] = valid_indices
             return valid_indices
 
-        def _valid_next_token_count_for_text(self, current_text: str) -> int:
-            """Count valid next tokens once per text prefix."""
-            cached = self._valid_next_count_cache.get(current_text)
-            if cached is not None:
-                return cached
-            accept_mask = self._get_accept_mask_for_text(current_text)
-            count = int(accept_mask.sum().item())
-            self._valid_next_count_cache[current_text] = count
-            return count
-
         def is_valid_prefix(self, text: str) -> bool:
             return self._is_valid_prefix(text)
 
@@ -449,34 +438,35 @@ def create_lark_dafny_parser(
         def IsValidPrefix(self, prefix) -> bool:
             """Dafny interface: Check if prefix is valid."""
             with _parser_timed("IsValidPrefix.dafny"):
-                if len(prefix) == 0:
+                if len(prefix) == 0 and not self._span_opener:
                     return True
-                cached = self._prefix_cache_get(self._valid_prefix_by_prefix_cache, prefix)
-                if cached is not None:
-                    return cached
-                text = self._prefix_to_text(prefix)
-                result = self._is_valid_prefix(text)
-                self._prefix_cache_set(self._valid_prefix_by_prefix_cache, prefix, result)
-                return result
+                # CARS try_advance: reject prefixes llguidance cannot consume (stricter
+                # than Lark alone). Uses per-piece ids to avoid BPE re-merge shortfall.
+                if self._llguidance_mask_store is not None and len(prefix) > 0:
+                    pieces = [dafny_seq_to_str(prefix[i]) for i in range(len(prefix))]
+                    ids: list[int] = []
+                    tok = self._llguidance_mask_store._tokenizer
+                    for piece in pieces:
+                        if piece:
+                            ids.extend(tok.encode(piece, add_special_tokens=False))
+                    store = self._llguidance_mask_store
+                    store.reset()
+                    if ids and store._matcher.try_consume_tokens(list(ids)) < len(ids):
+                        return False
+                return self._is_valid_prefix(self._structured_text(prefix))
 
         def IsCompletePrefix(self, prefix) -> bool:
             """Dafny interface: Check if prefix is complete."""
             with _parser_timed("IsCompletePrefix.dafny"):
                 if len(prefix) == 0:
                     return False
-                cached = self._prefix_cache_get(self._complete_by_prefix_cache, prefix)
-                if cached is not None:
-                    return cached
-                text = self._prefix_to_text(prefix)
-                result = self._is_complete(text)
-                self._prefix_cache_set(self._complete_by_prefix_cache, prefix, result)
-                return result
+                return self._is_complete(self._complete_text(prefix))
 
         def ValidNextTokens(self, prefix):
             """Dafny interface: Get valid next tokens using DFA mask store."""
             with _parser_timed("ValidNextTokens.total"):
                 with _parser_timed("ValidNextTokens.tokens_to_text"):
-                    current_text = self._prefix_to_text(prefix)
+                    current_text = self._structured_text(prefix)
 
                 if current_text and not self._is_valid_prefix(current_text):
                     return _dafny.SeqWithoutIsStrInference([])
@@ -491,41 +481,18 @@ def create_lark_dafny_parser(
         def ValidNextTokenCount(self, prefix):
             """Dafny interface: Count valid next tokens without materializing them."""
             with _parser_timed("ValidNextTokenCount.dafny"):
-                cached = self._prefix_cache_get(self._valid_next_count_by_prefix_cache, prefix)
-                if cached is not None:
-                    return cached
-                current_text = self._prefix_to_text(prefix)
+                current_text = self._structured_text(prefix)
 
                 if current_text and not self._is_valid_prefix(current_text):
-                    self._prefix_cache_set(self._valid_next_count_by_prefix_cache, prefix, 0)
                     return 0
 
-                count = self._valid_next_token_count_for_text(current_text)
-                self._prefix_cache_set(self._valid_next_count_by_prefix_cache, prefix, count)
-                return count
-
-        def IsDeadPrefix(self, prefix):
-            """Dafny interface: Check dead-end status using one text conversion."""
-            with _parser_timed("IsDeadPrefix.dafny"):
-                cached = self._prefix_cache_get(self._dead_prefix_by_prefix_cache, prefix)
-                if cached is not None:
-                    return cached
-
-                current_text = self._prefix_to_text(prefix)
-                if current_text and not self._is_valid_prefix(current_text):
-                    result = True
-                elif self._is_complete(current_text):
-                    result = False
-                else:
-                    result = self._valid_next_token_count_for_text(current_text) == 0
-
-                self._prefix_cache_set(self._dead_prefix_by_prefix_cache, prefix, result)
-                return result
+                accept_mask = self._get_accept_mask_for_text(current_text)
+                return int(accept_mask.sum().item())
 
         def ValidNextToken(self, prefix, token):
             """Dafny interface: Check one candidate token against the DFA mask."""
             with _parser_timed("ValidNextToken.dafny"):
-                current_text = self._prefix_to_text(prefix)
+                current_text = self._structured_text(prefix)
 
                 if current_text and not self._is_valid_prefix(current_text):
                     return False
@@ -549,7 +516,7 @@ def create_lark_dafny_parser(
             loop, instead of one DFA query per token in a Dafny-compiled loop.
             """
             with _parser_timed("GroupHasValidMember.dafny"):
-                current_text = self._prefix_to_text(prefix)
+                current_text = self._structured_text(prefix)
                 if current_text and not self._is_valid_prefix(current_text):
                     return False
                 accept_mask = self._get_accept_mask_for_text(current_text)
@@ -584,25 +551,110 @@ def create_lark_dafny_parser(
             when the count rises, one more table/column name just finished.
             """
             with _parser_timed("CompletedSchemaSymbolCount.dafny"):
-                current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
-                if not current_text:
-                    return 0
-                try:
-                    # Drive the inc parser so symbol_pos_map reflects THIS prefix.
-                    self._inc_parser.get_acceptable_next_terminals(current_text)
-                except Exception:
-                    # Not parseable as a prefix here: report no completed symbols so
-                    # the boundary simply doesn't fire (caller keeps prevCount).
-                    return 0
-                spm = getattr(self._inc_parser, "symbol_pos_map", None)
+                return self.CompletedSymbolCount(prefix, "", 0)
+
+
+        def _drive_symbol_map(self, prefix):
+            current_text = self._structured_text(prefix)
+            if not current_text:
+                return None
+            try:
+                self._inc_parser.get_acceptable_next_terminals(current_text)
+            except Exception:
+                return None
+            return getattr(self._inc_parser, "symbol_pos_map", None)
+
+        def StructuredCharLength(self, prefix) -> int:
+            return len(self._structured_text(prefix))
+
+        def CompletedSymbolCount(self, prefix, unit: str, after_char: int = 0) -> int:
+            """IterGen-style count of completed `unit` symbols ending after after_char.
+
+            Empty unit "" sums table_ref+column_ref (SQL schema aggregate).
+            """
+            with _parser_timed("CompletedSymbolCount.dafny"):
+                spm = self._drive_symbol_map(prefix)
                 if spm is None:
                     return 0
-                # Schema-bearing symbols in our sql.lark: table_ref + column_ref.
-                # get_symbol_count(after=0) counts every completed span.
-                return int(
-                    spm.get_symbol_count("table_ref")
-                    + spm.get_symbol_count("column_ref")
-                )
+                after = int(after_char)
+                if not unit:
+                    return int(
+                        spm.get_symbol_count("table_ref", after=after)
+                        + spm.get_symbol_count("column_ref", after=after)
+                    )
+                try:
+                    return int(spm.get_symbol_count(unit, after=after))
+                except Exception:
+                    return 0
+
+        def SymbolEndTokenIndex(self, prefix, unit: str, which: int) -> int:
+            spm = self._drive_symbol_map(prefix)
+            if spm is None:
+                return len(prefix) if hasattr(prefix, "__len__") else 0
+            try:
+                char_pos = int(spm.get_symbol_pos_end(unit, int(which)))
+            except Exception:
+                return len(prefix)
+            # Exclusive token index covering chars up to char_pos
+            return int(self._char_pos_to_token_index_exclusive(prefix, char_pos))
+
+        def _char_pos_to_token_index_exclusive(self, prefix, char_pos: int) -> int:
+            """Smallest token index i such that chars of prefix[:i] cover char_pos in structured text."""
+            structured = self._structured_text(prefix)
+            opener_len = len(self._span_opener) if self._span_opener else 0
+            # char_pos is in structured coordinates; map to inner prefix coords
+            inner_pos = max(0, char_pos - opener_len)
+            if inner_pos <= 0:
+                return 0
+            acc = 0
+            for i in range(len(prefix)):
+                piece = self._tokens_to_text([prefix[i]])
+                acc += len(piece)
+                if acc >= inner_pos:
+                    return i + 1
+            return len(prefix)
+
+        def _char_pos_to_token_index(self, prefix, char_pos: int) -> int:
+            """Map structured-text char_pos to inclusive token index in expr-only prefix."""
+            opener_len = len(self._span_opener) if self._span_opener else 0
+            inner_pos = max(0, int(char_pos) - opener_len)
+            if inner_pos <= 0:
+                return 0
+            acc = 0
+            for i in range(len(prefix)):
+                piece = self._tokens_to_text([prefix[i]])
+                next_acc = acc + len(piece)
+                if next_acc > inner_pos:
+                    return i
+                acc = next_acc
+            return len(prefix)
+
+        def SymbolStartTokenIndex(self, prefix, unit: str, which: int) -> int:
+            spm = self._drive_symbol_map(prefix)
+            if spm is None:
+                return 0
+            try:
+                char_pos = int(spm.get_symbol_pos_start(unit, int(which)))
+            except Exception:
+                return 0
+            return int(self._char_pos_to_token_index(prefix, char_pos))
+
+        def RenderSymbol(self, prefix, unit: str, which: int) -> str:
+            spm = self._drive_symbol_map(prefix)
+            if spm is None:
+                return ""
+            try:
+                start = int(spm.get_symbol_pos_start(unit, int(which)))
+                end = int(spm.get_symbol_pos_end(unit, int(which)))
+            except Exception:
+                return ""
+            text = self._structured_text(prefix)
+            if end > len(text):
+                end = len(text)
+            if start < 0:
+                start = 0
+            return text[start:end]
+
 
     return SyncodeDafnyParser
 

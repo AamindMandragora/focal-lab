@@ -1,0 +1,11 @@
+● csd-warm-recovery.service - Dynamic CSD warm-recovery queue supervisor
+     Loaded: loaded (/home/aadivyar/.config/systemd/user/csd-warm-recovery.service; enabled; vendor preset: enabled)
+     Active: active (running) since Wed 2026-07-15 08:16:36 UTC; 1min 38s ago
+   Main PID: 3202878 (python)
+      Tasks: 1 (limit: 229913)
+     Memory: 23.3M
+        CPU: 886ms
+     CGroup: /user.slice/user-1048.slice/user@1048.service/app.slice/csd-warm-recovery.service
+             └─3202878 /apps/conda/aadivyar/envs/csd/bin/python /home/aadivyar/csd-generation/scripts/runtime/supervise_warm_task_recovery.py --repo /home/aadivyar/csd-generation --manifest /home/aadivyar/csd-generation/saved-results/2026-07-14-warm-task-recovery-manifest.json --controller /home/aadivyar/csd-generation/scripts/runtime/run_warm_task_recovery_queue.py --resume-script /home/aadivyar/csd-generation/.context/resume_http429_cells.sh --python /apps/conda/aadivyar/envs/csd/bin/python --controller-lock /home/aadivyar/csd-generation/.context/warm_task_recovery_0714/controller.lock --controller-pid-file /home/aadivyar/csd-generation/.context/warm_task_recovery_0714/controller.pid --state-file /home/aadivyar/csd-generation/.context/warm_task_recovery_0714/supervisor_state.json --pending-manifest /home/aadivyar/csd-generation/.context/warm_task_recovery_0714/pending_manifest.json --poll-seconds 30 --retry-seconds 3600
+
+Jul 15 08:16:36 focalcluster systemd[2694091]: Started Dynamic CSD warm-recovery queue supervisor.

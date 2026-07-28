@@ -48,6 +48,12 @@ def _is_pathological_gsm_scoring_expression(expression: str) -> bool:
 
 
 def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
+    """Static ``gsm.lark`` for CRANE-faithful syntax scoring only.
+
+    Constrained decode uses dataset-owned ``crane_valid_vars_gsm_grammar`` per
+    example (see ``build_dynamic_parser``); ``--grammars-dir`` does not change
+    adaptive CRANE decode masks.
+    """
     return grammars_dir / "gsm.lark"
 
 
@@ -128,7 +134,7 @@ def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
 def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str, Any]):
     from synthesis.evaluate.benchmarks.common.parser_utils import create_lark_dafny_parser
     from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import (
-        build_dynamic_grammar,
+        crane_valid_vars_gsm_grammar,
         extract_variables_from_mapping,
     )
 
@@ -142,13 +148,17 @@ def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str,
     cache_key = tuple(sorted(allowed_variables))
     parser_factory = evaluator._dynamic_parser_factory_cache.get(cache_key)
     if parser_factory is None:
-        grammar_text = build_dynamic_grammar(evaluator._get_grammar_text(), list(cache_key))
+        grammar_text = crane_valid_vars_gsm_grammar(list(cache_key))
         parser_factory = create_lark_dafny_parser(
             grammar_text,
             env["VerifiedDecoderAgent"],
             env["_dafny"],
-            start="csd_start",
+            start="start",
             tokenizer=env["tokenizer"],
+            dfa_mode="grammar_strict",
+            apply_forbidden_token_filter=False,
+            constrained_span_opener="<<",
+            complete_start="expr",
         )
         evaluator._dynamic_parser_factory_cache[cache_key] = parser_factory
 
@@ -264,8 +274,8 @@ def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
 # This replaces the OLD metric (all visible spans + per-example variable
 # restriction) which was stricter than CRANE and caused phantom-variable
 # expressions to count as syntax failures even though CRANE would pass them.
-# The per-example dynamic grammar is still used at DECODE TIME (in
-# build_dynamic_parser) to restrict what the LM can generate — this only
+# The per-example CRANE-shaped grammar (see crane_valid_vars_gsm_grammar) is used at
+# DECODE TIME in build_dynamic_parser to restrict what the LM can generate — this only
 # changes the post-hoc scoring metric.
 # ---------------------------------------------------------------------------
 

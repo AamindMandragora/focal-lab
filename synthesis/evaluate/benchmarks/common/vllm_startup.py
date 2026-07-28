@@ -98,7 +98,20 @@ _MEMORY_PRESSURE_MESSAGE_MARKERS = (
     "no available memory for the cache blocks",
     "no free memory to run vllm",
     "kv cache",
+    # vLLM's own wording when the requested gpu_memory_utilization is larger
+    # than what is actually free -- the exact case the retry ladder exists to
+    # back off from. On a shared GPU this is the message you get when another
+    # user already holds the card, so missing it meant the run gave up instead
+    # of retrying at a smaller share.
+    "desired gpu memory utilization",
+    "free memory on device",
 )
+
+# Deliberately NOT a marker: "Engine core initialization failed". That is
+# vLLM's generic wrapper around *any* engine startup failure -- a missing
+# module or a bad argument produces it too. Treating it as memory pressure
+# would send real errors around the utilization ladder and then report them
+# as a generic startup failure, hiding the actual cause.
 
 
 def is_vllm_startup_memory_error(exc: BaseException) -> bool:

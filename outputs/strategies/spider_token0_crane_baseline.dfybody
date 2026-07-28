@@ -1,0 +1,27 @@
+// CSD_RATIONALE_BEGIN
+// Minimal CRANE-style token-0 constrained body for probe.
+// In token-0 mode (SPIDER_TOKEN0_CONSTRAINED=1), the runtime sets
+// start_inside_constrained=True so insideConstrained=true and
+// currentConstrained=[] on entry. We run ConstrainedGeneration directly
+// (no OpenConstrainedSpan needed -- we are already inside), then mark
+// the span closed on exit. If we enter NOT inside constrained (unexpected),
+// we just do nothing (cost=0; MyCSDStrategy cost:=1 fallback covers progress).
+// CSD_RATIONALE_END
+
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+if insideConstrained && maxSteps > 0 {
+  var constrainedOut, terminatedByEos := helpers.ConstrainedGeneration(
+    lm, parser, prompt, maxSteps, eosToken
+  );
+  // constrainedOut is the grammar-valid SQL tokens.
+  // |constrainedOut| <= maxSteps by ConstrainedGeneration ensures |generated| <= maxSteps.
+  generated := generatedPrefix + constrainedOut;
+  insideConstrainedOut := false;
+  currentConstrainedOut := [];
+  // Use |constrainedOut| as cost: trivially <= maxSteps by the length ensures.
+  cost := |constrainedOut|;
+}

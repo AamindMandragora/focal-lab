@@ -1,0 +1,1070 @@
+{
+  "accuracy": 0.7,
+  "syntax_rate": 0.88,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 112.7406,
+    "mean_generation_seconds_per_example": 1.127406,
+    "examples_with_generation_timing": 100,
+    "total_output_tokens": 2781,
+    "mean_output_tokens_per_example": 27.81,
+    "examples_with_token_counts": 100,
+    "evaluator_total_time_seconds": 162.458,
+    "evaluator_max_sample_time_seconds": 4.0355
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM singer >>",
+      "example_index": 0,
+      "source_index": 0,
+      "spider_source_index": 0,
+      "db_id": "concert_singer",
+      "num_tokens": 10,
+      "generation_seconds": 1.30283
+    },
+    {
+      "question": "What is the total number of singers?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM singer >>",
+      "example_index": 1,
+      "source_index": 1,
+      "spider_source_index": 1,
+      "db_id": "concert_singer",
+      "num_tokens": 10,
+      "generation_seconds": 0.383843
+    },
+    {
+      "question": "Find the number of concerts happened in the stadium with the highest capacity .",
+      "generated_answer": "SQL: <<SELECT count(*) FROM concert WHERE stadium_id = (SELECT stadium_id FROM stadium ORDER BY capacity DESC LIMIT 1)>>",
+      "example_index": 2,
+      "source_index": 43,
+      "spider_source_index": 43,
+      "db_id": "concert_singer",
+      "num_tokens": 27,
+      "generation_seconds": 0.991297
+    },
+    {
+      "question": "Find the maximum weight for each type of pet. List the maximum weight and pet type.",
+      "generated_answer": "SQL: <<SELECT max(weight) ,  pettype FROM pets GROUP BY pettype >>",
+      "example_index": 3,
+      "source_index": 49,
+      "spider_source_index": 49,
+      "db_id": "pets_1",
+      "num_tokens": 19,
+      "generation_seconds": 0.766852
+    },
+    {
+      "question": "Find number of pets owned by students who are older than 20.",
+      "generated_answer": "SQL: <<SELECT count(*) FROM student WHERE age > 20 JOIN!",
+      "example_index": 4,
+      "source_index": 51,
+      "spider_source_index": 51,
+      "db_id": "pets_1",
+      "num_tokens": 17,
+      "generation_seconds": 0.658114
+    },
+    {
+      "question": "What type of pet is the youngest animal, and how much does it weigh?",
+      "generated_answer": "SQL: <<SELECT pettype ,  weight FROM pets ORDER BY pet_age ASC LIMIT 1 >>",
+      "example_index": 5,
+      "source_index": 68,
+      "spider_source_index": 68,
+      "db_id": "pets_1",
+      "num_tokens": 21,
+      "generation_seconds": 0.806849
+    },
+    {
+      "question": "What is the average and maximum age for each pet type?",
+      "generated_answer": "SQL: <<SELECT pets.pettype ,  avg(pets.pet_age) ,  max(pets.pet_age) FROM pets JOIN has_pet ON pets.petid = has_pet.petid GROUP BY pets.pettype >>",
+      "example_index": 6,
+      "source_index": 72,
+      "spider_source_index": 72,
+      "db_id": "pets_1",
+      "num_tokens": 44,
+      "generation_seconds": 1.991162
+    },
+    {
+      "question": "Find the name of the makers that produced some cars in the year of 1970?",
+      "generated_answer": "SQL: <<SELECT DISTINCT car_makers.maker FROM car_makers JOIN model_list ON car_makers.id = model_list.maker JOIN car_names ON model_list.model = car_names.model JOIN cars_data ON car_names.makeid = cars_data.id WHERE cars_data.year = 1970 >>",
+      "example_index": 7,
+      "source_index": 99,
+      "spider_source_index": 99,
+      "db_id": "car_1",
+      "num_tokens": 62,
+      "generation_seconds": 2.406957
+    },
+    {
+      "question": "What are the different models for the cards produced after 1980?",
+      "generated_answer": "SQL: <<SELECT DISTINCT model FROM car_names WHERE year > 1980 >>",
+      "example_index": 8,
+      "source_index": 104,
+      "spider_source_index": 104,
+      "db_id": "car_1",
+      "num_tokens": 19,
+      "generation_seconds": 0.814845
+    },
+    {
+      "question": "What is the count of the car models produced in the United States?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM car_makers WHERE country = 'United States' AND maker IN (SELECT maker FROM model_list)>>",
+      "example_index": 9,
+      "source_index": 116,
+      "spider_source_index": 116,
+      "db_id": "car_1",
+      "num_tokens": 28,
+      "generation_seconds": 1.200338
+    },
+    {
+      "question": "What is the average weight of cars each year?",
+      "generated_answer": "SQL: <<SELECT year ,  avg(weight) FROM cars_data GROUP BY year >>",
+      "example_index": 10,
+      "source_index": 127,
+      "spider_source_index": 127,
+      "db_id": "car_1",
+      "num_tokens": 18,
+      "generation_seconds": 0.780239
+    },
+    {
+      "question": "What is the average horsepower for all cars produced before 1980 ?",
+      "generated_answer": "SQL: <<SELECT avg(horsepower) FROM cars_data WHERE year < 1980 >>",
+      "example_index": 11,
+      "source_index": 136,
+      "spider_source_index": 136,
+      "db_id": "car_1",
+      "num_tokens": 22,
+      "generation_seconds": 0.93251
+    },
+    {
+      "question": "For a volvo model, how many cylinders does the version with least accelerate have?",
+      "generated_answer": "SQL: <<SELECT min(cars_data.cylinders) FROM car_names JOIN model_list ON car_names.model = model_list.model JOIN car_makers ON model_list.maker = car_makers.id JOIN cars_data ON car_names.makeid = cars_data.id WHERE car_makers.maker = 'Volvo' >>",
+      "example_index": 12,
+      "source_index": 158,
+      "spider_source_index": 158,
+      "db_id": "car_1",
+      "num_tokens": 65,
+      "generation_seconds": 2.852197
+    },
+    {
+      "question": "What are the names of the countries with no car makers?",
+      "generated_answer": "SQL: <<SELECT countryname FROM countries WHERE countryid NOT IN (SELECT country FROM car_makers)>>",
+      "example_index": 13,
+      "source_index": 174,
+      "spider_source_index": 174,
+      "db_id": "car_1",
+      "num_tokens": 22,
+      "generation_seconds": 0.894444
+    },
+    {
+      "question": "How many flights do we have?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM flights >>",
+      "example_index": 14,
+      "source_index": 191,
+      "spider_source_index": 191,
+      "db_id": "flight_2",
+      "num_tokens": 10,
+      "generation_seconds": 0.400539
+    },
+    {
+      "question": "What is the airport name for airport 'AKO'?",
+      "generated_answer": "SQL: <<SELECT airportname FROM airports WHERE airportcode = 'AKO' >>",
+      "example_index": 15,
+      "source_index": 199,
+      "spider_source_index": 199,
+      "db_id": "flight_2",
+      "num_tokens": 18,
+      "generation_seconds": 0.689759
+    },
+    {
+      "question": "Return the name of the airport with code 'AKO'.",
+      "generated_answer": "SQL: <<SELECT airportname FROM airports WHERE airportcode = 'AKO' >>",
+      "example_index": 16,
+      "source_index": 200,
+      "spider_source_index": 200,
+      "db_id": "flight_2",
+      "num_tokens": 18,
+      "generation_seconds": 0.612322
+    },
+    {
+      "question": "Give the number of Jetblue Airways flights.",
+      "generated_answer": "SQL: <<SELECT count(*) FROM flights WHERE airline = 'Jetblue Airways' >>",
+      "example_index": 17,
+      "source_index": 214,
+      "spider_source_index": 214,
+      "db_id": "flight_2",
+      "num_tokens": 18,
+      "generation_seconds": 0.727582
+    },
+    {
+      "question": "How many 'United Airlines' flights depart from Airport 'AHD'?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM flights JOIN airlines ON airlines.uid = flights.airline JOIN airports ON airports.airportcode = flights.sourceairport WHERE airlines.airline = 'United Airlines' AND airports.airportcode = 'AHD' >>",
+      "example_index": 18,
+      "source_index": 217,
+      "spider_source_index": 217,
+      "db_id": "flight_2",
+      "num_tokens": 49,
+      "generation_seconds": 2.048543
+    },
+    {
+      "question": "Count the number of United Airlines flights that arrive in Aberdeen.",
+      "generated_answer": "SQL: <<SELECT count(*) FROM flights JOIN airlines ON airlines.uid = flights.airline JOIN airports ON airports.airportcode = flights.destairport WHERE airlines.airline = 'United Airlines' AND airports.city = 'Aberdeen' >>",
+      "example_index": 19,
+      "source_index": 220,
+      "spider_source_index": 220,
+      "db_id": "flight_2",
+      "num_tokens": 48,
+      "generation_seconds": 1.728449
+    },
+    {
+      "question": "What is the code of airport that has fewest number of flights?",
+      "generated_answer": "SQL: <<SELECT destairport FROM flights GROUP BY destairport ORDER BY count(*) ASC LIMIT 1 >>",
+      "example_index": 20,
+      "source_index": 227,
+      "spider_source_index": 227,
+      "db_id": "flight_2",
+      "num_tokens": 22,
+      "generation_seconds": 0.814829
+    },
+    {
+      "question": "Which airline has most number of flights?",
+      "generated_answer": "SQL: <<SELECT airline FROM flights GROUP BY airline ORDER BY count(*) DESC LIMIT 1 >>",
+      "example_index": 21,
+      "source_index": 229,
+      "spider_source_index": 229,
+      "db_id": "flight_2",
+      "num_tokens": 20,
+      "generation_seconds": 0.786642
+    },
+    {
+      "question": "Find all airlines that have at least 10 flights.",
+      "generated_answer": "SQL: <<SELECT airline FROM airlines JOIN flights ON airlines.uid = flights.airline GROUP BY airline HAVING COUNT(*) >= 10 >>",
+      "example_index": 22,
+      "source_index": 241,
+      "spider_source_index": 241,
+      "db_id": "flight_2",
+      "num_tokens": 29,
+      "generation_seconds": 1.170657
+    },
+    {
+      "question": "Which cities do more than one employee under age 30 come from?",
+      "generated_answer": "SQL: <<SELECT city FROM employee WHERE age < 30 GROUP BY city HAVING COUNT(*) > 1 >>",
+      "example_index": 23,
+      "source_index": 265,
+      "spider_source_index": 265,
+      "db_id": "employee_hire_evaluation",
+      "num_tokens": 25,
+      "generation_seconds": 0.980649
+    },
+    {
+      "question": "Which employee received the biggest bonus? Give me the employee name.",
+      "generated_answer": "SQL: <<SELECT employee.name FROM employee JOIN evaluation ON employee.employee_id = evaluation.employee_id ORDER BY evaluation.bonus DESC LIMIT 1 >>",
+      "example_index": 24,
+      "source_index": 280,
+      "spider_source_index": 280,
+      "db_id": "employee_hire_evaluation",
+      "num_tokens": 29,
+      "generation_seconds": 1.177023
+    },
+    {
+      "question": "What is the name of the shop that is hiring the largest number of employees?",
+      "generated_answer": "SQL: <<SELECT shop.name FROM shop JOIN hiring ON shop.shop_id = hiring.shop_id GROUP BY shop.name ORDER BY COUNT(hiring.employee_id) DESC LIMIT 1 >>",
+      "example_index": 25,
+      "source_index": 283,
+      "spider_source_index": 283,
+      "db_id": "employee_hire_evaluation",
+      "num_tokens": 36,
+      "generation_seconds": 1.461694
+    },
+    {
+      "question": "How many documents do we have?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM documents >>",
+      "example_index": 26,
+      "source_index": 297,
+      "spider_source_index": 297,
+      "db_id": "cre_Doc_Template_Mgt",
+      "num_tokens": 10,
+      "generation_seconds": 0.450133
+    },
+    {
+      "question": "Return the ids of templates that have the code PP or PPT.",
+      "generated_answer": "SQL: <<SELECT template_id FROM templates WHERE template_type_code IN ('PP', 'PPT') >>",
+      "example_index": 27,
+      "source_index": 324,
+      "spider_source_index": 324,
+      "db_id": "cre_Doc_Template_Mgt",
+      "num_tokens": 22,
+      "generation_seconds": 0.926854
+    },
+    {
+      "question": "Which template type code has most number of templates?",
+      "generated_answer": "SQL: <<SELECT template_type_code FROM templates GROUP BY template_type_code ORDER BY count(*) DESC LIMIT 1 >>",
+      "example_index": 28,
+      "source_index": 331,
+      "spider_source_index": 331,
+      "db_id": "cre_Doc_Template_Mgt",
+      "num_tokens": 24,
+      "generation_seconds": 0.940775
+    },
+    {
+      "question": "Return the different descriptions for templates that have been used in a document.",
+      "generated_answer": "SQL: <<SELECT DISTINCT ref_template_types.template_type_description FROM templates JOIN documents ON templates.template_id = documents.template_id JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code >>",
+      "example_index": 29,
+      "source_index": 354,
+      "spider_source_index": 354,
+      "db_id": "cre_Doc_Template_Mgt",
+      "num_tokens": 41,
+      "generation_seconds": 1.836135
+    },
+    {
+      "question": "What are the template ids with template type description \"Presentation\".",
+      "generated_answer": "SQL: <<SELECT template_id FROM templates JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code WHERE ref_template_types.template_type_description = 'Presentation' >>",
+      "example_index": 30,
+      "source_index": 355,
+      "spider_source_index": 355,
+      "db_id": "cre_Doc_Template_Mgt",
+      "num_tokens": 37,
+      "generation_seconds": 1.614031
+    },
+    {
+      "question": "How many paragraphs in total?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM paragraphs >>",
+      "example_index": 31,
+      "source_index": 357,
+      "spider_source_index": 357,
+      "db_id": "cre_Doc_Template_Mgt",
+      "num_tokens": 10,
+      "generation_seconds": 0.404995
+    },
+    {
+      "question": "What are the paragraph texts for the document with the name 'Customer reviews'?",
+      "generated_answer": "SQL: <<SELECT paragraph_text FROM paragraphs WHERE document_id = (SELECT document_id FROM documents WHERE document_name = 'Customer reviews') >>",
+      "example_index": 32,
+      "source_index": 366,
+      "spider_source_index": 366,
+      "db_id": "cre_Doc_Template_Mgt",
+      "num_tokens": 28,
+      "generation_seconds": 1.092148
+    },
+    {
+      "question": "Show all document ids, names and the number of paragraphs in each document.",
+      "generated_answer": "SQL: <<SELECT document_id ,  document_name ,  count(*) FROM documents JOIN paragraphs ON documents.document_id = paragraphs.document_id GROUP BY document_id ,  document_name >>",
+      "example_index": 33,
+      "source_index": 369,
+      "spider_source_index": 369,
+      "db_id": "cre_Doc_Template_Mgt",
+      "num_tokens": 36,
+      "generation_seconds": 1.418774
+    },
+    {
+      "question": "Give the ids of documents that have between one and two paragraphs.",
+      "generated_answer": "SQL: <<SELECT document_id FROM paragraphs GROUP BY document_id HAVING COUNT(*) BETWEEN 1 AND 2 >>",
+      "example_index": 34,
+      "source_index": 378,
+      "spider_source_index": 378,
+      "db_id": "cre_Doc_Template_Mgt",
+      "num_tokens": 24,
+      "generation_seconds": 0.918396
+    },
+    {
+      "question": "How many teachers are there?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM teacher >>",
+      "example_index": 35,
+      "source_index": 381,
+      "spider_source_index": 381,
+      "db_id": "course_teach",
+      "num_tokens": 10,
+      "generation_seconds": 0.401426
+    },
+    {
+      "question": "What is the total count of teachers?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM teacher >>",
+      "example_index": 36,
+      "source_index": 382,
+      "spider_source_index": 382,
+      "db_id": "course_teach",
+      "num_tokens": 10,
+      "generation_seconds": 0.394633
+    },
+    {
+      "question": "What is the name of each teacher and what course they teach?",
+      "generated_answer": "SQL: <<SELECT teacher.name, course.course FROM teacher JOIN course_arrange ON teacher.teacher_id = course_arrange.teacher_id JOIN course ON course_arrange.course_id = course.course_id >>",
+      "example_index": 37,
+      "source_index": 400,
+      "spider_source_index": 400,
+      "db_id": "course_teach",
+      "num_tokens": 39,
+      "generation_seconds": 1.561474
+    },
+    {
+      "question": "Find the average number of staff working for the museums that were open before 2009.",
+      "generated_answer": "SQL: <<SELECT avg(num_of_staff) FROM museum WHERE open_year < 2009 >>",
+      "example_index": 38,
+      "source_index": 416,
+      "spider_source_index": 416,
+      "db_id": "museum_visit",
+      "num_tokens": 22,
+      "generation_seconds": 0.86242
+    },
+    {
+      "question": "What are the opening year and staff number of the museum named Plaza Museum?",
+      "generated_answer": "SQL: <<SELECT open_year ,  num_of_staff FROM museum WHERE name = 'Plaza Museum' >>",
+      "example_index": 39,
+      "source_index": 417,
+      "spider_source_index": 417,
+      "db_id": "museum_visit",
+      "num_tokens": 23,
+      "generation_seconds": 0.880685
+    },
+    {
+      "question": "find the id, name and age for visitors who visited some museums more than once.",
+      "generated_answer": "SQL: <<SELECT id, name, age FROM visitor WHERE id IN (SELECT visitor_id FROM visit GROUP BY visitor_id HAVING COUNT(*) > 1)>>",
+      "example_index": 40,
+      "source_index": 419,
+      "spider_source_index": 419,
+      "db_id": "museum_visit",
+      "num_tokens": 33,
+      "generation_seconds": 1.275074
+    },
+    {
+      "question": "What are the average and maximum number of tickets bought in all visits?",
+      "generated_answer": "SQL: <<SELECT avg(num_of_ticket) ,  max(num_of_ticket) FROM visit >>",
+      "example_index": 41,
+      "source_index": 424,
+      "spider_source_index": 424,
+      "db_id": "museum_visit",
+      "num_tokens": 20,
+      "generation_seconds": 0.7619
+    },
+    {
+      "question": "List the first name and birth date of all players from the country with code USA.",
+      "generated_answer": "SQL: <<SELECT first_name ,  birth_date FROM players WHERE country_code = 'USA' >>",
+      "example_index": 42,
+      "source_index": 433,
+      "spider_source_index": 433,
+      "db_id": "wta_1",
+      "num_tokens": 21,
+      "generation_seconds": 0.821412
+    },
+    {
+      "question": "List the number of all matches who played in years of 2013 or 2016.",
+      "generated_answer": "SQL: <<SELECT count(*) FROM matches WHERE YEAR = 2013 OR YEAR = 2016 >>",
+      "example_index": 43,
+      "source_index": 449,
+      "spider_source_index": 449,
+      "db_id": "wta_1",
+      "num_tokens": 26,
+      "generation_seconds": 1.025277
+    },
+    {
+      "question": "Find the first name and country code of the oldest player.",
+      "generated_answer": "SQL: <<SELECT first_name, country_code FROM players ORDER BY birth_date ASC LIMIT 1 >>",
+      "example_index": 44,
+      "source_index": 453,
+      "spider_source_index": 453,
+      "db_id": "wta_1",
+      "num_tokens": 21,
+      "generation_seconds": 0.805026
+    },
+    {
+      "question": "What is the first name and country code of the oldest player?",
+      "generated_answer": "SQL: <<SELECT first_name, country_code FROM players ORDER BY birth_date ASC LIMIT 1 >>",
+      "example_index": 45,
+      "source_index": 454,
+      "spider_source_index": 454,
+      "db_id": "wta_1",
+      "num_tokens": 21,
+      "generation_seconds": 0.734918
+    },
+    {
+      "question": "List the first and last name of all players who are left / L hand in the order of birth date.",
+      "generated_answer": "SQL: <<SELECT first_name ,  last_name FROM players WHERE hand = 'L' ORDER BY birth_date >>",
+      "example_index": 46,
+      "source_index": 457,
+      "spider_source_index": 457,
+      "db_id": "wta_1",
+      "num_tokens": 24,
+      "generation_seconds": 0.928381
+    },
+    {
+      "question": "What is the first name and country code of the player with the most tours?",
+      "generated_answer": "SQL: <<SELECT first_name, country_code FROM players WHERE player_id IN (SELECT player_id FROM rankings GROUP BY player_id ORDER BY COUNT(*) DESC LIMIT 1)>>",
+      "example_index": 47,
+      "source_index": 460,
+      "spider_source_index": 460,
+      "db_id": "wta_1",
+      "num_tokens": 35,
+      "generation_seconds": 1.263688
+    },
+    {
+      "question": "What is the code of the country with the most players?",
+      "generated_answer": "SQL: <<SELECT country_code FROM players GROUP BY country_code ORDER BY count(*) DESC LIMIT 1 >>",
+      "example_index": 48,
+      "source_index": 476,
+      "spider_source_index": 476,
+      "db_id": "wta_1",
+      "num_tokens": 22,
+      "generation_seconds": 0.830746
+    },
+    {
+      "question": "Find the codes of countries that have more than 50 players.",
+      "generated_answer": "SQL: <<SELECT country_code FROM players GROUP BY country_code HAVING COUNT(*) > 50 >>",
+      "example_index": 49,
+      "source_index": 477,
+      "spider_source_index": 477,
+      "db_id": "wta_1",
+      "num_tokens": 22,
+      "generation_seconds": 0.836636
+    },
+    {
+      "question": "Find the name and rank of the 3 youngest winners across all matches.",
+      "generated_answer": "SQL: <<SELECT winner_name ,  winner_rank FROM matches JOIN players ON matches.winner_id = players.player_id ORDER BY winner_age ASC LIMIT 3 >>",
+      "example_index": 50,
+      "source_index": 483,
+      "spider_source_index": 483,
+      "db_id": "wta_1",
+      "num_tokens": 33,
+      "generation_seconds": 1.279789
+    },
+    {
+      "question": "Find the number of left handed winners who participated in the WTA Championships.",
+      "generated_answer": "SQL: <<SELECT count(*) FROM players WHERE winner_hand = 'L' AND tourney_name = 'WTA Championships' AND winner_id IN (SELECT player_id FROM rankings WHERE ranking_date = (SELECT MAX(ranking_date) FROM rankings)) >>",
+      "example_index": 51,
+      "source_index": 486,
+      "spider_source_index": 486,
+      "db_id": "wta_1",
+      "num_tokens": 51,
+      "generation_seconds": 2.017609
+    },
+    {
+      "question": "How many degrees does the engineering department have?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM degree_programs WHERE department_id = (SELECT department_id FROM departments WHERE department_name = 'Engineering') >>",
+      "example_index": 52,
+      "source_index": 522,
+      "spider_source_index": 522,
+      "db_id": "student_transcripts_tracking",
+      "num_tokens": 29,
+      "generation_seconds": 1.139163
+    },
+    {
+      "question": "What is the department description for the one whose name has the word computer?",
+      "generated_answer": "SQL: <<SELECT department_description FROM departments WHERE department_name LIKE '%computer%' >>",
+      "example_index": 53,
+      "source_index": 532,
+      "spider_source_index": 532,
+      "db_id": "student_transcripts_tracking",
+      "num_tokens": 17,
+      "generation_seconds": 0.703529
+    },
+    {
+      "question": "Which student has enrolled for the most times in any program? List the id, first name, middle name, last name, the number of enrollments and student id.",
+      "generated_answer": "SQL: <<SELECT students.student_id, students.first_name, students.middle_name, students.last_name, COUNT(student_enrolment.student_id) AS enrollment_count FROM students JOIN student_enrolment ON students.student_id = student_enrolment.student_id GROUP BY students.student_id, students.first_name, students.middle_name, students.last_name ORDER BY enrollment_count DESC LIMIT 1 >>",
+      "example_index": 54,
+      "source_index": 541,
+      "spider_source_index": 541,
+      "db_id": "student_transcripts_tracking",
+      "num_tokens": 76,
+      "generation_seconds": 4.035492
+    },
+    {
+      "question": "What are the last name of the students who live in North Carolina but have not registered in any degree programs?",
+      "generated_answer": "SQL: <<SELECT last_name FROM students WHERE current_address_id IN (SELECT address_id FROM addresses WHERE state_province_county = 'North Carolina') AND student_id NOT IN (SELECT student_id FROM student_enrolment)>>",
+      "example_index": 55,
+      "source_index": 550,
+      "spider_source_index": 550,
+      "db_id": "student_transcripts_tracking",
+      "num_tokens": 45,
+      "generation_seconds": 1.833517
+    },
+    {
+      "question": "How many times at most can a course enrollment result show in different transcripts? Also show the course enrollment id.",
+      "generated_answer": "SQL: <<SELECT max(count(*)) ,  student_course_id FROM transcript_contents GROUP BY student_course_id >>",
+      "example_index": 56,
+      "source_index": 571,
+      "spider_source_index": 571,
+      "db_id": "student_transcripts_tracking",
+      "num_tokens": 23,
+      "generation_seconds": 0.91086
+    },
+    {
+      "question": "What are the different addresses that have students living there?",
+      "generated_answer": "SQL: <<SELECT count(DISTINCT line_1) FROM addresses WHERE address_id IN (SELECT current_address_id FROM students) OR address_id IN (SELECT permanent_address_id FROM students)>>",
+      "example_index": 57,
+      "source_index": 578,
+      "spider_source_index": 578,
+      "db_id": "student_transcripts_tracking",
+      "num_tokens": 39,
+      "generation_seconds": 1.543213
+    },
+    {
+      "question": "What are the titles of the cartoons sorted alphabetically?",
+      "generated_answer": "SQL: <<SELECT title FROM cartoon ORDER BY title ASC >>",
+      "example_index": 58,
+      "source_index": 586,
+      "spider_source_index": 586,
+      "db_id": "tvshow",
+      "num_tokens": 13,
+      "generation_seconds": 0.5597
+    },
+    {
+      "question": "What is the country with the most number of TV Channels and how many does it have?",
+      "generated_answer": "SQL: <<SELECT country, COUNT(*) AS channel_count FROM tv_channel GROUP BY country ORDER BY channel_count DESC LIMIT 1 >>",
+      "example_index": 59,
+      "source_index": 596,
+      "spider_source_index": 596,
+      "db_id": "tvshow",
+      "num_tokens": 27,
+      "generation_seconds": 0.996876
+    },
+    {
+      "question": "How many TV Channel using language English?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM tv_channel WHERE language = 'English' >>",
+      "example_index": 60,
+      "source_index": 603,
+      "spider_source_index": 603,
+      "db_id": "tvshow",
+      "num_tokens": 17,
+      "generation_seconds": 0.680247
+    },
+    {
+      "question": "For each language, list the number of TV Channels that use it.",
+      "generated_answer": "SQL: <<SELECT language ,  count(*) FROM tv_channel GROUP BY language >>",
+      "example_index": 61,
+      "source_index": 608,
+      "spider_source_index": 608,
+      "db_id": "tvshow",
+      "num_tokens": 17,
+      "generation_seconds": 0.702968
+    },
+    {
+      "question": "find the id of tv channels that do not play any cartoon directed by Ben Jones.",
+      "generated_answer": "SQL: <<SELECT id FROM tv_channel WHERE id NOT IN (SELECT channel FROM cartoon WHERE directed_by = 'Ben Jones') >>",
+      "example_index": 62,
+      "source_index": 643,
+      "spider_source_index": 643,
+      "db_id": "tvshow",
+      "num_tokens": 27,
+      "generation_seconds": 1.019763
+    },
+    {
+      "question": "find the package option of the tv channel that do not have any cartoon directed by Ben Jones.",
+      "generated_answer": "SQL: <<SELECT package_option FROM tv_channel WHERE id NOT IN (SELECT channel FROM cartoon WHERE directed_by = 'Ben Jones') >>",
+      "example_index": 63,
+      "source_index": 645,
+      "spider_source_index": 645,
+      "db_id": "tvshow",
+      "num_tokens": 28,
+      "generation_seconds": 1.056142
+    },
+    {
+      "question": "List the names of poker players ordered by the final tables made in ascending order.",
+      "generated_answer": "SQL: <<SELECT people.name FROM poker_player JOIN people ON poker_player.people_id = people.people_id ORDER BY poker_player.final_table_made ASC >>",
+      "example_index": 64,
+      "source_index": 663,
+      "spider_source_index": 663,
+      "db_id": "poker_player",
+      "num_tokens": 31,
+      "generation_seconds": 1.218394
+    },
+    {
+      "question": "What is the money rank of the tallest poker player?",
+      "generated_answer": "SQL: <<SELECT poker_player.money_rank FROM poker_player JOIN people ON poker_player.people_id = people.people_id ORDER BY people.height DESC LIMIT 1 >>",
+      "example_index": 65,
+      "source_index": 667,
+      "spider_source_index": 667,
+      "db_id": "poker_player",
+      "num_tokens": 32,
+      "generation_seconds": 1.213557
+    },
+    {
+      "question": "What is last date created of votes from the state 'CA'?",
+      "generated_answer": "SQL: <<SELECT max(created) FROM votes WHERE state = 'CA' >>",
+      "example_index": 66,
+      "source_index": 691,
+      "spider_source_index": 691,
+      "db_id": "voter_1",
+      "num_tokens": 17,
+      "generation_seconds": 0.671463
+    },
+    {
+      "question": "What are the distinct states and create time of all votes?",
+      "generated_answer": "SQL: <<SELECT DISTINCT state ,  created FROM votes >>",
+      "example_index": 67,
+      "source_index": 693,
+      "spider_source_index": 693,
+      "db_id": "voter_1",
+      "num_tokens": 13,
+      "generation_seconds": 0.539551
+    },
+    {
+      "question": "What are the contestant numbers and names of the contestants who had at least two votes?",
+      "generated_answer": "SQL: <<SELECT contestant_number, contestant_name FROM contestants WHERE contestant_number IN (SELECT contestant_number FROM votes GROUP BY contestant_number HAVING COUNT(*) >= 2)>>",
+      "example_index": 68,
+      "source_index": 694,
+      "spider_source_index": 694,
+      "db_id": "voter_1",
+      "num_tokens": 34,
+      "generation_seconds": 1.303058
+    },
+    {
+      "question": "List the area codes in which voters voted both for the contestant 'Tabatha Gehling' and the contestant 'Kelly Clauss'.",
+      "generated_answer": "SQL: <<SELECT area_code FROM area_code_state WHERE state IN (SELECT state FROM votes WHERE contestant_number = (SELECT contestant_number FROM contestants WHERE contestant_name = 'Tabatha Gehling')) INTERSECT SELECT area_code FROM area_code_state WHERE state IN (SELECT state FROM votes WHERE contestant_number = (SELECT contestant_number FROM contestants WHERE contestant_name = 'Kelly Clauss')) >>",
+      "example_index": 69,
+      "source_index": 700,
+      "spider_source_index": 700,
+      "db_id": "voter_1",
+      "num_tokens": 77,
+      "generation_seconds": 3.330624
+    },
+    {
+      "question": "Which continent is Anguilla in?",
+      "generated_answer": "SQL: <<SELECT continent FROM country WHERE name = 'Anguilla' >>",
+      "example_index": 70,
+      "source_index": 708,
+      "spider_source_index": 708,
+      "db_id": "world_1",
+      "num_tokens": 17,
+      "generation_seconds": 0.71002
+    },
+    {
+      "question": "Which language is the most popular in Aruba?",
+      "generated_answer": "SQL: <<SELECT language FROM countrylanguage WHERE countrycode = (SELECT code FROM country WHERE name = 'Aruba') ORDER BY percentage DESC LIMIT 1 >>",
+      "example_index": 71,
+      "source_index": 712,
+      "spider_source_index": 712,
+      "db_id": "world_1",
+      "num_tokens": 33,
+      "generation_seconds": 1.323579
+    },
+    {
+      "question": "What region does Angola belong to and what is its population?",
+      "generated_answer": "SQL: <<SELECT region, population FROM country WHERE name = 'Angola' >>",
+      "example_index": 72,
+      "source_index": 717,
+      "spider_source_index": 717,
+      "db_id": "world_1",
+      "num_tokens": 18,
+      "generation_seconds": 0.701228
+    },
+    {
+      "question": "Which continent has the most diverse languages?",
+      "generated_answer": "SQL: <<SELECT continent FROM countrylanguage GROUP BY continent ORDER BY COUNT(DISTINCT language) DESC LIMIT 1 >>",
+      "example_index": 73,
+      "source_index": 742,
+      "spider_source_index": 742,
+      "db_id": "world_1",
+      "num_tokens": 25,
+      "generation_seconds": 0.937003
+    },
+    {
+      "question": "Which continent speaks the most languages?",
+      "generated_answer": "SQL: <<SELECT continent FROM countrylanguage JOIN country ON countrylanguage.countrycode = country.code GROUP BY continent ORDER BY COUNT(DISTINCT language) DESC LIMIT 1 >>",
+      "example_index": 74,
+      "source_index": 743,
+      "spider_source_index": 743,
+      "db_id": "world_1",
+      "num_tokens": 35,
+      "generation_seconds": 1.326812
+    },
+    {
+      "question": "What is the number of nations that use English and Dutch?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM countrylanguage WHERE language = 'English' AND isofficial = 1 AND countrycode IN (SELECT countrycode FROM countrylanguage WHERE language = 'Dutch' AND isofficial = 1)>>",
+      "example_index": 75,
+      "source_index": 745,
+      "spider_source_index": 745,
+      "db_id": "world_1",
+      "num_tokens": 47,
+      "generation_seconds": 1.801728
+    },
+    {
+      "question": "What languages are only used by a single country with a republic government?",
+      "generated_answer": "SQL: <<SELECT language FROM countrylanguage WHERE countrycode IN (SELECT code FROM country WHERE governmentform = 'Republic' GROUP BY code HAVING COUNT(DISTINCT language) = 1)>>",
+      "example_index": 76,
+      "source_index": 759,
+      "spider_source_index": 759,
+      "db_id": "world_1",
+      "num_tokens": 40,
+      "generation_seconds": 1.541404
+    },
+    {
+      "question": "Which Asian countries have a population that is larger than any country in Africa?",
+      "generated_answer": "SQL: <<SELECT name FROM country WHERE continent = 'Asia' AND population > (SELECT MAX(population) FROM country WHERE continent = 'Africa') >>",
+      "example_index": 77,
+      "source_index": 776,
+      "spider_source_index": 776,
+      "db_id": "world_1",
+      "num_tokens": 32,
+      "generation_seconds": 1.2502
+    },
+    {
+      "question": "What are the Asian countries which have a population larger than that of any country in Africa?",
+      "generated_answer": "SQL: <<SELECT name FROM country WHERE continent = 'Asia' AND population > (SELECT MAX(population) FROM country WHERE continent = 'Africa') >>",
+      "example_index": 78,
+      "source_index": 777,
+      "spider_source_index": 777,
+      "db_id": "world_1",
+      "num_tokens": 32,
+      "generation_seconds": 1.002934
+    },
+    {
+      "question": "What are the names of cities in Europe for which English is not the official language?",
+      "generated_answer": "SQL: <<SELECT city.name FROM city JOIN country ON city.countrycode = country.code JOIN countrylanguage ON country.code = countrylanguage.countrycode WHERE country.continent = 'Europe' AND countrylanguage.language = 'English' AND countrylanguage.isofficial = 0 >>",
+      "example_index": 79,
+      "source_index": 785,
+      "spider_source_index": 785,
+      "db_id": "world_1",
+      "num_tokens": 54,
+      "generation_seconds": 2.269608
+    },
+    {
+      "question": "What are the names of the nations with the 3 lowest populations?",
+      "generated_answer": "SQL: <<SELECT name FROM country ORDER BY population ASC LIMIT 3 >>",
+      "example_index": 80,
+      "source_index": 804,
+      "spider_source_index": 804,
+      "db_id": "world_1",
+      "num_tokens": 16,
+      "generation_seconds": 0.621815
+    },
+    {
+      "question": "Count the number of countries for which Spanish is the predominantly spoken language.",
+      "generated_answer": "SQL: <<SELECT count(*) FROM countrylanguage WHERE language = 'Spanish' AND percentage = 100 >>",
+      "example_index": 81,
+      "source_index": 819,
+      "spider_source_index": 819,
+      "db_id": "world_1",
+      "num_tokens": 24,
+      "generation_seconds": 0.91204
+    },
+    {
+      "question": "What are the names of conductors, sorted descending by the number of years they have worked?",
+      "generated_answer": "SQL: <<SELECT conductor.name FROM conductor ORDER BY conductor.year_of_work DESC >>",
+      "example_index": 82,
+      "source_index": 837,
+      "spider_source_index": 837,
+      "db_id": "orchestra",
+      "num_tokens": 17,
+      "generation_seconds": 0.730697
+    },
+    {
+      "question": "What is the name of the conductor who has worked the greatest number of years?",
+      "generated_answer": "SQL: <<SELECT conductor.name FROM conductor ORDER BY conductor.year_of_work DESC LIMIT 1 >>",
+      "example_index": 83,
+      "source_index": 839,
+      "spider_source_index": 839,
+      "db_id": "orchestra",
+      "num_tokens": 20,
+      "generation_seconds": 0.71064
+    },
+    {
+      "question": "Show the names of conductors that have conducted more than one orchestras.",
+      "generated_answer": "SQL: <<SELECT conductor.name FROM conductor JOIN orchestra ON conductor.conductor_id = orchestra.conductor_id GROUP BY conductor.name HAVING COUNT(orchestra.orchestra_id) > 1 >>",
+      "example_index": 84,
+      "source_index": 842,
+      "spider_source_index": 842,
+      "db_id": "orchestra",
+      "num_tokens": 42,
+      "generation_seconds": 1.678531
+    },
+    {
+      "question": "Show the ids of high schoolers who have friends and are also liked by someone else.",
+      "generated_answer": "SQL: <<SELECT id FROM highschooler WHERE id IN (SELECT student_id FROM friend) AND id IN (SELECT liked_id FROM likes)>>",
+      "example_index": 85,
+      "source_index": 898,
+      "spider_source_index": 898,
+      "db_id": "network_1",
+      "num_tokens": 30,
+      "generation_seconds": 1.0755
+    },
+    {
+      "question": "What are the names of high schoolers who have likes, and how many likes does each have?",
+      "generated_answer": "SQL: <<SELECT highschooler.name, count(likes.liked_id) as like_count FROM highschooler JOIN likes ON highschooler.id = likes.student_id GROUP BY highschooler.name >>",
+      "example_index": 86,
+      "source_index": 905,
+      "spider_source_index": 905,
+      "db_id": "network_1",
+      "num_tokens": 42,
+      "generation_seconds": 1.657672
+    },
+    {
+      "question": "Which states have both owners and professionals living there?",
+      "generated_answer": "SQL: <<SELECT state FROM owners INTERSECT SELECT state FROM professionals >>",
+      "example_index": 87,
+      "source_index": 918,
+      "spider_source_index": 918,
+      "db_id": "dog_kennels",
+      "num_tokens": 16,
+      "generation_seconds": 0.655458
+    },
+    {
+      "question": "Find the owner id and zip code of the owner who spent the most money in total for his or her dogs.",
+      "generated_answer": "SQL: <<SELECT o.owner_id, o.zip_code FROM owners o JOIN dogs d ON o.owner_id = d.owner_id JOIN treatments t ON d.dog_id = t.dog_id GROUP BY o.owner_id, o.zip_code ORDER BY SUM(t.cost_of_treatment) DESC LIMIT 1 >>",
+      "example_index": 88,
+      "source_index": 941,
+      "spider_source_index": 941,
+      "db_id": "dog_kennels",
+      "num_tokens": 62,
+      "generation_seconds": 2.621599
+    },
+    {
+      "question": "List the date of each treatment, together with the first name of the professional who operated it.",
+      "generated_answer": "SQL: <<SELECT treatments.date_of_treatment, professionals.first_name FROM treatments JOIN professionals ON treatments.professional_id = professionals.professional_id >>",
+      "example_index": 89,
+      "source_index": 946,
+      "spider_source_index": 946,
+      "db_id": "dog_kennels",
+      "num_tokens": 29,
+      "generation_seconds": 1.285853
+    },
+    {
+      "question": "List each owner's first name, last name, and the size of his for her dog.",
+      "generated_answer": "SQL: <<SELECT owners.first_name, owners.last_name, sizes.size_description FROM dogs JOIN owners ON dogs.owner_id = owners.owner_id JOIN sizes ON dogs.size_code = sizes.size_code >>",
+      "example_index": 90,
+      "source_index": 950,
+      "spider_source_index": 950,
+      "db_id": "dog_kennels",
+      "num_tokens": 39,
+      "generation_seconds": 1.719396
+    },
+    {
+      "question": "List pairs of the owner's first name and the dogs's name.",
+      "generated_answer": "SQL: <<SELECT owners.first_name, dogs.name FROM dogs JOIN owners ON dogs.owner_id = owners.owner_id >>",
+      "example_index": 91,
+      "source_index": 952,
+      "spider_source_index": 952,
+      "db_id": "dog_kennels",
+      "num_tokens": 24,
+      "generation_seconds": 0.935751
+    },
+    {
+      "question": "How many professionals have performed any treatment to dogs?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM professionals WHERE professional_id IN (SELECT professional_id FROM treatments)>>",
+      "example_index": 92,
+      "source_index": 968,
+      "spider_source_index": 968,
+      "db_id": "dog_kennels",
+      "num_tokens": 20,
+      "generation_seconds": 0.786226
+    },
+    {
+      "question": "Find the number of professionals who have ever treated dogs.",
+      "generated_answer": "SQL: <<SELECT count(*) FROM professionals WHERE professional_id IN (SELECT professional_id FROM treatments)>>",
+      "example_index": 93,
+      "source_index": 969,
+      "spider_source_index": 969,
+      "db_id": "dog_kennels",
+      "num_tokens": 20,
+      "generation_seconds": 0.742005
+    },
+    {
+      "question": "How much does each charge type costs? List both charge type and amount.",
+      "generated_answer": "SQL: <<SELECT charge_type ,  charge_amount FROM charges >>",
+      "example_index": 94,
+      "source_index": 990,
+      "spider_source_index": 990,
+      "db_id": "dog_kennels",
+      "num_tokens": 14,
+      "generation_seconds": 0.595551
+    },
+    {
+      "question": "List the email, cell phone and home phone of all the professionals.",
+      "generated_answer": "SQL: <<SELECT email_address ,  cell_number ,  home_phone FROM professionals >>",
+      "example_index": 95,
+      "source_index": 994,
+      "spider_source_index": 994,
+      "db_id": "dog_kennels",
+      "num_tokens": 18,
+      "generation_seconds": 0.724335
+    },
+    {
+      "question": "Find the distinct breed type and size type combinations for dogs.",
+      "generated_answer": "SQL: <<SELECT DISTINCT breeds.breed_name, sizes.size_description FROM dogs JOIN breeds ON dogs.breed_code = breeds.breed_code JOIN sizes ON dogs.size_code = sizes.size_code >>",
+      "example_index": 96,
+      "source_index": 997,
+      "spider_source_index": 997,
+      "db_id": "dog_kennels",
+      "num_tokens": 39,
+      "generation_seconds": 1.559683
+    },
+    {
+      "question": "List the name of singers whose citizenship is not \"France\".",
+      "generated_answer": "SQL: <<SELECT name FROM singer WHERE citizenship != 'France' >>",
+      "example_index": 97,
+      "source_index": 1006,
+      "spider_source_index": 1006,
+      "db_id": "singer",
+      "num_tokens": 15,
+      "generation_seconds": 0.603007
+    },
+    {
+      "question": "For each citizenship, how many singers are from that country?",
+      "generated_answer": "SQL: <<SELECT citizenship ,  count(*) FROM singer GROUP BY citizenship >>",
+      "example_index": 98,
+      "source_index": 1013,
+      "spider_source_index": 1013,
+      "db_id": "singer",
+      "num_tokens": 16,
+      "generation_seconds": 0.635892
+    },
+    {
+      "question": "How many available features are there in total?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM other_available_features >>",
+      "example_index": 99,
+      "source_index": 1030,
+      "spider_source_index": 1030,
+      "db_id": "real_estate_properties",
+      "num_tokens": 12,
+      "generation_seconds": 0.501806
+    }
+  ],
+  "matrix_metadata": {
+    "phase": "main_matrix",
+    "strategy": "metadecode",
+    "benchmark": "spider",
+    "smiles_class": null,
+    "eval_model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "eval_backend": "vllm",
+    "generation_profile": "sonnet4.6",
+    "generation_backend": "bedrock",
+    "generation_model": "us.anthropic.claude-sonnet-4-6",
+    "synthesis_iterations": 10,
+    "eval_step_token_budget": 1,
+    "eval_max_steps": 600,
+    "sample_sizes": {
+      "synthesis_eval": 50,
+      "final_eval": 100
+    },
+    "thresholds": {
+      "min_accuracy": 0.71,
+      "min_syntax_rate": 0.9,
+      "accuracy_win_margin": 0.01,
+      "target_accuracy_strategy": "itergen",
+      "target_accuracy_path": "outputs/baselines/itergen/Qwen_Qwen2.5_Coder_7B_Instruct/spider__tb1__ms600.json",
+      "target_syntax_strategy": "crane",
+      "target_syntax_path": "outputs/baselines/crane/Qwen_Qwen2.5_Coder_7B_Instruct/spider__tb1__ms600.json"
+    },
+    "runtime_controls": {
+      "eval_max_seconds_per_example": 90.0,
+      "eval_min_examples_before_threshold_stop": 50,
+      "vllm_gpu_memory_utilization": 0.55,
+      "vllm_tensor_parallel_size": 1
+    },
+    "synthesis_controls": {
+      "max_tokens": 32768,
+      "restart_after_stuck_iters": 0,
+      "adaptive_helper_mask": true,
+      "helper_selection_policy": "bandit",
+      "refinement_beam_size": 2,
+      "anthropic_thinking": "enabled",
+      "anthropic_effort": "high",
+      "anthropic_thinking_display": "summarized"
+    },
+    "splits": {
+      "spider": {
+        "split_file": "/home/aadivyar/csd-generation/environment/benchmark_splits/spider_dev_proportional.json",
+        "split_name": "eval"
+      }
+    },
+    "cache": {
+      "baseline_cache_mode": "reuse"
+    },
+    "command": "python -m synthesis.scripts.reevaluate_compiled_csd outputs/generated/ralph_7B_20260527_065955/metadecode_spider_Qwen_Qwen2.5_Coder_7B_Instruct_sonnet4.6_iter10_tb1_ms600_20260527_091958_8935b8/python/metadecode_spider_Qwen_Qwen2.5_Coder_7B_Instruct_sonnet4.6_iter10_tb1_ms600_20260527_095543_5ced15/GeneratedCSD.py --dataset spider --eval-model Qwen/Qwen2.5-Coder-7B-Instruct --eval-backend vllm --device auto --sample-size 100 --max-steps 600 --step-token-budget 1 --vllm-gpu-memory-utilization 0.55 --output-json outputs/baselines/metadecode/Qwen_Qwen2.5_Coder_7B_Instruct/spider__tb1__ms600__gensonnet4.6__iter10.json --vllm-tensor-parallel-size 1 --spider-split-file /home/aadivyar/csd-generation/environment/benchmark_splits/spider_dev_proportional.json --spider-split-name eval"
+  }
+}

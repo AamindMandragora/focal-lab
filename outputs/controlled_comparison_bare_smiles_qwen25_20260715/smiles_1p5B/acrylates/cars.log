@@ -1,0 +1,1726 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+Tokenizer: Qwen/Qwen2.5-1.5B-Instruct
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights:   0%|          | 1/338 [00:00<00:43,  7.71it/s]Loading weights:  10%|▉         | 33/338 [00:00<00:01, 171.07it/s]Loading weights:  19%|█▊        | 63/338 [00:00<00:01, 223.37it/s]Loading weights:  30%|██▉       | 101/338 [00:00<00:00, 275.95it/s]Loading weights:  41%|████      | 138/338 [00:00<00:00, 307.92it/s]Loading weights:  51%|█████     | 172/338 [00:00<00:00, 312.50it/s]Loading weights:  62%|██████▏   | 208/338 [00:00<00:00, 325.82it/s]Loading weights:  72%|███████▏  | 245/338 [00:00<00:00, 339.07it/s]Loading weights:  83%|████████▎ | 281/338 [00:00<00:00, 340.11it/s]Loading weights:  93%|█████████▎| 316/338 [00:01<00:00, 336.85it/s]Loading weights: 100%|██████████| 338/338 [00:01<00:00, 307.54it/s]
+Model: Qwen/Qwen2.5-1.5B-Instruct
+Model device: cuda:0
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.82 (0.04)
+CC(=N
+Sample 1 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.81 (0.08)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.29 (0.01)
+CC1=CC=C(C
+Sample 3 failed, tokens: tensor([53873, 19238], device='cuda:0') / ['CCC', '(O'], time: 0.12 (0.00)
+CCC(O
+Sample 4 failed, tokens: tensor([   34,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['C', '1', '=', 'CC', '=C', '(C'], time: 0.30 (0.02)
+C1=CC=C(C
+Sample 5 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 7612,
+          16], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'OC', '1'], time: 0.55 (0.01)
+CC(=C)C(=O)OOC1
+Sample 6 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.68 (0.10)
+C=CC(=O)OCC1=CC=CC=C
+Sample 7 failed, tokens: tensor([  34,    7,   28, 3706], device='cuda:0') / ['C', '(', '=', 'CC'], time: 0.16 (0.00)
+C(=CC
+Sample 8 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.55 (0.02)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 9 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -10.668903350830078, cons_logprob: -7.142875671386719, time: 0.43 (0.01)
+100%|██████████| 1/1 [00:04<00:00,  4.75s/it]100%|██████████| 1/1 [00:04<00:00,  4.75s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/10
+Sample time: 4.75 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=1/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=1/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['C', '1', '=', 'CC', '=C', '(C'], time: 0.23 (0.02)
+C1=CC=C(C
+Sample 2 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.64 (0.05)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 3 failed, tokens: tensor([  34,    7,   28, 3706], device='cuda:0') / ['C', '(', '=', 'CC'], time: 0.16 (0.01)
+C(=CC
+Sample 4 failed, tokens: tensor([   34,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.25 (0.01)
+C1=CC=CC=C
+Sample 5 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.05)
+C=CC(=O)OCC1=CC=CC=C
+Sample 6 failed, tokens: tensor([53873, 19238], device='cuda:0') / ['CCC', '(O'], time: 0.10 (0.00)
+CCC(O
+Sample 7 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.27 (0.02)
+CC1=CC=CC=C
+Sample 8 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -6.981820106506348, cons_logprob: -3.4224557876586914, time: 0.43 (0.01)
+100%|██████████| 1/1 [00:02<00:00,  2.81s/it]100%|██████████| 1/1 [00:02<00:00,  2.81s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/9
+Sample time: 2.81 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=2/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=2/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.17 (0.01)
+CC(=N
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([   34,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.27 (0.02)
+C1=CC=CC=C
+Sample 3 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.68 (0.05)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 4 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.51 (0.04)
+C=CC(=O)OC1=CC=CC=C
+Sample 5 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 6 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.27 (0.02)
+CC1=CC=CC=C
+Sample 7 failed, tokens: tensor([53873,     7,    28,    46], device='cuda:0') / ['CCC', '(', '=', 'O'], time: 0.17 (0.01)
+CCC(=O
+Sample 8 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -6.015290260314941, cons_logprob: -2.471494674682617, time: 0.45 (0.01)
+100%|██████████| 1/1 [00:03<00:00,  3.23s/it]100%|██████████| 1/1 [00:03<00:00,  3.23s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/9
+Sample time: 3.23 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=3/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=3/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.05)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706, 40917,    16], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=C', '1'], time: 0.46 (0.01)
+C=CC(=O)OCC1=CC=C1
+Sample 4 failed, tokens: tensor([   34,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['C', '1', '=', 'CC', '=C', '(C'], time: 0.24 (0.02)
+C1=CC=C(C
+Sample 5 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.22 (0.01)
+CC1=CC=C(C
+Sample 6 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -6.2267537117004395, cons_logprob: -3.0323288440704346, time: 0.44 (0.01)
+100%|██████████| 1/1 [00:02<00:00,  2.24s/it]100%|██████████| 1/1 [00:02<00:00,  2.24s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/7
+Sample time: 2.24 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=4/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=4/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.17 (0.01)
+CC(=N
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.50 (0.04)
+C=CC(=O)OC1=CC=CC=C
+Sample 2 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.01)
+C(=O
+Sample 3 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.65 (0.06)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 4 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.26 (0.01)
+CC1=CC=CC=C
+Sample 5 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 6 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.23 (0.01)
+CC1=CC=C(C
+Sample 7 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16,   28, 9949,
+           7,   28,   34, 8204], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'NC', '(', '=', 'C', '(N'], time: 0.55 (0.02)
+C=CC(=O)OCC1=NC(=C(N
+Sample 8 failed, tokens: tensor([ 3706,    16, 40917,  8204], device='cuda:0') / ['CC', '1', '=C', '(N'], time: 0.16 (0.01)
+CC1=C(N
+Sample 9 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    18,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '3', '=', 'CC', '=', 'CC', '=C'], time: 0.51 (0.02)
+C=CC(=O)OCC3=CC=CC=C
+Sample 10 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.59 (0.03)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 11 failed, tokens: tensor([   34,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['C', '1', '=', 'CC', '=C', '(C'], time: 0.23 (0.01)
+C1=CC=C(C
+Sample 12 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,    7,   28,   46],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '(', '=', 'O'], time: 0.41 (0.01)
+C=CC(=O)OCC(=O
+Sample 13 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 53873,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.61 (0.03)
+CC(=C)C(=O)OCCC1=CC=CC=C
+Sample 14 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.02)
+C=CC(=O)OCCC1=CC=CC=C
+Sample 15 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16, 40917,  3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=C', '(C'], time: 0.48 (0.01)
+CC(=C)C(=O)OC1=C(C
+Sample 16 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.118191719055176, cons_logprob: -1.9332796335220337, time: 0.42 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.01s/it]100%|██████████| 1/1 [00:07<00:00,  7.02s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/17
+Sample time: 7.01 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=5/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=5/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.17 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.55 (0.04)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.64 (0.04)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 4 failed, tokens: tensor([53873, 19238], device='cuda:0') / ['CCC', '(O'], time: 0.10 (0.00)
+CCC(O
+Sample 5 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.26 (0.01)
+CC1=CC=CC=C
+Sample 6 failed, tokens: tensor([53873,     7,    28,    46], device='cuda:0') / ['CCC', '(', '=', 'O'], time: 0.18 (0.01)
+CCC(=O
+Sample 7 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16,   28, 9949,
+          28, 8996], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'NC', '=', 'NO'], time: 0.52 (0.01)
+C=CC(=O)OCC1=NC=NO
+Sample 8 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.62 (0.03)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 9 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.22 (0.00)
+CC1=CC=C(C
+Sample 10 failed, tokens: tensor([ 3706,    16, 40917,  8204], device='cuda:0') / ['CC', '1', '=C', '(N'], time: 0.16 (0.00)
+CC1=C(N
+Sample 11 failed, tokens: tensor([3706,   16,   28, 9949,    7,   28,   46], device='cuda:0') / ['CC', '1', '=', 'NC', '(', '=', 'O'], time: 0.26 (0.01)
+CC1=NC(=O
+Sample 12 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -6.402381896972656, cons_logprob: -2.654538154602051, time: 0.46 (0.02)
+100%|██████████| 1/1 [00:04<00:00,  4.32s/it]100%|██████████| 1/1 [00:04<00:00,  4.32s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/13
+Sample time: 4.32 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=6/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=6/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.17 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.27 (0.02)
+CC1=CC=CC=C
+Sample 3 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.66 (0.06)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 4 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.068262100219727, cons_logprob: -2.419246196746826, time: 0.47 (0.04)
+100%|██████████| 1/1 [00:01<00:00,  1.76s/it]100%|██████████| 1/1 [00:01<00:00,  1.76s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/5
+Sample time: 1.76 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=7/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=7/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.2589497566223145, cons_logprob: -3.1168274879455566, time: 0.44 (0.04)
+100%|██████████| 1/1 [00:00<00:00,  1.63it/s]100%|██████████| 1/1 [00:00<00:00,  1.63it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.61 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=8/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=8/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.50 (0.03)
+C=CC(=O)OC1=CC=CC=C
+Sample 2 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.00)
+C(=O
+Sample 3 failed, tokens: tensor([53873,     7,    28,    45], device='cuda:0') / ['CCC', '(', '=', 'N'], time: 0.16 (0.01)
+CCC(=N
+Sample 4 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.65 (0.04)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 5 failed, tokens: tensor([   34,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.26 (0.01)
+C1=CC=CC=C
+Sample 6 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.26 (0.01)
+CC1=CC=C(C
+Sample 7 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.62 (0.02)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 8 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.245442867279053, cons_logprob: -2.333972930908203, time: 0.42 (0.01)
+100%|██████████| 1/1 [00:03<00:00,  3.21s/it]100%|██████████| 1/1 [00:03<00:00,  3.21s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/9
+Sample time: 3.21 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=9/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=9/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.17 (0.01)
+CC(=N
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.57 (0.04)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.63 (0.03)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 3 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.005899906158447, cons_logprob: -2.781294822692871, time: 0.41 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.79s/it]100%|██████████| 1/1 [00:01<00:00,  1.79s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/4
+Sample time: 1.79 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=10/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=10/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.16 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.17 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.26 (0.01)
+CC1=CC=CC=C
+Sample 3 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.22 (0.00)
+CC1=CC=C(C
+Sample 4 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 5 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.61 (0.03)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 6 failed, tokens: tensor([53873,     7,    28,    46], device='cuda:0') / ['CCC', '(', '=', 'O'], time: 0.17 (0.01)
+CCC(=O
+Sample 7 failed, tokens: tensor([ 3706,    16, 40917,  3025], device='cuda:0') / ['CC', '1', '=C', '(C'], time: 0.16 (0.00)
+CC1=C(C
+Sample 8 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.62 (0.02)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 9 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.52 (0.02)
+C=CC(=O)OC1=CC=CC=C
+Sample 10 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.935791969299316, cons_logprob: -1.6230123043060303, time: 0.41 (0.01)
+100%|██████████| 1/1 [00:03<00:00,  3.85s/it]100%|██████████| 1/1 [00:03<00:00,  3.85s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/11
+Sample time: 3.85 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=11/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=11/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.16 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 failed, tokens: tensor([53873, 19238], device='cuda:0') / ['CCC', '(O'], time: 0.10 (0.00)
+CCC(O
+Sample 4 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706, 40917,    16], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=C', '1'], time: 0.53 (0.01)
+C=CC(=O)OCC1=CC=C1
+Sample 5 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.23 (0.01)
+CC1=CC=C(C
+Sample 6 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.27 (0.01)
+CC1=CC=CC=C
+Sample 7 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.66 (0.04)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 8 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -5.7727227210998535, cons_logprob: -3.220341205596924, time: 0.44 (0.03)
+100%|██████████| 1/1 [00:03<00:00,  3.09s/it]100%|██████████| 1/1 [00:03<00:00,  3.09s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/9
+Sample time: 3.09 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=12/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=12/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.51 (0.03)
+C=CC(=O)OC1=CC=CC=C
+Sample 2 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.00)
+C(=O
+Sample 3 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.52 (0.02)
+C=CC(=O)OCC1=CC=CC=C
+Sample 4 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706, 40917,    16], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=C', '1'], time: 0.48 (0.01)
+C=CC(=O)OCC1=CC=C1
+Sample 5 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.59 (0.03)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 6 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.25 (0.01)
+CC1=CC=C(C
+Sample 7 failed, tokens: tensor([53873, 19238], device='cuda:0') / ['CCC', '(O'], time: 0.10 (0.00)
+CCC(O
+Sample 8 failed, tokens: tensor([   34,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['C', '1', '=', 'CC', '=C', '(C'], time: 0.23 (0.01)
+C1=CC=C(C
+Sample 9 failed, tokens: tensor([   34,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.26 (0.01)
+C1=CC=CC=C
+Sample 10 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.385811805725098, cons_logprob: -1.9991050958633423, time: 0.41 (0.01)
+100%|██████████| 1/1 [00:03<00:00,  3.69s/it]100%|██████████| 1/1 [00:03<00:00,  3.69s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/11
+Sample time: 3.69 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=13/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=13/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -4.296868801116943, cons_logprob: -3.159196376800537, time: 0.44 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.64it/s]100%|██████████| 1/1 [00:00<00:00,  1.64it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.61 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=14/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=14/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.18 (0.01)
+CC(=N
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.57 (0.05)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.48 (0.02)
+C=CC(=O)OC1=CC=CC=C
+Sample 3 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.00)
+C(=O
+Sample 4 failed, tokens: tensor([   34,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['C', '1', '=', 'CC', '=C', '(C'], time: 0.23 (0.01)
+C1=CC=C(C
+Sample 5 failed, tokens: tensor([53873,     7,    28,    46], device='cuda:0') / ['CCC', '(', '=', 'O'], time: 0.16 (0.01)
+CCC(=O
+Sample 6 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.52 (0.02)
+C=CC(=O)OCCC1=CC=CC=C
+Sample 7 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.64 (0.04)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 8 failed, tokens: tensor([   34, 40917,     7], device='cuda:0') / ['C', '=C', '('], time: 0.13 (0.00)
+C=C(
+Sample 9 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.854012489318848, cons_logprob: -1.678367257118225, time: 0.42 (0.01)
+100%|██████████| 1/1 [00:03<00:00,  3.50s/it]100%|██████████| 1/1 [00:03<00:00,  3.50s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/10
+Sample time: 3.50 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=15/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=15/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.64 (0.04)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.27 (0.02)
+CC1=CC=CC=C
+Sample 3 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.23 (0.00)
+CC1=CC=C(C
+Sample 4 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.56 (0.05)
+C=CC(=O)OCC1=CC=CC=C
+Sample 5 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.01)
+C(=O
+Sample 6 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.658618927001953, cons_logprob: -2.449667453765869, time: 0.45 (0.01)
+100%|██████████| 1/1 [00:02<00:00,  2.49s/it]100%|██████████| 1/1 [00:02<00:00,  2.49s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/7
+Sample time: 2.49 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=16/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=16/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.17 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.56 (0.05)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.23 (0.01)
+CC1=CC=C(C
+Sample 4 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.86383056640625, cons_logprob: -1.0230658054351807, time: 0.43 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.57s/it]100%|██████████| 1/1 [00:01<00:00,  1.57s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/5
+Sample time: 1.57 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=17/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=17/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.822996616363525, cons_logprob: -2.6818912029266357, time: 0.48 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.52it/s]100%|██████████| 1/1 [00:00<00:00,  1.52it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.66 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=18/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=18/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.6106526851654053, cons_logprob: -1.100386142730713, time: 0.43 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.14s/it]100%|██████████| 1/1 [00:01<00:00,  1.14s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.14 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=19/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=19/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.24 (0.02)
+CC1=CC=C(C
+Sample 2 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.64 (0.04)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 3 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 4 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.59 (0.02)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 5 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.00)
+C(=O
+Sample 6 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.331542491912842, cons_logprob: -2.422062397003174, time: 0.45 (0.01)
+100%|██████████| 1/1 [00:02<00:00,  2.80s/it]100%|██████████| 1/1 [00:02<00:00,  2.80s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/7
+Sample time: 2.80 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=20/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=20/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.55 (0.04)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.18 (0.01)
+C(=O
+Sample 3 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.28 (0.01)
+CC1=CC=CC=C
+Sample 4 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.5648081302642822, cons_logprob: -0.9648305177688599, time: 0.42 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.60s/it]100%|██████████| 1/1 [00:01<00:00,  1.60s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/5
+Sample time: 1.60 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=21/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=21/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.64 (0.03)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.5979795455932617, cons_logprob: -1.054945945739746, time: 0.45 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.80s/it]100%|██████████| 1/1 [00:01<00:00,  1.80s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/4
+Sample time: 1.80 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=22/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=22/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.04)
+C=CC(=O)OCC1=CC=CC=C
+Sample 1 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.232998847961426, cons_logprob: -1.8757245540618896, time: 0.44 (0.01)
+100%|██████████| 1/1 [00:01<00:00,  1.16s/it]100%|██████████| 1/1 [00:01<00:00,  1.16s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.16 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=23/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=23/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.50 (0.02)
+C=CC(=O)OCCC1=CC=CC=C
+Sample 3 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.26 (0.01)
+CC1=CC=CC=C
+Sample 4 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.00)
+C(=O
+Sample 5 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.7210004329681396, cons_logprob: -0.9559603929519653, time: 0.43 (0.02)
+100%|██████████| 1/1 [00:02<00:00,  2.06s/it]100%|██████████| 1/1 [00:02<00:00,  2.06s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/6
+Sample time: 2.06 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=24/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=24/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.16 (0.01)
+C(=O
+Sample 2 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.948889970779419, cons_logprob: -2.8566718101501465, time: 0.44 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.29it/s]100%|██████████| 1/1 [00:00<00:00,  1.29it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/3
+Sample time: 0.78 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=25/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=25/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.6505839824676514, cons_logprob: -1.4015971422195435, time: 0.43 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.14s/it]100%|██████████| 1/1 [00:01<00:00,  1.14s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.14 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=26/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=26/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.27 (0.01)
+CC1=CC=CC=C
+Sample 2 failed, tokens: tensor([ 3706,    16,    28, 28668,  3025, 40917,    16], device='cuda:0') / ['CC', '1', '=', 'CN', '(C', '=C', '1'], time: 0.26 (0.01)
+CC1=CN(C=C1
+Sample 3 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.5397675037384033, cons_logprob: -1.4131559133529663, time: 0.44 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.15s/it]100%|██████████| 1/1 [00:01<00:00,  1.15s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/4
+Sample time: 1.15 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=27/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=27/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.23 (0.01)
+CC1=CC=C(C
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.651058673858643, cons_logprob: -2.0183486938476562, time: 0.45 (0.01)
+100%|██████████| 1/1 [00:01<00:00,  1.40s/it]100%|██████████| 1/1 [00:01<00:00,  1.40s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/4
+Sample time: 1.40 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=28/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=28/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.17 (0.01)
+CC(=N
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.35 (0.03)
+CC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.919311046600342, cons_logprob: -2.5535788536071777, time: 0.60 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.12s/it]100%|██████████| 1/1 [00:01<00:00,  1.12s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.12 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=29/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=29/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.21 (0.01)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.195738792419434, cons_logprob: -1.9180712699890137, time: 0.54 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.32it/s]100%|██████████| 1/1 [00:00<00:00,  1.32it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.75 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=30/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=30/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.21 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.29 (0.01)
+CC1=CC=C(C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.566850662231445, cons_logprob: -2.0150208473205566, time: 0.60 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.10s/it]100%|██████████| 1/1 [00:01<00:00,  1.11s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.10 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=31/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=31/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.21 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.68 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.940337657928467, cons_logprob: -1.9715267419815063, time: 0.57 (0.01)
+100%|██████████| 1/1 [00:01<00:00,  1.47s/it]100%|██████████| 1/1 [00:01<00:00,  1.47s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.47 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=32/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=32/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.21 (0.01)
+CC(=N
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.69 (0.04)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.77 (0.04)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 3 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.953113555908203, cons_logprob: -1.8863420486450195, time: 0.56 (0.01)
+100%|██████████| 1/1 [00:02<00:00,  2.24s/it]100%|██████████| 1/1 [00:02<00:00,  2.24s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/4
+Sample time: 2.24 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=33/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=33/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.21 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.67 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.211137771606445, cons_logprob: -1.7492815256118774, time: 0.56 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.44s/it]100%|██████████| 1/1 [00:01<00:00,  1.44s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.44 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=34/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=34/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.01)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.902670860290527, cons_logprob: -2.735891342163086, time: 0.59 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.23it/s]100%|██████████| 1/1 [00:00<00:00,  1.23it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.81 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=35/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=35/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.68 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.79 (0.04)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 3 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.7141616344451904, cons_logprob: -1.536520004272461, time: 0.55 (0.03)
+100%|██████████| 1/1 [00:02<00:00,  2.25s/it]100%|██████████| 1/1 [00:02<00:00,  2.25s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/4
+Sample time: 2.25 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=36/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=36/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.17 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.27 (0.02)
+CC1=CC=CC=C
+Sample 3 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.04)
+C=CC(=O)OCC1=CC=CC=C
+Sample 4 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.2866950035095215, cons_logprob: -2.1403586864471436, time: 0.45 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.62s/it]100%|██████████| 1/1 [00:01<00:00,  1.62s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/5
+Sample time: 1.62 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=37/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=37/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.8116769790649414, cons_logprob: -1.7055792808532715, time: 0.44 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.62it/s]100%|██████████| 1/1 [00:00<00:00,  1.62it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.62 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=38/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=38/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.6436572074890137, cons_logprob: -1.7127972841262817, time: 0.44 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.64it/s]100%|██████████| 1/1 [00:00<00:00,  1.63it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.61 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=39/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=39/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.26 (0.01)
+CC1=CC=CC=C
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.096372604370117, cons_logprob: -1.7624106407165527, time: 0.42 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.38s/it]100%|██████████| 1/1 [00:01<00:00,  1.38s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/4
+Sample time: 1.38 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=40/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=40/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.26 (0.01)
+CC1=CC=C(C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.259976387023926, cons_logprob: -1.881230115890503, time: 0.54 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.02it/s]100%|██████████| 1/1 [00:00<00:00,  1.02it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 0.98 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=41/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=41/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.21 (0.01)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.33 (0.01)
+CC1=CC=CC=C
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.66 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.2275919914245605, cons_logprob: -1.3804059028625488, time: 0.57 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.78s/it]100%|██████████| 1/1 [00:01<00:00,  1.78s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/4
+Sample time: 1.78 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=42/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=42/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.475842475891113, cons_logprob: -1.614760398864746, time: 0.61 (0.04)
+100%|██████████| 1/1 [00:00<00:00,  1.20it/s]100%|██████████| 1/1 [00:00<00:00,  1.20it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.83 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=43/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=43/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.29 (0.01)
+CC1=CC=C(C
+Sample 2 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.32 (0.01)
+CC1=CC=CC=C
+Sample 3 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.66 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 4 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.854851484298706, cons_logprob: -2.076906204223633, time: 0.56 (0.04)
+100%|██████████| 1/1 [00:02<00:00,  2.06s/it]100%|██████████| 1/1 [00:02<00:00,  2.06s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/5
+Sample time: 2.06 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=44/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=44/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.17 (0.02)
+CC(=N
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.04)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([34,  7, 28, 45], device='cuda:0') / ['C', '(', '=', 'N'], time: 0.17 (0.00)
+C(=N
+Sample 3 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.60 (0.03)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 4 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.5112524032592773, cons_logprob: -1.3531149625778198, time: 0.43 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.91s/it]100%|██████████| 1/1 [00:01<00:00,  1.91s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/5
+Sample time: 1.91 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=45/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=45/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.69 (0.04)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.34 (0.02)
+CC1=CC=CC=C
+Sample 3 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.28 (0.01)
+CC1=CC=C(C
+Sample 4 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.754047393798828, cons_logprob: -2.1383581161499023, time: 0.56 (0.03)
+100%|██████████| 1/1 [00:02<00:00,  2.04s/it]100%|██████████| 1/1 [00:02<00:00,  2.04s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/5
+Sample time: 2.04 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=46/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=46/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.21 (0.01)
+CC(=O
+Sample 1 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.6507678031921387, cons_logprob: -2.0026121139526367, time: 0.55 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.32it/s]100%|██████████| 1/1 [00:00<00:00,  1.32it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.76 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=47/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=47/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.21 (0.01)
+C(=O
+Sample 2 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.4834890365600586, cons_logprob: -1.4622033834457397, time: 0.56 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.01it/s]100%|██████████| 1/1 [00:00<00:00,  1.01it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/3
+Sample time: 0.99 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=48/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=48/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.24 (0.01)
+CC(=N
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.68 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.21 (0.01)
+C(=O
+Sample 3 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.34 (0.02)
+CC1=CC=CC=C
+Sample 4 success: [53873, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CCC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -4.733778953552246, cons_logprob: -3.058411121368408, time: 0.55 (0.03)
+100%|██████████| 1/1 [00:02<00:00,  2.03s/it]100%|██████████| 1/1 [00:02<00:00,  2.03s/it]
+CCCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/5
+Sample time: 2.03 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=49/100
+CCCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=49/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.66 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.21 (0.00)
+C(=O
+Sample 3 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.34 (0.01)
+CC1=CC=CC=C
+Sample 4 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.78 (0.03)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 5 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.123201847076416, cons_logprob: -3.064549684524536, time: 0.65 (0.02)
+100%|██████████| 1/1 [00:02<00:00,  2.86s/it]100%|██████████| 1/1 [00:02<00:00,  2.86s/it]
+CC(=C)C(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/6
+Sample time: 2.86 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=50/100
+CC(=C)C(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=50/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.21 (0.02)
+CC(=O
+Sample 1 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.237593173980713, cons_logprob: -2.4437241554260254, time: 0.67 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.14it/s]100%|██████████| 1/1 [00:00<00:00,  1.14it/s]
+CC(=C)C(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.88 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=51/100
+CC(=C)C(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=51/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.21 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.006651401519775, cons_logprob: -2.2850146293640137, time: 0.55 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.31it/s]100%|██████████| 1/1 [00:00<00:00,  1.30it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.77 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=52/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=52/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.35 (0.02)
+CC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.8738813400268555, cons_logprob: -1.9479398727416992, time: 0.57 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.13s/it]100%|██████████| 1/1 [00:01<00:00,  1.13s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.13 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=53/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=53/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.80 (0.04)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.21 (0.01)
+C(=O
+Sample 3 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.200357675552368, cons_logprob: -1.4615294933319092, time: 0.56 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.80s/it]100%|██████████| 1/1 [00:01<00:00,  1.80s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/4
+Sample time: 1.80 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=54/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=54/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.79 (0.03)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 2 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.73 (0.02)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 3 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.123588800430298, cons_logprob: -1.2538185119628906, time: 0.55 (0.03)
+100%|██████████| 1/1 [00:02<00:00,  2.30s/it]100%|██████████| 1/1 [00:02<00:00,  2.30s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/4
+Sample time: 2.30 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=55/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=55/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.67 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.3193814754486084, cons_logprob: -1.4516661167144775, time: 0.58 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.48s/it]100%|██████████| 1/1 [00:01<00:00,  1.48s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.48 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=56/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=56/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.22 (0.02)
+CC(=N
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.129885673522949, cons_logprob: -2.3325464725494385, time: 0.60 (0.04)
+100%|██████████| 1/1 [00:00<00:00,  1.21it/s]100%|██████████| 1/1 [00:00<00:00,  1.21it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.82 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=57/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=57/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.67 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.96109676361084, cons_logprob: -2.0945138931274414, time: 0.56 (0.01)
+100%|██████████| 1/1 [00:01<00:00,  1.45s/it]100%|██████████| 1/1 [00:01<00:00,  1.45s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.45 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=58/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=58/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.9152510166168213, cons_logprob: -1.9211232662200928, time: 0.45 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.59it/s]100%|██████████| 1/1 [00:00<00:00,  1.59it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.63 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=59/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=59/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.4940426349639893, cons_logprob: -1.7910387516021729, time: 0.43 (0.02)
+100%|██████████| 1/1 [00:00<00:00,  1.65it/s]100%|██████████| 1/1 [00:00<00:00,  1.65it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.60 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=60/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=60/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.17 (0.01)
+C(=O
+Sample 2 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.5446603298187256, cons_logprob: -1.4061968326568604, time: 0.44 (0.02)
+100%|██████████| 1/1 [00:00<00:00,  1.27it/s]100%|██████████| 1/1 [00:00<00:00,  1.27it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/3
+Sample time: 0.78 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=61/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=61/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.17 (0.01)
+C(=O
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.699252128601074, cons_logprob: -1.2721216678619385, time: 0.48 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.22it/s]100%|██████████| 1/1 [00:00<00:00,  1.22it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 0.82 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=62/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=62/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.009770393371582, cons_logprob: -1.2025442123413086, time: 0.48 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.53it/s]100%|██████████| 1/1 [00:00<00:00,  1.53it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.65 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=63/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=63/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.27 (0.01)
+CC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.551041126251221, cons_logprob: -1.5941383838653564, time: 0.47 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.09it/s]100%|██████████| 1/1 [00:00<00:00,  1.09it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 0.92 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=64/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=64/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.17 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.27 (0.01)
+CC1=CC=CC=C
+Sample 4 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.35186767578125, cons_logprob: -1.524754524230957, time: 0.45 (0.01)
+100%|██████████| 1/1 [00:01<00:00,  1.61s/it]100%|██████████| 1/1 [00:01<00:00,  1.61s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/5
+Sample time: 1.61 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=65/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=65/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.17 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.17 (0.01)
+C(=O
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.456643104553223, cons_logprob: -1.5615105628967285, time: 0.48 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.21it/s]100%|██████████| 1/1 [00:00<00:00,  1.21it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 0.83 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=66/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=66/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.77147912979126, cons_logprob: -1.8429187536239624, time: 0.48 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.50it/s]100%|██████████| 1/1 [00:00<00:00,  1.50it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.67 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=67/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=67/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.171606540679932, cons_logprob: -1.98723566532135, time: 0.45 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.60it/s]100%|██████████| 1/1 [00:00<00:00,  1.60it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.63 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=68/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=68/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.9696338176727295, cons_logprob: -1.8582712411880493, time: 0.44 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.60it/s]100%|██████████| 1/1 [00:00<00:00,  1.60it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.63 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=69/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=69/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.8399593830108643, cons_logprob: -1.8661290407180786, time: 0.45 (0.04)
+100%|██████████| 1/1 [00:00<00:00,  1.58it/s]100%|██████████| 1/1 [00:00<00:00,  1.58it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.63 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=70/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=70/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.03)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.7725749015808105, cons_logprob: -1.7240992784500122, time: 0.45 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.57it/s]100%|██████████| 1/1 [00:00<00:00,  1.57it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.64 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=71/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=71/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.940030574798584, cons_logprob: -2.8059310913085938, time: 0.54 (0.04)
+100%|██████████| 1/1 [00:01<00:00,  1.27s/it]100%|██████████| 1/1 [00:01<00:00,  1.27s/it]
+CC(=C)C(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.27 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=72/100
+CC(=C)C(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=72/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.3047685623168945, cons_logprob: -1.6350915431976318, time: 0.44 (0.02)
+100%|██████████| 1/1 [00:00<00:00,  1.60it/s]100%|██████████| 1/1 [00:00<00:00,  1.60it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.63 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=73/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=73/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.18 (0.02)
+CC(=N
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.0410356521606445, cons_logprob: -1.9717278480529785, time: 0.44 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.61it/s]100%|██████████| 1/1 [00:00<00:00,  1.61it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.62 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=74/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=74/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.03)
+CC(=O
+Sample 1 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -2.95343279838562, cons_logprob: -1.4477696418762207, time: 0.45 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.58it/s]100%|██████████| 1/1 [00:00<00:00,  1.58it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.63 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=75/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=75/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.03)
+CC(=O
+Sample 1 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.313016414642334, cons_logprob: -1.9984526634216309, time: 0.45 (0.04)
+100%|██████████| 1/1 [00:00<00:00,  1.57it/s]100%|██████████| 1/1 [00:00<00:00,  1.57it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.64 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=76/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=76/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.54 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.310900688171387, cons_logprob: -1.7975420951843262, time: 0.46 (0.01)
+100%|██████████| 1/1 [00:01<00:00,  1.18s/it]100%|██████████| 1/1 [00:01<00:00,  1.18s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.18 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=77/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=77/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.18 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.55 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.8985772132873535, cons_logprob: -2.8756797313690186, time: 0.54 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.45s/it]100%|██████████| 1/1 [00:01<00:00,  1.45s/it]
+CC(=C)C(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/4
+Sample time: 1.45 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=78/100
+CC(=C)C(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=78/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.0563154220581055, cons_logprob: -1.7449707984924316, time: 0.48 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.51it/s]100%|██████████| 1/1 [00:00<00:00,  1.51it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.66 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=79/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=79/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.5181736946105957, cons_logprob: -2.5691261291503906, time: 0.46 (0.05)
+100%|██████████| 1/1 [00:00<00:00,  2.17it/s]100%|██████████| 1/1 [00:00<00:00,  2.17it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/1
+Sample time: 0.46 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=80/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=80/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([  34,    7,   28, 3706], device='cuda:0') / ['C', '(', '=', 'CC'], time: 0.18 (0.02)
+C(=CC
+Sample 1 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.01)
+CC(=O
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -3.8088107109069824, cons_logprob: -1.5763955116271973, time: 0.45 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.22it/s]100%|██████████| 1/1 [00:00<00:00,  1.22it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 0.82 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=81/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=81/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.03)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.1443328857421875, cons_logprob: -1.5125900506973267, time: 0.50 (0.04)
+100%|██████████| 1/1 [00:00<00:00,  1.46it/s]100%|██████████| 1/1 [00:00<00:00,  1.46it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.68 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=82/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=82/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.55 (0.05)
+C=CC(=O)OCC1=CC=CC=C
+Sample 1 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.18 (0.01)
+CC(=N
+Sample 2 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.18 (0.01)
+C(=O
+Sample 3 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  9949,    17,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'NC', '2', '=', 'CC', '=', 'CC', '=C'], time: 0.62 (0.02)
+C=CC(=O)OCC1=NC2=CC=CC=C
+Sample 4 failed, tokens: tensor([   34,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.28 (0.01)
+C1=CC=CC=C
+Sample 5 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.543236494064331, cons_logprob: -1.625333309173584, time: 0.44 (0.02)
+100%|██████████| 1/1 [00:02<00:00,  2.25s/it]100%|██████████| 1/1 [00:02<00:00,  2.25s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/6
+Sample time: 2.25 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=83/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=83/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.03)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.104221820831299, cons_logprob: -1.9737037420272827, time: 0.47 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.52it/s]100%|██████████| 1/1 [00:00<00:00,  1.52it/s]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.66 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=84/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=84/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.68 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.410142421722412, cons_logprob: -1.7560797929763794, time: 0.55 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.45s/it]100%|██████████| 1/1 [00:01<00:00,  1.45s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.45 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=85/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=85/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.34 (0.02)
+C1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.730697154998779, cons_logprob: -2.3715267181396484, time: 0.56 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.12s/it]100%|██████████| 1/1 [00:01<00:00,  1.12s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.12 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=86/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=86/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.4429497718811035, cons_logprob: -1.570372223854065, time: 0.60 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.21it/s]100%|██████████| 1/1 [00:00<00:00,  1.21it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.82 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=87/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=87/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.80 (0.03)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 2 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.58412504196167, cons_logprob: -1.7356350421905518, time: 0.55 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.58s/it]100%|██████████| 1/1 [00:01<00:00,  1.58s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.58 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=88/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=88/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.22 (0.02)
+CC(=O
+Sample 1 failed, tokens: tensor([   34, 40917, 23917], device='cuda:0') / ['C', '=C', '\\C'], time: 0.17 (0.00)
+C=C\C
+Sample 2 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.21 (0.00)
+C(=O
+Sample 3 failed, tokens: tensor([ 3706,    16,    28,  3706, 40917,  3025], device='cuda:0') / ['CC', '1', '=', 'CC', '=C', '(C'], time: 0.29 (0.01)
+CC1=CC=C(C
+Sample 4 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.453076362609863, cons_logprob: -1.4168899059295654, time: 0.59 (0.04)
+100%|██████████| 1/1 [00:01<00:00,  1.48s/it]100%|██████████| 1/1 [00:01<00:00,  1.48s/it]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/5
+Sample time: 1.48 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=89/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=89/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.04)
+CC(=O
+Sample 1 failed, tokens: tensor([   34, 40917,  3025], device='cuda:0') / ['C', '=C', '(C'], time: 0.15 (0.00)
+C=C(C
+Sample 2 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 3 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.084263801574707, cons_logprob: -2.9822254180908203, time: 0.54 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.42s/it]100%|██████████| 1/1 [00:01<00:00,  1.42s/it]
+CC(=C)C(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/4
+Sample time: 1.42 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=90/100
+CC(=C)C(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=90/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.03)
+CC(=O
+Sample 1 failed, tokens: tensor([34,  7, 28, 46], device='cuda:0') / ['C', '(', '=', 'O'], time: 0.20 (0.01)
+C(=O
+Sample 2 failed, tokens: tensor([   34, 40917, 23917], device='cuda:0') / ['C', '=C', '\\C'], time: 0.15 (0.00)
+C=C\C
+Sample 3 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.534235954284668, cons_logprob: -1.4521305561065674, time: 0.45 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.02it/s]100%|██████████| 1/1 [00:00<00:00,  1.02it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/4
+Sample time: 0.98 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=91/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=91/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.03)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.68 (0.04)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 2 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.377566337585449, cons_logprob: -1.2105298042297363, time: 0.45 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.32s/it]100%|██████████| 1/1 [00:01<00:00,  1.32s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.32 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=92/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=92/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.03)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.55 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.561171293258667, cons_logprob: -1.6023672819137573, time: 0.45 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.19s/it]100%|██████████| 1/1 [00:01<00:00,  1.19s/it]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.19 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=93/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=93/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   45], device='cuda:0') / ['CC', '(', '=', 'N'], time: 0.19 (0.03)
+CC(=N
+Sample 1 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.63 (0.03)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -5.430179595947266, cons_logprob: -3.007734775543213, time: 0.45 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.28s/it]100%|██████████| 1/1 [00:01<00:00,  1.28s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.28 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=94/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=94/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.03)
+CC(=O
+Sample 1 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.689864158630371, cons_logprob: -1.8995591402053833, time: 0.49 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.48it/s]100%|██████████| 1/1 [00:00<00:00,  1.48it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.68 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=95/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=95/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.03)
+CC(=O
+Sample 1 failed, tokens: tensor([   34, 40917, 23917], device='cuda:0') / ['C', '=C', '\\C'], time: 0.15 (0.01)
+C=C\C
+Sample 2 failed, tokens: tensor([  34,    7,   28, 3706], device='cuda:0') / ['C', '(', '=', 'CC'], time: 0.19 (0.00)
+C(=CC
+Sample 3 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.674450874328613, cons_logprob: -2.3937530517578125, time: 0.56 (0.03)
+100%|██████████| 1/1 [00:01<00:00,  1.09s/it]100%|██████████| 1/1 [00:01<00:00,  1.09s/it]
+CC(=C)C(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/4
+Sample time: 1.09 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=96/100
+CC(=C)C(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=96/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.04)
+CC(=O
+Sample 1 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.6158294677734375, cons_logprob: -1.894350290298462, time: 0.46 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.53it/s]100%|██████████| 1/1 [00:00<00:00,  1.53it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.65 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=97/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=97/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.04)
+CC(=O
+Sample 1 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -3.549985885620117, cons_logprob: -1.6311726570129395, time: 0.46 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.53it/s]100%|██████████| 1/1 [00:00<00:00,  1.53it/s]
+CCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 1/2
+Sample time: 0.66 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=98/100
+CCOC(=O)C(=C)C
+[generated-sample] END strategy=cars dataset=smiles sample=98/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.03)
+CC(=O
+Sample 1 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.30 (0.02)
+CC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.702057838439941, cons_logprob: -1.849367380142212, time: 0.50 (0.03)
+100%|██████████| 1/1 [00:00<00:00,  1.01it/s]100%|██████████| 1/1 [00:00<00:00,  1.01it/s]
+C=CC(=O)OCC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 0.99 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=99/100
+C=CC(=O)OCC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=99/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.19 (0.04)
+CC(=O
+Sample 1 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.56 (0.03)
+C=CC(=O)OCC1=CC=CC=C
+Sample 2 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 28, 28668, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CN', '1', '<|im_end|>'], raw_logprob: -4.241717338562012, cons_logprob: -2.282808303833008, time: 0.46 (0.02)
+100%|██████████| 1/1 [00:01<00:00,  1.22s/it]100%|██████████| 1/1 [00:01<00:00,  1.22s/it]
+C=CC(=O)OC1=CN1<|im_end|>
+Total suceeses: 1/3
+Sample time: 1.22 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=100/100
+C=CC(=O)OC1=CN1
+[generated-sample] END strategy=cars dataset=smiles sample=100/100
+Saved baseline JSON: outputs/controlled_comparison_bare_smiles_qwen25_20260715/smiles_1p5B/acrylates/cars.json

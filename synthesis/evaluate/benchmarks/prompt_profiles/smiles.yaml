@@ -1,0 +1,23 @@
+dataset: smiles
+strategy_profiles:
+  gcd: direct
+  itergen: direct
+  crane: chain_of_thought
+
+profiles:
+  direct:
+    template: |-
+      {base_prompt}
+
+      Return exactly one line containing only the SMILES string (example: CC(=O)OC=C).
+      Molecule:
+    append_trailing_space: true
+
+  chain_of_thought:
+    template: |-
+      {base_prompt}
+
+      Think step by step about how to satisfy the structural constraints, then output only the final SMILES string after `Molecule:` with no delimiters.
+      Molecule:
+    append_trailing_space: true
+

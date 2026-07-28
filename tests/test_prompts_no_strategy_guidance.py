@@ -444,6 +444,8 @@ def test_model_facing_prompt_surfaces_use_positive_contract_language():
         "db_info": "# singer ( singer_id , name )",
         "question": "How many singers do we have?",
     }
+    spider_expression_only = sql_spider_eval_logic.format_prompt_expression_only(None, benchmark_example)
+    assert isinstance(spider_expression_only, str)
     rendered_surfaces.extend(
         [
             (
@@ -452,7 +454,7 @@ def test_model_facing_prompt_surfaces_use_positive_contract_language():
             ),
             (
                 "Spider expression-only prompt",
-                sql_spider_eval_logic.format_prompt_expression_only(None, benchmark_example),
+                spider_expression_only,
             ),
         ]
     )
@@ -470,5 +472,5 @@ def test_model_facing_prompt_surfaces_use_positive_contract_language():
     assert "Use visible delimiters only when the task or evaluator requires visible constrained spans" in combined
     assert "Call it once at method start" in combined
     assert "Return exactly the Dafny method body" in combined
-    assert "Return exactly one line containing `<<SMILES>>`" in combined
-    assert "Return exactly one line: `SQL: <<YOUR QUERY>>`" in combined
+    assert "Return exactly one line containing only the SMILES string" in combined
+    assert "Only output the SQL quey." in combined

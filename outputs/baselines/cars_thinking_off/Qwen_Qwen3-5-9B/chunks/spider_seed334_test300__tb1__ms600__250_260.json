@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.8,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 329.0704,
+    "mean_generation_seconds_per_example": 32.907035,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 348.164,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 250,
+    "eval_end_index": 260
+  },
+  "answers": [
+    {
+      "question": "Find the number of orchestras whose record format is \"CD\" or \"DVD\".",
+      "generated_answer": "SELECT COUNT(*) FROM orchestra WHERE major_record_format LIKE '%CD%' OR major_record_format LIKE '%DVD%'",
+      "generation_seconds": 25.019442
+    },
+    {
+      "question": "Show the years in which orchestras that have given more than one performance are founded.",
+      "generated_answer": "select year_of_founded from orchestra where orchestra_id in (select performance_id from performance group by performance_id) group by year_of_founded",
+      "generation_seconds": 76.382773
+    },
+    {
+      "question": "What are years of founding for orchestras that have had more than a single performance?",
+      "generated_answer": "SELECT year_of_founded FROM orchestra WHERE orchestra_id IN (SELECT orchestra_id FROM performance GROUP BY orchestra_id HAVING COUNT(*) > 1)",
+      "generation_seconds": 77.6553
+    },
+    {
+      "question": "What are the names and grades for each high schooler?",
+      "generated_answer": "SELECT name, grade FROM highschooler",
+      "generation_seconds": 8.325814
+    },
+    {
+      "question": "What grade is Kyle in?",
+      "generated_answer": "SELECT grade FROM highschooler WHERE id = (SELECT name FROM highschooler WHERE name = 'Kyle')",
+      "generation_seconds": 20.866795
+    },
+    {
+      "question": "Return the grade for the high schooler named Kyle.",
+      "generated_answer": "SELECT grade FROM highschooler WHERE id = (SELECT id FROM highschooler WHERE name = 'Kyle')",
+      "generation_seconds": 27.949886
+    },
+    {
+      "question": "What are the names of all high schoolers in grade 10?",
+      "generated_answer": "SELECT name FROM highschooler WHERE grade = 10",
+      "generation_seconds": 4.079994
+    },
+    {
+      "question": "Which grade has the most high schoolers?",
+      "generated_answer": "SELECT grade, COUNT(*) AS count FROM highschooler GROUP BY grade ORDER BY count DESC LIMIT 1",
+      "generation_seconds": 12.140591
+    },
+    {
+      "question": "What are the names of high schoolers who have 3 or more friends?",
+      "generated_answer": "SELECT name FROM highschooler WHERE id IN (SELECT student_id FROM friend GROUP BY student_id HAVING COUNT(friend_id) >= 3)",
+      "generation_seconds": 12.079038
+    },
+    {
+      "question": "Show the names of all of the high schooler Kyle's friends.",
+      "generated_answer": "SELECT name FROM highschooler WHERE id IN (SELECT friend_id FROM friend WHERE student_id = (SELECT id FROM highschooler WHERE name = 'Kyle'))",
+      "generation_seconds": 64.570719
+    }
+  ]
+}

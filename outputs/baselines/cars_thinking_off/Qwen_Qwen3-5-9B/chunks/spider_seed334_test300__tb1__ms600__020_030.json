@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.4,
+  "syntax_rate": 0.8,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 2462.9377,
+    "mean_generation_seconds_per_example": 246.293765,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 2495.7936,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 20,
+    "eval_end_index": 30
+  },
+  "answers": [
+    {
+      "question": "Find the first name and age of students who have a pet.",
+      "generated_answer": "SELECT fname, age FROM student s JOIN has_pet hp ON s.stuid = hp.stuid",
+      "generation_seconds": 56.735641
+    },
+    {
+      "question": "What is the id of the pet owned by the student whose last name is 'Smith'?",
+      "generated_answer": "SELECT petid FROM has_pet JOIN student ON has_pet.stuid = student.stuid WHERE student.lname = 'Smith'",
+      "generation_seconds": 96.889033
+    },
+    {
+      "question": "For students who have pets , how many pets does each student have ? list their ids instead of names .",
+      "generated_answer": "",
+      "generation_seconds": 769.553786
+    },
+    {
+      "question": "What is the last name of the student who has a cat that is 3 years old?",
+      "generated_answer": "select s.lname from student s join has_pet h on s.stuid = h.stuid join pets p on h.petid = p.petid where p.pettype = 'cat' and p.pet_age = 3",
+      "generation_seconds": 103.999859
+    },
+    {
+      "question": "Find the average age of students who do not have any pet .",
+      "generated_answer": "SELECT AVG(age) FROM student LEFT JOIN has_pet ON student.stuid = has_pet.stuid WHERE has_pet.petid IS NULL GROUP BY stuid",
+      "generation_seconds": 100.411305
+    },
+    {
+      "question": "How many countries does each continent have? List the continent id, continent name and the number of countries.",
+      "generated_answer": "",
+      "generation_seconds": 810.500848
+    },
+    {
+      "question": "How many countries are listed?",
+      "generated_answer": "SELECT COUNT(*) FROM countries",
+      "generation_seconds": 5.315323
+    },
+    {
+      "question": "How many countries exist?",
+      "generated_answer": "SELECT COUNT(*) FROM countries",
+      "generation_seconds": 10.343372
+    },
+    {
+      "question": "Which model of the car has the minimum horsepower?",
+      "generated_answer": "SELECT model FROM car_names",
+      "generation_seconds": 452.2724
+    },
+    {
+      "question": "What is the model for the car with a weight smaller than the average?",
+      "generated_answer": "SELECT DISTINCT mn.model FROM car_names cn JOIN model_list mn ON cn.model = mn.model JOIN cars_data cd ON cn.makeid = cd.id WHERE cd.weight < (SELECT AVG(weight) FROM cars_data)",
+      "generation_seconds": 56.916083
+    }
+  ]
+}

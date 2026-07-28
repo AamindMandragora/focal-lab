@@ -1,0 +1,52 @@
+{
+  "accuracy": 0.3333333333333333,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 3,
+    "total_generation_seconds": 12.4299,
+    "mean_generation_seconds_per_example": 4.1433,
+    "examples_with_generation_timing": 3,
+    "total_output_tokens": 45,
+    "mean_output_tokens_per_example": 15.0,
+    "examples_with_token_counts": 3,
+    "evaluator_total_time_seconds": 53.4147,
+    "evaluator_max_sample_time_seconds": 4.7794
+  },
+  "answers": [
+    {
+      "question": "acrylates",
+      "generated_answer": "C=CC(=O)OCC(C)(C)C>>",
+      "num_tokens": 15,
+      "generation_seconds": 4.779374,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "C=CC(=O)OCC(C)(C)C>>",
+      "num_tokens": 15,
+      "generation_seconds": 3.869511,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "acrylates",
+      "generated_answer": "C=CC(=O)OCC(C)(C)C>>",
+      "num_tokens": 15,
+      "generation_seconds": 3.781016,
+      "is_correct": true,
+      "is_syntax_valid": true
+    }
+  ],
+  "smiles_paper_trial": {
+    "validity_rdkit": 1.0,
+    "diversity_tanimoto": null,
+    "retro_score": null,
+    "membership": 1.0,
+    "samples_to_target_unique_valid": 1000,
+    "unique_valid_count": 1,
+    "sample_count": 3,
+    "retro_scored_count": 0,
+    "retro_available": false
+  }
+}

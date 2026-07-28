@@ -1,0 +1,81 @@
+{
+  "accuracy": 0.125,
+  "syntax_rate": 0.625,
+  "metrics": {
+    "num_examples": 8,
+    "total_generation_seconds": 37.9009,
+    "mean_generation_seconds_per_example": 4.737607,
+    "examples_with_generation_timing": 8,
+    "total_output_tokens": 1275,
+    "mean_output_tokens_per_example": 159.375,
+    "examples_with_token_counts": 8,
+    "evaluator_total_time_seconds": 81.4013,
+    "evaluator_max_sample_time_seconds": 6.9107
+  },
+  "answers": [
+    {
+      "question": "{name} is rolling a {sides} die. How much more likely is it (expressed as a percentage) that he rolls a number greater than {target} than that he rolls two even numbers in a row?",
+      "generated_answer": "Let's think step by step. The probability of rolling a number greater than {target} is <<p(> {target}) = 1 - p(< {target})>>. The probability of rolling two even numbers in a row is <<p(2 < {target}) * p(2 < {target})>>. The difference is <<p(> {target}) - p(2 < {target}) * p(2 < {target})>>. The final answer is <<p(> {target}) - p(2 < {target}) * p(2 < {target})>>.",
+      "num_tokens": 123,
+      "generation_seconds": 4.417924,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "A {g} of {n} students has various hobbies. {n_1} like to {h_1}, {n_2} like to play {h_2}, and the rest like to either {h_3} or {h_4}. How many like to {h_3} if the number that like to {h_4} is twice t",
+      "generated_answer": "Let's think step by step. The number of students who like {h_4} is twice the number of students who prefer playing {h_2}, which is <<2 * n_2>>. The rest who like to either {h_3} or {h_4} is the difference between {n} and those who like {h_1} + those who prefer {h_2}, which is <<n - n_1 - n_2>>. The number of students who like {h_3} is <<n - n_1 - n_2 - 2 * n_2>>. The final answer is <<n - n_1 - n_2 - 2 * n_2>>.",
+      "num_tokens": 152,
+      "generation_seconds": 4.116907,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} is popping popcorn for a snack. As the {p} of kernels heats up, the kernels start popping faster. {n} pop in the first {s} seconds of cooking, then {k_2} times that amount in the next {s} secon",
+      "generated_answer": "Let's think step by step. Initially, there are ${m} p. After the first {s} seconds, ${n} p pop. Then, ${k_2 * n} p in the next {s} seconds. Next, {k_3 * n} p pop in the next {s} seconds, but at half of the rate, so half of that is {k_4 * n / 2} p. After the {s} seconds, a quarter of ${k_4 * n / 2} p also pop, which is {k_5 * n / 4} p. There are ${k_6 * n / 4} p in total. The final answer is <<k_6 * n / 4*1000>>.",
+      "num_tokens": 165,
+      "generation_seconds": 4.734468,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} has {x} {area} of {fruit} field. There are {k} {fruit} per {area}. {name} can harvest his {fruit} every {n} months. How many {fruit} can {name} harvest within a year?",
+      "generated_answer": "Let's think step by step. Initially, {name} has {x} {area} of {fruit} field. There are {k} {fruit} per {area}. {name} can harvest his {fruit} every {n} months. To answer, first find how many {fruit} {name} can harvest {n} months. This is <<number of fruits per month * n>>. Since there are {x} {area} of {fruit} field, the total can be found as <<number of fruits per month * n * x>>. Adjust for a year of {n} months to get {name} can harvest within a year by multiplying by 12: <<number of fruits per month * n * x * 12>>. The final answer is <<number of fruits per month * n * x * 12>>.",
+      "num_tokens": 179,
+      "generation_seconds": 4.910432,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "A juggler can juggle {n} balls. {frac_1} of the balls are {ball_type} balls, and {frac_2} of the {ball_type} balls are {color}. How many {color} {ball_type} balls are there?",
+      "generated_answer": "Let's think step by step. A juggler can juggle {n} balls. Of these, {frac_1} are {ball_type}, so {n * frac_1} are {ball_type}. For half of these {ball_type} balls, {frac_2} are {color}, so {n * frac_1 * frac_2} are {color}. The number of {color} {ball_type} balls is <<n * frac_1 * frac_2>>. The final answer is <<n * frac_1 * frac_2>>.",
+      "num_tokens": 119,
+      "generation_seconds": 3.527045,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "To make a call from a {dev}, you must pay {currency} {frac1} for each minute of your call. After {t} minutes, that price drops to {currency} {frac2} per minute. How much would a {total}-minute call co",
+      "generated_answer": "To solve the math problem, we need to consider two different pricing schedules to calculate the total cost of a call. Here's the step-by-step reasoning and expressions:\n\n1. Calculate the cost for the first {t} minutes at {currency} {frac1} per minute:\n   << (t * frac1) * dev_cost >> \n\n2. Calculate the cost for the remaining {(total - t)} minutes at {currency} {frac2} per minute:\n   << ((total - t) * frac2) * dev_cost >> \n\n3. Sum the costs from steps 1 and 2:\n   << (t * frac1) * dev_cost + ((total - t) * frac2) * dev_cost >> \n\n4. Since the formula needs a numeric value not reached above, we can exclude 'dev_cost' and simplify the expression to:\n   << (t * frac1 + (total - t) * frac2) * dev_cost >> \n\n5. The final answer is:\n   << (t * frac1 + (total - t) * frac2) * dev_cost >>",
+      "num_tokens": 225,
+      "generation_seconds": 6.910703,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} wants to make different sized ice cubes with {n} {unit}s of water. He can make giant cubes that use {w1} {unit}s per cube, medium cubes that use {w2} {unit}s, and small cubes that use {w3} of {",
+      "generated_answer": "Let's think step by step. First, calculate the total water used for giant cubes: <<n1 * w1>>. Then, calculate the total water used for medium cubes: <<n2 * w2>>. Finally, calculate the total water used for small cubes: <<n3 * w3>>. The total water used is <<n1 * w1 + n2 * w2 + n3 * w3>>. Subtract this total from the initial amount of water: <<n * unit - n1 * w1 - n2 * w2 - n3 * w3>>. The final answer is <<n * unit - n1 * w1 - n2 * w2 - n3 * w3>>.",
+      "num_tokens": 151,
+      "generation_seconds": 4.588172,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name1}'s dog has {n1} puppies, {k1} of which have spots. {name2}'s dog has {n2} puppies, {k2} of which have spots. What percentage of all the puppies have spots?",
+      "generated_answer": "Let's think step by step. {name1}'s dog has <<n1>> puppies. {name1}'s dog has <<k1>> puppies with spots. <<n1 - k1>> puppies have spots.\n\n{name2}'s dog has <<n2>> puppies. {name2}'s dog has <<k2>> puppies with spots. <<n2 - k2>> puppies have spots.\n\nThe total number of puppies with spots is <<k1 + k2>>. The total number of puppies is <<n1 + n2>>.\n\nThe percentage of puppies with spots is <<(\\frac{k1 + k2}{n1 + n2}) * 100>>.\n\nThe final answer is <<\\frac{4}{9}*100>>.",
+      "num_tokens": 161,
+      "generation_seconds": 4.695202,
+      "is_correct": false,
+      "is_syntax_valid": false
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+dataset: spider
+strategy_profiles:
+  gcd: direct
+  itergen: direct
+  crane: chain_of_thought
+
+profiles:
+  direct:
+    values:
+      instruction: " Only output the SQL quey. "
+    template: |-
+      db_id: {db_id}
+      db_info: {db_info}
+      question: {question}{instruction}
+      SQL:
+
+  chain_of_thought:
+    values:
+      instruction: " Think step by step about the tables, joins, and filters. Then output only the final SQL query wrapped in << >>."
+    template: |-
+      db_id: {db_id}
+      db_info: {db_info}
+      question: {question}{instruction}
+      SQL:
+

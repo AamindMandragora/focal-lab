@@ -1,0 +1,141 @@
+{
+  "accuracy": 0.24,
+  "syntax_rate": 0.72,
+  "metrics": {
+    "num_examples": 25,
+    "total_generation_seconds": 4853.998,
+    "mean_generation_seconds_per_example": 194.159918,
+    "examples_with_generation_timing": 25,
+    "run_wall_time_seconds": 4877.2476,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 25,
+    "eval_end_index": 50
+  },
+  "answers": [
+    {
+      "question": "How many countries does each continent have? List the continent id, continent name and the number of countries.",
+      "generated_answer": "",
+      "generation_seconds": 612.743152
+    },
+    {
+      "question": "How many countries are listed?",
+      "generated_answer": "SELECT COUNT(*) FROM countries",
+      "generation_seconds": 5.527221
+    },
+    {
+      "question": "How many countries exist?",
+      "generated_answer": "SELECT COUNT(*) FROM countries",
+      "generation_seconds": 11.889023
+    },
+    {
+      "question": "Which model of the car has the minimum horsepower?",
+      "generated_answer": "SELECT make FROM car_names WHERE id = (SELECT MIN(horsepower) FROM cars_data)",
+      "generation_seconds": 25.858089
+    },
+    {
+      "question": "What is the model for the car with a weight smaller than the average?",
+      "generated_answer": "SELECT model FROM cars_data WHERE weight < (SELECT AVG(weight) FROM cars_data)",
+      "generation_seconds": 228.470077
+    },
+    {
+      "question": "Which distinct car models are the produced after 1980?",
+      "generated_answer": "SELECT DISTINCT car_names.make FROM car_names JOIN model_list ON model_list.model = car_names.model JOIN car_makers ON model_list.maker = car_makers.id JOIN cars_data ON car_names.makeid = cars_data.id WHERE cars_data.year > 1980",
+      "generation_seconds": 54.365731
+    },
+    {
+      "question": "How many car makers are there in each continents? List the continent name and the count.",
+      "generated_answer": "",
+      "generation_seconds": 591.697526
+    },
+    {
+      "question": "Which of the countries has the most car makers? List the country name.",
+      "generated_answer": "SELECT countryname FROM countries WHERE countryid IN (SELECT country FROM car_makers GROUP BY country HAVING COUNT(*) = (SELECT MAX(count_makers) FROM (SELECT COUNT(*) AS count_makers FROM car_makers GROUP BY country) AS subq))",
+      "generation_seconds": 41.095798
+    },
+    {
+      "question": "What are all the makers and models?",
+      "generated_answer": "SELECT DISTINCT maker, model FROM model_list",
+      "generation_seconds": 19.747767
+    },
+    {
+      "question": "What are the names and ids of all countries with at least one car maker?",
+      "generated_answer": "",
+      "generation_seconds": 467.64329
+    },
+    {
+      "question": "What is the number of the cars with horsepower more than 150?",
+      "generated_answer": "SELECT COUNT(*) FROM cars_data WHERE horsepower > 150",
+      "generation_seconds": 36.306798
+    },
+    {
+      "question": "What is the average weight and year for each year?",
+      "generated_answer": "select avg(cars_data.weight) as avg_weight, cars_data.year from cars_data group by cars_data.year",
+      "generation_seconds": 14.828572
+    },
+    {
+      "question": "Which countries in europe have at least 3 car manufacturers?",
+      "generated_answer": "",
+      "generation_seconds": 384.078646
+    },
+    {
+      "question": "What is the maximum horsepower and the make of the car models with 3 cylinders?",
+      "generated_answer": "",
+      "generation_seconds": 516.037912
+    },
+    {
+      "question": "What is the average horsepower of the cars before 1980?",
+      "generated_answer": "SELECT AVG(ce.horsepower) AS average_horsepower FROM cars_data ce JOIN car_names cn ON ce.id = cn.makeid JOIN model_list ml ON cn.model = ml.model JOIN car_makers cm ON ml.maker = cm.id",
+      "generation_seconds": 183.217298
+    },
+    {
+      "question": "What is the average edispl of the cars of model volvo?",
+      "generated_answer": "select avg(edispl) from cars_data where model in (select model from car_names where makeid in (select id from car_makers where maker = 'volvo'))",
+      "generation_seconds": 24.538603
+    },
+    {
+      "question": "What is the average edispl for all volvos?",
+      "generated_answer": "SELECT AVG(cdispl) FROM cars_data WHERE makeid IN (SELECT carid FROM model_list WHERE maker = (SELECT id FROM car_makers WHERE maker = 'Volvo'))",
+      "generation_seconds": 10.789362
+    },
+    {
+      "question": "What is the maximum accelerate for different number of cylinders?",
+      "generated_answer": "SELECT MAX(accelerate), cylinders FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid JOIN model_list ON car_names.model = model_list.modelid JOIN car_makers ON model_list.maker = car_makers.id GROUP BY cylinders",
+      "generation_seconds": 50.770701
+    },
+    {
+      "question": "In 1980, how many cars were made?",
+      "generated_answer": "SELECT COUNT(*) FROM cars_data WHERE year = 1980",
+      "generation_seconds": 54.533129
+    },
+    {
+      "question": "What are the names and ids of all makers with more than 3 models?",
+      "generated_answer": "SELECT maker, id FROM car_makers WHERE id IN (SELECT model_list.maker FROM model_list GROUP BY model_list.maker HAVING COUNT(model_list.modelid) > 3)",
+      "generation_seconds": 168.544077
+    },
+    {
+      "question": "What are the different models created by either the car maker General Motors or weighed more than 3500?",
+      "generated_answer": "",
+      "generation_seconds": 404.572423
+    },
+    {
+      "question": "What is the horsepower of the car with the largest accelerate?",
+      "generated_answer": "SELECT horsepower FROM cars_data WHERE id = (SELECT makeid FROM car_names WHERE model = (SELECT model FROM model_list WHERE maker = (SELECT id FROM car_makers WHERE maker = (SELECT maker FROM model_list WHERE model = (SELECT model FROM model_list WHERE maker IN (SELECT id FROM car_makers WHERE maker = 'manufacturer') AND mpg = 0)))))",
+      "generation_seconds": 58.28718
+    },
+    {
+      "question": "What is the horsepower of the car with the greatest accelerate?",
+      "generated_answer": "SELECT horsespower FROM cars_data WHERE year = (SELECT MIN(year) FROM cars_data GROUP BY accelerate ORDER BY accelerate DESC LIMIT 1)",
+      "generation_seconds": 43.887237
+    },
+    {
+      "question": "For a volvo model, how many cylinders does the version with least accelerate have?",
+      "generated_answer": "SELECT MIN(c.edispl) FROM cars_data c JOIN car_names cn ON c.id = cn.makeid JOIN model_list ml ON cn.model = ml.model JOIN car_makers cm ON ml.maker = cm.id WHERE cm.maker = 'Volvo' AND c.accelerate = (SELECT MIN(c2.accelerate) FROM cars_data c2 JOIN car_names cn2 ON c2.id = cn2.makeid JOIN model_list ml2 ON cn2.model = ml2.model JOIN car_makers cm2 ON ml2.maker = cm2.id WHERE cm2.maker = 'Volvo')",
+      "generation_seconds": 313.695755
+    },
+    {
+      "question": "How many countries has more than 2 car makers ?",
+      "generated_answer": "",
+      "generation_seconds": 530.872586
+    }
+  ]
+}

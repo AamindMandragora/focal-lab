@@ -1,0 +1,21 @@
+{
+  "artifact_type": "dry_run_default_launcher",
+  "created_utc": "2026-06-29T20:35Z",
+  "dry_run_default": true,
+  "eval_max_seconds_per_example": 600,
+  "eval_model": "Qwen/Qwen3.5-9B",
+  "gsm_split_name": "eval",
+  "h65_root": "outputs/generated/synth_gsm_9b_z3fix_seed123train_h65_timeoutguard_20260630",
+  "hypothesis": "H71",
+  "launcher": "outputs/generated/h71_gsm9_h65_heldout_reeval_materialization_20260629/launch_h71_gsm9_h65_heldout_reeval.sh",
+  "max_iterations": 1,
+  "output_root": "outputs/generated/h71_gsm9_h65_heldout_reeval_20260629",
+  "purpose": "Prepare immediate GSM-9B held-out re-eval if H65 crosses train bar.",
+  "real_launch_requires": [
+    "H65 success_report",
+    "H65 PID not alive",
+    "SAFE_GPU_ID",
+    "safe GPU memory",
+    "no non-aadivyar process"
+  ]
+}

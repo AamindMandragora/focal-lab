@@ -1,0 +1,850 @@
+=== CARS gsm_symbolic Qwen/Qwen2.5-7B-Instruct START Tue Jun  9 09:09:48 PM UTC 2026 ===
+`torch_dtype` is deprecated! Use `dtype` instead!
+2026-06-09 21:09:55.972979: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-06-09 21:09:55.993232: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1781039396.013435 1469242 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1781039396.019801 1469242 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1781039396.039822 1469242 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1781039396.039855 1469242 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1781039396.039858 1469242 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1781039396.039861 1469242 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-06-09 21:09:56.044746: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:torchao:Skipping import of cpp extensions due to incompatible torch version. Please upgrade to torch >= 2.11.0 (found 2.10.0+cu129).
+Loaded 49 examples from CRANE folder /home/aadivyar/csd-generation/legacy/CRANE/src/gsm_symbolic
+Tokenizer: Qwen/Qwen2.5-7B-Instruct
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:01<00:04,  1.40s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:02<00:02,  1.36s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:04<00:01,  1.34s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:04<00:00,  1.07it/s]Loading checkpoint shards: 100%|██████████| 4/4 [00:04<00:00,  1.09s/it]
+WARNING:accelerate.big_modeling:Some parameters are on the meta device because they were offloaded to the cpu.
+Model: Qwen/Qwen2.5-7B-Instruct
+Model device: cuda:0
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+Sample 0
+Sample 0 failed, tokens: tensor([6636,   74,  353,  379,    8,  353,  220,   16,   17,    8,  608,  856,
+           8,  353,  220,   16,   15,   15,  271, 2442], device='cuda:0') / ['(((', 'k', ' *', ' y', ')', ' *', ' ', '1', '2', ')', ' /', ' x', ')', ' *', ' ', '1', '0', '0', '\n\n', '<<'], time: 14.56 (0.10)
+(((k * y) * 12) / x) * 100
+
+<<
+Sample 1 failed, tokens: tensor([1188,   74,  353,  379,    8,  353,  220,   16,   17,  608,  856,    8,
+         353,  220,   16,   15,   15,  271, 2442], device='cuda:0') / ['((', 'k', ' *', ' y', ')', ' *', ' ', '1', '2', ' /', ' x', ')', ' *', ' ', '1', '0', '0', '\n\n', '<<'], time: 13.13 (0.07)
+((k * y) * 12 / x) * 100
+
+<<
+Sample 2 success: [6636, 74, 353, 379, 8, 608, 220, 16, 17, 8, 353, 220, 16, 15, 15, 8, 608, 856, 151645] / ['(((', 'k', ' *', ' y', ')', ' /', ' ', '1', '2', ')', ' *', ' ', '1', '0', '0', ')', ' /', ' x', '<|im_end|>'], raw_logprob: -20.700345993041992, cons_logprob: -2.236994504928589, time: 12.44 (0.04)
+100%|██████████| 1/1 [00:40<00:00, 40.15s/it]100%|██████████| 1/1 [00:40<00:00, 40.15s/it]
+(((k * y) / 12) * 100) / x<|im_end|>
+Total suceeses: 1/3
+Sample time: 40.15 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([5035, 3009,  284], device='cuda:0') / ['total', '_time', ' ='], time: 2.61 (0.01)
+total_time =
+Sample 1 failed, tokens: tensor([9407, 8768], device='cuda:0') / ['cos', 'ervation'], time: 1.96 (0.01)
+coservation
+Sample 2 failed, tokens: tensor([10458, 58148], device='cuda:0') / ['forc', ' Fog'], time: 1.96 (0.00)
+forc Fog
+Sample 3 failed, tokens: tensor([  76, 3658], device='cuda:0') / ['m', 'iles'], time: 1.95 (0.00)
+miles
+Sample 4 failed, tokens: tensor([27359,   287], device='cuda:0') / ['discount', 'ing'], time: 1.96 (0.00)
+discounting
+Sample 5 failed, tokens: tensor([1678, 2346], device='cuda:0') / ['time', '_to'], time: 1.95 (0.00)
+time_to
+Sample 6 failed, tokens: tensor([  83,  353,  320,   88,  442,  294,  488,  320,   88, 1018,  294,  861],
+       device='cuda:0') / ['t', ' *', ' (', 'y', ' //', ' d', ' +', ' (', 'y', ' %', ' d', ' >'], time: 8.46 (0.03)
+t * (y // d + (y % d >
+Sample 7 failed, tokens: tensor([61118,  7021], device='cuda:0') / ['(times', '(y'], time: 1.98 (0.00)
+(times(y
+Sample 8 failed, tokens: tensor([   7, 2442], device='cuda:0') / ['(', '<<'], time: 1.94 (0.00)
+(<<
+Sample 9 failed, tokens: tensor([88143,   481,   379,   442,   294,   353,   259,   488,   320,    16,
+          421], device='cuda:0') / ['(goal', ' -', ' y', ' //', ' d', ' *', ' t', ' +', ' (', '1', ' if'], time: 7.80 (0.03)
+(goal - y // d * t + (1 if
+Sample 10 failed, tokens: tensor([ 983, 3421], device='cuda:0') / ['to', ' cover'], time: 1.95 (0.00)
+to cover
+Sample 11 failed, tokens: tensor([68920,  2550], device='cuda:0') / ['(force', ' output'], time: 1.96 (0.00)
+(force output
+Sample 12 failed, tokens: tensor([ 66, 353], device='cuda:0') / ['c', ' *'], time: 1.94 (0.00)
+c *
+Sample 13 failed, tokens: tensor([38329,  3009], device='cuda:0') / ['loan', '_time'], time: 1.94 (0.01)
+loan_time
+Sample 14 failed, tokens: tensor([16440,  1115], device='cuda:0') / ['cost', ' <<'], time: 1.94 (0.00)
+cost <<
+Sample 15 failed, tokens: tensor([1188,   88,  442,  294,    8,  353,  259,  488,  259,  353,  320,   88,
+        1018,  294,  861], device='cuda:0') / ['((', 'y', ' //', ' d', ')', ' *', ' t', ' +', ' t', ' *', ' (', 'y', ' %', ' d', ' >'], time: 10.37 (0.05)
+((y // d) * t + t * (y % d >
+Sample 16 failed, tokens: tensor([ 72, 686], device='cuda:0') / ['i', ' will'], time: 1.94 (0.00)
+i will
+Sample 17 failed, tokens: tensor([ 9284, 22129], device='cuda:0') / ['�', '��'], time: 1.98 (0.00)
+🟥
+Sample 18 failed, tokens: tensor([  12,   16,  353,  259,  353,  320,   88,  442,  294,  488,  320,   88,
+        1018,  294,  861], device='cuda:0') / ['-', '1', ' *', ' t', ' *', ' (', 'y', ' //', ' d', ' +', ' (', 'y', ' %', ' d', ' >'], time: 10.43 (0.05)
+-1 * t * (y // d + (y % d >
+Sample 19 failed, tokens: tensor([  83,  353,  320,   88,  442,  294,  488,  526, 7021, 1018,  294,  861],
+       device='cuda:0') / ['t', ' *', ' (', 'y', ' //', ' d', ' +', ' int', '(y', ' %', ' d', ' >'], time: 8.55 (0.02)
+t * (y // d + int(y % d >
+Sample 20 success: [41720, 353, 294, 608, 259, 151645] / ['years', ' *', ' d', ' /', ' t', '<|im_end|>'], raw_logprob: -29.290395736694336, cons_logprob: -5.046735763549805, time: 3.92 (0.01)
+100%|██████████| 1/1 [01:19<00:00, 79.54s/it]100%|██████████| 1/1 [01:19<00:00, 79.54s/it]
+years * d / t<|im_end|>
+Total suceeses: 1/21
+Sample time: 79.54 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([37018, 45340], device='cuda:0') / ['frac', '{x'], time: 1.94 (0.01)
+frac{x
+Sample 1 success: [87, 353, 296, 442, 320, 76, 488, 308, 8, 151645] / ['x', ' *', ' m', ' //', ' (', 'm', ' +', ' n', ')', '<|im_end|>'], raw_logprob: -22.6217041015625, cons_logprob: -2.379821538925171, time: 6.49 (0.05)
+100%|██████████| 1/1 [00:08<00:00,  8.44s/it]100%|██████████| 1/1 [00:08<00:00,  8.44s/it]
+x * m // (m + n)<|im_end|>
+Total suceeses: 1/2
+Sample time: 8.44 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([6636,   77,   16,  353,  289,   16,    8,  488,  320,   77,   17,  353,
+         289,   17,    8,  488,  320,   77,   18,  353,  289,   18,    8,  488,
+         320,   77,   19,  353,  289,   19,  593,  442, 2790,  488, 1781,   77,
+          16,  353,  289,   16,    8,  488,  320,   77,   17,  353,  289,   17,
+           8,  488,  320,   77,   18,  353,  289,   18,    8,  488,  320,   77,
+          19,  353,  289,   19,  593, 1018, 2790,  861], device='cuda:0') / ['(((', 'n', '1', ' *', ' w', '1', ')', ' +', ' (', 'n', '2', ' *', ' w', '2', ')', ' +', ' (', 'n', '3', ' *', ' w', '3', ')', ' +', ' (', 'n', '4', ' *', ' w', '4', '))', ' //', ' total', ' +', ' ((', 'n', '1', ' *', ' w', '1', ')', ' +', ' (', 'n', '2', ' *', ' w', '2', ')', ' +', ' (', 'n', '3', ' *', ' w', '3', ')', ' +', ' (', 'n', '4', ' *', ' w', '4', '))', ' %', ' total', ' >'], time: 45.03 (0.20)
+(((n1 * w1) + (n2 * w2) + (n3 * w3) + (n4 * w4)) // total + ((n1 * w1) + (n2 * w2) + (n3 * w3) + (n4 * w4)) % total >
+Sample 1 failed, tokens: tensor([ 1188,    77,    16, 59376,    16,   488,   308,    17, 59376,    17,
+          488,   308,    18, 59376,    18,   488,   308,    19, 59376,    19,
+            8,   442,  2790,   488,  1781,    77,    16, 59376,    16,   488,
+          308,    17, 59376,    17,   488,   308,    18, 59376,    18,   488,
+          308,    19, 59376,    19,     8,  1018,  2790,   861],
+       device='cuda:0') / ['((', 'n', '1', '*w', '1', ' +', ' n', '2', '*w', '2', ' +', ' n', '3', '*w', '3', ' +', ' n', '4', '*w', '4', ')', ' //', ' total', ' +', ' ((', 'n', '1', '*w', '1', ' +', ' n', '2', '*w', '2', ' +', ' n', '3', '*w', '3', ' +', ' n', '4', '*w', '4', ')', ' %', ' total', ' >'], time: 32.04 (0.17)
+((n1*w1 + n2*w2 + n3*w3 + n4*w4) // total + ((n1*w1 + n2*w2 + n3*w3 + n4*w4) % total >
+Sample 2 failed, tokens: tensor([66844,    77,    16,   353,   289,    16,     8,   488,   320,    77,
+           17,   353,   289,    17,     8,   488,   320,    77,    18,   353,
+          289,    18,     8,   488,   320,    77,    19,   353,   289,    19,
+          593,   442,  2790,     8,   488, 11600,    77,    16,   353,   289,
+           16,     8,   488,   320,    77,    17,   353,   289,    17,     8,
+          488,   320,    77,    18,   353,   289,    18,     8,   488,   320,
+           77,    19,   353,   289,    19,   593,  1018,  2790,   861],
+       device='cuda:0') / ['((((', 'n', '1', ' *', ' w', '1', ')', ' +', ' (', 'n', '2', ' *', ' w', '2', ')', ' +', ' (', 'n', '3', ' *', ' w', '3', ')', ' +', ' (', 'n', '4', ' *', ' w', '4', '))', ' //', ' total', ')', ' +', ' (((', 'n', '1', ' *', ' w', '1', ')', ' +', ' (', 'n', '2', ' *', ' w', '2', ')', ' +', ' (', 'n', '3', ' *', ' w', '3', ')', ' +', ' (', 'n', '4', ' *', ' w', '4', '))', ' %', ' total', ' >'], time: 45.58 (0.23)
+((((n1 * w1) + (n2 * w2) + (n3 * w3) + (n4 * w4)) // total) + (((n1 * w1) + (n2 * w2) + (n3 * w3) + (n4 * w4)) % total >
+Sample 3 failed, tokens: tensor([1188,   77,   16,  353,  289,   16,    8,  488,  320,   77,   17,  353,
+         289,   17,    8,  488,  320,   77,   18,  353,  289,   18,    8,  488,
+         320,   77,   19,  353,  289,   19,  593,  442, 2790,  488,  526, 6636,
+          77,   16,  353,  289,   16,    8,  488,  320,   77,   17,  353,  289,
+          17,    8,  488,  320,   77,   18,  353,  289,   18,    8,  488,  320,
+          77,   19,  353,  289,   19,  593, 1018, 2790,  861], device='cuda:0') / ['((', 'n', '1', ' *', ' w', '1', ')', ' +', ' (', 'n', '2', ' *', ' w', '2', ')', ' +', ' (', 'n', '3', ' *', ' w', '3', ')', ' +', ' (', 'n', '4', ' *', ' w', '4', '))', ' //', ' total', ' +', ' int', '(((', 'n', '1', ' *', ' w', '1', ')', ' +', ' (', 'n', '2', ' *', ' w', '2', ')', ' +', ' (', 'n', '3', ' *', ' w', '3', ')', ' +', ' (', 'n', '4', ' *', ' w', '4', '))', ' %', ' total', ' >'], time: 45.46 (0.19)
+((n1 * w1) + (n2 * w2) + (n3 * w3) + (n4 * w4)) // total + int(((n1 * w1) + (n2 * w2) + (n3 * w3) + (n4 * w4)) % total >
+Sample 4 failed, tokens: tensor([4129, 3575], device='cuda:0') / ['length', '_of'], time: 1.96 (0.00)
+length_of
+Sample 5 failed, tokens: tensor([1188,   77,   16,  353,  526, 3622,   16,    8,  488,  308,   17,  353,
+         526, 3622,   17,    8,  488,  308,   18,  353,  526, 3622,   18,    8,
+         488,  308,   19,  353,  526, 3622,   19,  593,  442, 2790,  488, 1781,
+          77,   16,  353,  526, 3622,   16,    8,  488,  308,   17,  353,  526,
+        3622,   17,    8,  488,  308,   18,  353,  526, 3622,   18,    8,  488,
+         308,   19,  353,  526, 3622,   19,  593, 1018, 2790,  861],
+       device='cuda:0') / ['((', 'n', '1', ' *', ' int', '(w', '1', ')', ' +', ' n', '2', ' *', ' int', '(w', '2', ')', ' +', ' n', '3', ' *', ' int', '(w', '3', ')', ' +', ' n', '4', ' *', ' int', '(w', '4', '))', ' //', ' total', ' +', ' ((', 'n', '1', ' *', ' int', '(w', '1', ')', ' +', ' n', '2', ' *', ' int', '(w', '2', ')', ' +', ' n', '3', ' *', ' int', '(w', '3', ')', ' +', ' n', '4', ' *', ' int', '(w', '4', '))', ' %', ' total', ' >'], time: 46.12 (0.23)
+((n1 * int(w1) + n2 * int(w2) + n3 * int(w3) + n4 * int(w4)) // total + ((n1 * int(w1) + n2 * int(w2) + n3 * int(w3) + n4 * int(w4)) % total >
+Sample 6 failed, tokens: tensor([ 83, 284], device='cuda:0') / ['t', ' ='], time: 1.96 (0.01)
+t =
+Sample 7 success: [1188, 77, 16, 59376, 16, 8, 488, 320, 77, 17, 59376, 17, 8, 488, 320, 77, 18, 59376, 18, 8, 488, 320, 77, 19, 59376, 19, 8, 488, 320, 5035, 481, 220, 16, 593, 442, 2790, 151645] / ['((', 'n', '1', '*w', '1', ')', ' +', ' (', 'n', '2', '*w', '2', ')', ' +', ' (', 'n', '3', '*w', '3', ')', ' +', ' (', 'n', '4', '*w', '4', ')', ' +', ' (', 'total', ' -', ' ', '1', '))', ' //', ' total', '<|im_end|>'], raw_logprob: -24.45577621459961, cons_logprob: -8.892345428466797, time: 24.09 (0.12)
+100%|██████████| 1/1 [04:02<00:00, 242.25s/it]100%|██████████| 1/1 [04:02<00:00, 242.25s/it]
+((n1*w1) + (n2*w2) + (n3*w3) + (n4*w4) + (total - 1)) // total<|im_end|>
+Total suceeses: 1/8
+Sample time: 242.25 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [22842, 481, 856, 481, 379, 481, 1147, 8, 151645] / ['(total', ' -', ' x', ' -', ' y', ' -', ' z', ')', '<|im_end|>'], raw_logprob: -27.19245147705078, cons_logprob: -4.150362014770508, time: 5.86 (0.03)
+100%|██████████| 1/1 [00:05<00:00,  5.86s/it]100%|██████████| 1/1 [00:05<00:00,  5.86s/it]
+(total - x - y - z)<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.86 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([ 83, 284], device='cuda:0') / ['t', ' ='], time: 1.95 (0.01)
+t =
+Sample 1 failed, tokens: tensor([66844,    77,   481,   320,    74,   353,   856,   593,  1018,   856,
+        25759], device='cuda:0') / ['((((', 'n', ' -', ' (', 'k', ' *', ' x', '))', ' %', ' x', '))))'], time: 7.75 (0.03)
+((((n - (k * x)) % x))))
+Sample 2 failed, tokens: tensor([6636,   77,  481,  595,  353,  856,    8,  442,  856,    8,  353,  856,
+         488, 1781,   77,  481,  595,  353,  856,    8, 1018,  856, 4390, 3983],
+       device='cuda:0') / ['(((', 'n', ' -', ' k', ' *', ' x', ')', ' //', ' x', ')', ' *', ' x', ' +', ' ((', 'n', ' -', ' k', ' *', ' x', ')', ' %', ' x', '))\n\n', 'But'], time: 16.17 (0.07)
+(((n - k * x) // x) * x + ((n - k * x) % x))
+
+But
+Sample 3 failed, tokens: tensor([   7, 2442], device='cuda:0') / ['(', '<<'], time: 1.96 (0.00)
+(<<
+Sample 4 failed, tokens: tensor([1188,   77,  442,  595,    8,  353,  856,  488,  308, 1018,  595,    8,
+         481,  308,  271, 1986], device='cuda:0') / ['((', 'n', ' //', ' k', ')', ' *', ' x', ' +', ' n', ' %', ' k', ')', ' -', ' n', '\n\n', 'This'], time: 11.00 (0.04)
+((n // k) * x + n % k) - n
+
+This
+Sample 5 failed, tokens: tensor([6636,   77,  481,  320,   74,  353,  856,  593,  442,  856,    8,  353,
+         856,    8,  488, 1781,   77,  481,  320,   74,  353,  856,  593, 1018,
+         856,    8, 4710, 2442], device='cuda:0') / ['(((', 'n', ' -', ' (', 'k', ' *', ' x', '))', ' //', ' x', ')', ' *', ' x', ')', ' +', ' ((', 'n', ' -', ' (', 'k', ' *', ' x', '))', ' %', ' x', ')', ' \n\n', '<<'], time: 18.98 (0.08)
+(((n - (k * x)) // x) * x) + ((n - (k * x)) % x) 
+
+<<
+Sample 6 failed, tokens: tensor([6636,   77,  481,  595,  353,  856,    8, 1018,  856,    8,  421],
+       device='cuda:0') / ['(((', 'n', ' -', ' k', ' *', ' x', ')', ' %', ' x', ')', ' if'], time: 7.87 (0.02)
+(((n - k * x) % x) if
+Sample 7 failed, tokens: tensor([  75, 1115], device='cuda:0') / ['l', ' <<'], time: 1.96 (0.00)
+l <<
+Sample 8 failed, tokens: tensor([  9284, 131764], device='cuda:0') / ['�', 'れない'], time: 2.00 (0.00)
+�れない
+Sample 9 failed, tokens: tensor([1188,   77,  481,  320,   74,  353,  856,  593, 1018,  856,  692, 1986],
+       device='cuda:0') / ['((', 'n', ' -', ' (', 'k', ' *', ' x', '))', ' %', ' x', ')\n\n', 'This'], time: 8.51 (0.03)
+((n - (k * x)) % x)
+
+This
+Sample 10 failed, tokens: tensor([37018, 91362], device='cuda:0') / ['frac', '{n'], time: 1.96 (0.00)
+frac{n
+Sample 11 failed, tokens: tensor([  74,  353,  856,  481,  308,  271, 1986], device='cuda:0') / ['k', ' *', ' x', ' -', ' n', '\n\n', 'This'], time: 5.21 (0.02)
+k * x - n
+
+This
+Sample 12 success: [1188, 77, 481, 595, 353, 856, 8, 1018, 856, 8, 151645] / ['((', 'n', ' -', ' k', ' *', ' x', ')', ' %', ' x', ')', '<|im_end|>'], raw_logprob: -24.97345542907715, cons_logprob: -2.823882818222046, time: 7.16 (0.02)
+100%|██████████| 1/1 [01:32<00:00, 92.49s/it]100%|██████████| 1/1 [01:32<00:00, 92.49s/it]
+((n - k * x) % x)<|im_end|>
+Total suceeses: 1/13
+Sample time: 92.49 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([27359,   291], device='cuda:0') / ['discount', 'ed'], time: 1.95 (0.00)
+discounted
+Sample 1 failed, tokens: tensor([1188,   81,  353,  289,    8,  481,  320,   77,  353,  289, 4390, 2442],
+       device='cuda:0') / ['((', 'r', ' *', ' w', ')', ' -', ' (', 'n', ' *', ' w', '))\n\n', '<<'], time: 8.50 (0.03)
+((r * w) - (n * w))
+
+<<
+Sample 2 success: [2601, 353, 289, 481, 308, 353, 289, 8, 151645] / ['(r', ' *', ' w', ' -', ' n', ' *', ' w', ')', '<|im_end|>'], raw_logprob: -27.80670738220215, cons_logprob: -5.613920211791992, time: 5.86 (0.03)
+100%|██████████| 1/1 [00:16<00:00, 16.32s/it]100%|██████████| 1/1 [00:16<00:00, 16.32s/it]
+(r * w - n * w)<|im_end|>
+Total suceeses: 1/3
+Sample time: 16.32 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7, 308, 16, 488, 308, 17, 873, 353, 13665, 488, 320, 320, 308, 16, 481, 296, 16, 873, 488, 320, 308, 16, 488, 308, 17, 488, 296, 17, 873, 873, 353, 9961, 151645] / ['(', ' n', '1', ' +', ' n', '2', ' )', ' *', ' cn', ' +', ' (', ' (', ' n', '1', ' -', ' m', '1', ' )', ' +', ' (', ' n', '1', ' +', ' n', '2', ' +', ' m', '2', ' )', ' )', ' *', ' cm', '<|im_end|>'], raw_logprob: -26.44451332092285, cons_logprob: -7.102990627288818, time: 21.76 (0.10)
+100%|██████████| 1/1 [00:21<00:00, 21.77s/it]100%|██████████| 1/1 [00:21<00:00, 21.77s/it]
+( n1 + n2 ) * cn + ( ( n1 - m1 ) + ( n1 + n2 + m2 ) ) * cm<|im_end|>
+Total suceeses: 1/1
+Sample time: 21.77 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [1188, 83, 353, 2745, 353, 595, 488, 259, 353, 296, 8, 608, 296, 8, 151645] / ['((', 't', ' *', ' mult', ' *', ' k', ' +', ' t', ' *', ' m', ')', ' /', ' m', ')', '<|im_end|>'], raw_logprob: -18.618877410888672, cons_logprob: -2.2096080780029297, time: 9.84 (0.04)
+100%|██████████| 1/1 [00:09<00:00,  9.84s/it]100%|██████████| 1/1 [00:09<00:00,  9.84s/it]
+((t * mult * k + t * m) / m)<|im_end|>
+Total suceeses: 1/1
+Sample time: 9.84 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([258, 279], device='cuda:0') / ['in', ' the'], time: 1.96 (0.00)
+in the
+Sample 1 success: [37018, 353, 320, 77, 353, 281, 16, 442, 220, 16, 15, 15, 8, 488, 526, 2601, 16, 353, 320, 77, 353, 320, 16, 15, 15, 481, 281, 16, 8, 608, 220, 16, 15, 15, 593, 151645] / ['frac', ' *', ' (', 'n', ' *', ' p', '1', ' //', ' ', '1', '0', '0', ')', ' +', ' int', '(r', '1', ' *', ' (', 'n', ' *', ' (', '1', '0', '0', ' -', ' p', '1', ')', ' /', ' ', '1', '0', '0', '))', '<|im_end|>'], raw_logprob: -31.169921875, cons_logprob: -12.273054122924805, time: 23.50 (0.11)
+100%|██████████| 1/1 [00:25<00:00, 25.46s/it]100%|██████████| 1/1 [00:25<00:00, 25.46s/it]
+frac * (n * p1 // 100) + int(r1 * (n * (100 - p1) / 100))<|im_end|>
+Total suceeses: 1/2
+Sample time: 25.46 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [77, 16, 488, 308, 17, 488, 2745, 353, 308, 16, 151645] / ['n', '1', ' +', ' n', '2', ' +', ' mult', ' *', ' n', '1', '<|im_end|>'], raw_logprob: -21.91019630432129, cons_logprob: -0.3453425168991089, time: 7.18 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.18s/it]100%|██████████| 1/1 [00:07<00:00,  7.18s/it]
+n1 + n2 + mult * n1<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.18 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([ 5035,   481,   220,    17, 54286,    16,   481,   305,    17,   481,
+          308,    17, 54286,    18,   481,   320,  5035,   481,   220,    17,
+        54286,    16,   481,   305,    17,   481,   308,    17, 54286,    18,
+            8,   608,   305,    16,   353,   305,    16,   481,   320,  5035,
+          481,   220,    17, 54286,    16,   481,   305,    17,   481,   308,
+           17, 54286,    18,     8,  1018,   305,    16,   353,   296,    16,
+          608,   220,    21,    15,   271,  2442], device='cuda:0') / ['total', ' -', ' ', '2', '*h', '1', ' -', ' h', '2', ' -', ' n', '2', '*h', '3', ' -', ' (', 'total', ' -', ' ', '2', '*h', '1', ' -', ' h', '2', ' -', ' n', '2', '*h', '3', ')', ' /', ' h', '1', ' *', ' h', '1', ' -', ' (', 'total', ' -', ' ', '2', '*h', '1', ' -', ' h', '2', ' -', ' n', '2', '*h', '3', ')', ' %', ' h', '1', ' *', ' m', '1', ' /', ' ', '6', '0', '\n\n', '<<'], time: 43.74 (0.22)
+total - 2*h1 - h2 - n2*h3 - (total - 2*h1 - h2 - n2*h3) / h1 * h1 - (total - 2*h1 - h2 - n2*h3) % h1 * m1 / 60
+
+<<
+Sample 1 failed, tokens: tensor([ 5035,   481,   220,    17, 54286,    16,   481,   305,    17,   481,
+          308,    17, 54286,    18,   481,   320,  5035,   481,   220,    17,
+        54286,    16,   481,   305,    17,   481,   308,    17, 54286,    18,
+            8,   442,   305,    16,   353,   305,    16,   481,   320,  5035,
+          481,   220,    17, 54286,    16,   481,   305,    17,   481,   308,
+           17, 54286,    18,     8,  1018,   305,    16,   608,   296,    16,
+          353,   296,    16,   271,  2442], device='cuda:0') / ['total', ' -', ' ', '2', '*h', '1', ' -', ' h', '2', ' -', ' n', '2', '*h', '3', ' -', ' (', 'total', ' -', ' ', '2', '*h', '1', ' -', ' h', '2', ' -', ' n', '2', '*h', '3', ')', ' //', ' h', '1', ' *', ' h', '1', ' -', ' (', 'total', ' -', ' ', '2', '*h', '1', ' -', ' h', '2', ' -', ' n', '2', '*h', '3', ')', ' %', ' h', '1', ' /', ' m', '1', ' *', ' m', '1', '\n\n', '<<'], time: 43.23 (0.13)
+total - 2*h1 - h2 - n2*h3 - (total - 2*h1 - h2 - n2*h3) // h1 * h1 - (total - 2*h1 - h2 - n2*h3) % h1 / m1 * m1
+
+<<
+Sample 2 success: [5035, 481, 220, 17, 54286, 16, 481, 305, 17, 481, 308, 17, 54286, 18, 481, 320, 5035, 481, 220, 17, 54286, 16, 481, 305, 17, 481, 308, 17, 54286, 18, 8, 442, 305, 16, 353, 305, 16, 151645] / ['total', ' -', ' ', '2', '*h', '1', ' -', ' h', '2', ' -', ' n', '2', '*h', '3', ' -', ' (', 'total', ' -', ' ', '2', '*h', '1', ' -', ' h', '2', ' -', ' n', '2', '*h', '3', ')', ' //', ' h', '1', ' *', ' h', '1', '<|im_end|>'], raw_logprob: -17.777925491333008, cons_logprob: -4.900990009307861, time: 24.81 (0.03)
+100%|██████████| 1/1 [01:51<00:00, 111.80s/it]100%|██████████| 1/1 [01:51<00:00, 111.80s/it]
+total - 2*h1 - h2 - n2*h3 - (total - 2*h1 - h2 - n2*h3) // h1 * h1<|im_end|>
+Total suceeses: 1/3
+Sample time: 111.80 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([5035,  353,  320,   79,   16,  442,  220,   16,   15,   15,    8,  488,
+        2790,  353,  320,   79,   17,  442,  220,   16,   15,   15,    8,  353,
+         320,   16,  481,  281,   16,  442,  220,   16,   15,   15,  692, 2442],
+       device='cuda:0') / ['total', ' *', ' (', 'p', '1', ' //', ' ', '1', '0', '0', ')', ' +', ' total', ' *', ' (', 'p', '2', ' //', ' ', '1', '0', '0', ')', ' *', ' (', '1', ' -', ' p', '1', ' //', ' ', '1', '0', '0', ')\n\n', '<<'], time: 24.20 (0.13)
+total * (p1 // 100) + total * (p2 // 100) * (1 - p1 // 100)
+
+<<
+Sample 1 failed, tokens: tensor([5035,  353,  320,   79,   16,  442,  220,   16,   15,   15,  488,  320,
+          16,   15,   15,  481,  281,   16,    8,  353,  320,   79,   17,  442,
+         220,   16,   15,   15,  488,  320,   16,   15,   15,  481,  281,   17,
+           8,  442,  220,   16,   15,   15,  593,  442,  220,   16,   15,   15,
+         271, 2442], device='cuda:0') / ['total', ' *', ' (', 'p', '1', ' //', ' ', '1', '0', '0', ' +', ' (', '1', '0', '0', ' -', ' p', '1', ')', ' *', ' (', 'p', '2', ' //', ' ', '1', '0', '0', ' +', ' (', '1', '0', '0', ' -', ' p', '2', ')', ' //', ' ', '1', '0', '0', '))', ' //', ' ', '1', '0', '0', '\n\n', '<<'], time: 33.30 (0.13)
+total * (p1 // 100 + (100 - p1) * (p2 // 100 + (100 - p2) // 100)) // 100
+
+<<
+Sample 2 failed, tokens: tensor([22842,   353,   320,    79,    16,   488,   281,    17,   593,   442,
+          220,    16,    15,    15,   271,  2442], device='cuda:0') / ['(total', ' *', ' (', 'p', '1', ' +', ' p', '2', '))', ' //', ' ', '1', '0', '0', '\n\n', '<<'], time: 11.12 (0.05)
+(total * (p1 + p2)) // 100
+
+<<
+Sample 3 failed, tokens: tensor([5035,  353,  320,   79,   16,  608,  220,   16,   15,   15,    8,  488,
+        2790,  353,  320,   79,   17,  608,  220,   16,   15,   15,    8,  353,
+         320,   16,  481,  281,   16,  608,  220,   16,   15,   15,  692, 2442],
+       device='cuda:0') / ['total', ' *', ' (', 'p', '1', ' /', ' ', '1', '0', '0', ')', ' +', ' total', ' *', ' (', 'p', '2', ' /', ' ', '1', '0', '0', ')', ' *', ' (', '1', ' -', ' p', '1', ' /', ' ', '1', '0', '0', ')\n\n', '<<'], time: 24.20 (0.11)
+total * (p1 / 100) + total * (p2 / 100) * (1 - p1 / 100)
+
+<<
+Sample 4 success: [5035, 353, 320, 79, 16, 442, 220, 16, 15, 15, 488, 320, 16, 15, 15, 481, 281, 16, 8, 353, 320, 79, 17, 442, 220, 16, 15, 15, 488, 281, 18, 442, 220, 16, 15, 15, 8, 442, 220, 16, 15, 15, 8, 151645] / ['total', ' *', ' (', 'p', '1', ' //', ' ', '1', '0', '0', ' +', ' (', '1', '0', '0', ' -', ' p', '1', ')', ' *', ' (', 'p', '2', ' //', ' ', '1', '0', '0', ' +', ' p', '3', ' //', ' ', '1', '0', '0', ')', ' //', ' ', '1', '0', '0', ')', '<|im_end|>'], raw_logprob: -17.792661666870117, cons_logprob: -1.6563429832458496, time: 28.49 (0.07)
+100%|██████████| 1/1 [02:01<00:00, 121.32s/it]100%|██████████| 1/1 [02:01<00:00, 121.32s/it]
+total * (p1 // 100 + (100 - p1) * (p2 // 100 + p3 // 100) // 100)<|im_end|>
+Total suceeses: 1/5
+Sample time: 121.32 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([1188,   77,   16,  353,  220,   22,    8,  488,  320,   77,   17,  353,
+         220,   22,    8,  488,  320,   77,   18,  353,  220,   22, 4390, 2442],
+       device='cuda:0') / ['((', 'n', '1', ' *', ' ', '7', ')', ' +', ' (', 'n', '2', ' *', ' ', '7', ')', ' +', ' (', 'n', '3', ' *', ' ', '7', '))\n\n', '<<'], time: 16.21 (0.07)
+((n1 * 7) + (n2 * 7) + (n3 * 7))
+
+<<
+Sample 1 success: [1188, 77, 16, 488, 308, 17, 488, 308, 18, 8, 353, 220, 22, 8, 151645] / ['((', 'n', '1', ' +', ' n', '2', ' +', ' n', '3', ')', ' *', ' ', '7', ')', '<|im_end|>'], raw_logprob: -16.761056900024414, cons_logprob: -0.5105636119842529, time: 9.80 (0.04)
+100%|██████████| 1/1 [00:26<00:00, 26.02s/it]100%|██████████| 1/1 [00:26<00:00, 26.02s/it]
+((n1 + n2 + n3) * 7)<|im_end|>
+Total suceeses: 1/2
+Sample time: 26.02 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([ 82, 284], device='cuda:0') / ['s', ' ='], time: 1.98 (0.00)
+s =
+Sample 1 failed, tokens: tensor([6636,   77,  353,  320,   16,   15,   15,  481,  281,  593,  608,  220,
+          16,   15,   15,    8,  353,  294, 4390], device='cuda:0') / ['(((', 'n', ' *', ' (', '1', '0', '0', ' -', ' p', '))', ' /', ' ', '1', '0', '0', ')', ' *', ' d', '))\n\n'], time: 13.03 (0.07)
+(((n * (100 - p)) / 100) * d))
+
+
+Sample 2 success: [1188, 77, 353, 320, 16, 15, 15, 481, 281, 593, 608, 220, 16, 15, 15, 8, 353, 294, 151645] / ['((', 'n', ' *', ' (', '1', '0', '0', ' -', ' p', '))', ' /', ' ', '1', '0', '0', ')', ' *', ' d', '<|im_end|>'], raw_logprob: -23.8898868560791, cons_logprob: -4.836755275726318, time: 12.41 (0.06)
+100%|██████████| 1/1 [00:27<00:00, 27.42s/it]100%|██████████| 1/1 [00:27<00:00, 27.42s/it]
+((n * (100 - p)) / 100) * d<|im_end|>
+Total suceeses: 1/3
+Sample time: 27.42 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([66595,    16,   488,  1635,   353,  2745,   692,  2442],
+       device='cuda:0') / ['(age', '1', ' +', ' years', ' *', ' mult', ')\n\n', '<<'], time: 5.83 (0.03)
+(age1 + years * mult)
+
+<<
+Sample 1 success: [66595, 16, 488, 1635, 353, 2745, 8, 442, 2745, 481, 1635, 151645] / ['(age', '1', ' +', ' years', ' *', ' mult', ')', ' //', ' mult', ' -', ' years', '<|im_end|>'], raw_logprob: -19.023014068603516, cons_logprob: -1.2404440641403198, time: 7.79 (0.02)
+100%|██████████| 1/1 [00:13<00:00, 13.62s/it]100%|██████████| 1/1 [00:13<00:00, 13.62s/it]
+(age1 + years * mult) // mult - years<|im_end|>
+Total suceeses: 1/2
+Sample time: 13.62 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([27359,   287], device='cuda:0') / ['discount', 'ing'], time: 2.01 (0.00)
+discounting
+Sample 1 success: [424, 16, 488, 4231, 15850, 14, 17, 151645] / ['age', '1', ' +', ' age', '_diff', '/', '2', '<|im_end|>'], raw_logprob: -26.18085479736328, cons_logprob: -6.498473644256592, time: 5.25 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.26s/it]100%|██████████| 1/1 [00:07<00:00,  7.26s/it]
+age1 + age_diff/2<|im_end|>
+Total suceeses: 1/2
+Sample time: 7.26 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([1188,   82,   16,  488,  274,   17,    8,  481, 5795,    8,  353,  481,
+          16,  271, 9112], device='cuda:0') / ['((', 's', '1', ' +', ' s', '2', ')', ' -', ' goal', ')', ' *', ' -', '1', '\n\n', 'Note'], time: 10.38 (0.04)
+((s1 + s2) - goal) * -1
+
+Note
+Sample 1 failed, tokens: tensor([  77,   17,  353,  320,   82,   16,  488,  274,   17,  481, 5795,    8,
+         442,  308,   17,  353,  220,   17,  271, 9112], device='cuda:0') / ['n', '2', ' *', ' (', 's', '1', ' +', ' s', '2', ' -', ' goal', ')', ' //', ' n', '2', ' *', ' ', '2', '\n\n', 'Note'], time: 13.70 (0.06)
+n2 * (s1 + s2 - goal) // n2 * 2
+
+Note
+Sample 2 failed, tokens: tensor([  77,   17,  353,  320,   82,   16,  488,  274,   17,  481, 5795,    8,
+         442,  308,   17,  271, 2442], device='cuda:0') / ['n', '2', ' *', ' (', 's', '1', ' +', ' s', '2', ' -', ' goal', ')', ' //', ' n', '2', '\n\n', '<<'], time: 11.73 (0.02)
+n2 * (s1 + s2 - goal) // n2
+
+<<
+Sample 3 success: [82, 16, 488, 274, 17, 488, 308, 17, 353, 320, 82, 16, 488, 274, 17, 8, 481, 5795, 151645] / ['s', '1', ' +', ' s', '2', ' +', ' n', '2', ' *', ' (', 's', '1', ' +', ' s', '2', ')', ' -', ' goal', '<|im_end|>'], raw_logprob: -22.18549346923828, cons_logprob: -1.8768858909606934, time: 12.40 (0.05)
+100%|██████████| 1/1 [00:48<00:00, 48.21s/it]100%|██████████| 1/1 [00:48<00:00, 48.21s/it]
+s1 + s2 + n2 * (s1 + s2) - goal<|im_end|>
+Total suceeses: 1/4
+Sample time: 48.21 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([ 6555,   481,   320,  6555,   353, 11060,    16, 29883,   608,   220,
+           16,    15,    15,     8,   481,   320,  6555,   353, 11060,    17,
+        29883,   608,   220,    16,    15,    15,     8,   481, 11679,   271,
+         2442], device='cuda:0') / ['price', ' -', ' (', 'price', ' *', ' fee', '1', '_percent', ' /', ' ', '1', '0', '0', ')', ' -', ' (', 'price', ' *', ' fee', '2', '_percent', ' /', ' ', '1', '0', '0', ')', ' -', ' loan', '\n\n', '<<'], time: 20.89 (0.10)
+price - (price * fee1_percent / 100) - (price * fee2_percent / 100) - loan
+
+<<
+Sample 1 failed, tokens: tensor([ 6555,   353,   320,    16,   481, 11060,    16, 29883,   608,   220,
+           16,    15,    15,   481, 11060,    17, 29883,   608,   220,    16,
+           15,    15,     8,   481, 11679,   271,  2442], device='cuda:0') / ['price', ' *', ' (', '1', ' -', ' fee', '1', '_percent', ' /', ' ', '1', '0', '0', ' -', ' fee', '2', '_percent', ' /', ' ', '1', '0', '0', ')', ' -', ' loan', '\n\n', '<<'], time: 18.22 (0.09)
+price * (1 - fee1_percent / 100 - fee2_percent / 100) - loan
+
+<<
+Sample 2 failed, tokens: tensor([ 6555,   481,   526, 44746,   353, 11060,    16, 29883,   442,   220,
+           16,    15,    15,     8,   481,   526, 44746,   353, 11060,    17,
+        29883,   442,   220,    16,    15,    15,     8,   481, 11679,   271,
+         2442], device='cuda:0') / ['price', ' -', ' int', '(price', ' *', ' fee', '1', '_percent', ' //', ' ', '1', '0', '0', ')', ' -', ' int', '(price', ' *', ' fee', '2', '_percent', ' //', ' ', '1', '0', '0', ')', ' -', ' loan', '\n\n', '<<'], time: 20.80 (0.09)
+price - int(price * fee1_percent // 100) - int(price * fee2_percent // 100) - loan
+
+<<
+Sample 3 success: [44746, 481, 320, 6555, 353, 11060, 16, 29883, 608, 220, 16, 15, 15, 8, 481, 320, 6555, 353, 11060, 17, 29883, 608, 220, 16, 15, 15, 8, 481, 11679, 8, 151645] / ['(price', ' -', ' (', 'price', ' *', ' fee', '1', '_percent', ' /', ' ', '1', '0', '0', ')', ' -', ' (', 'price', ' *', ' fee', '2', '_percent', ' /', ' ', '1', '0', '0', ')', ' -', ' loan', ')', '<|im_end|>'], raw_logprob: -20.485937118530273, cons_logprob: -1.8193941116333008, time: 20.22 (0.10)
+100%|██████████| 1/1 [01:20<00:00, 80.14s/it]100%|██████████| 1/1 [01:20<00:00, 80.14s/it]
+(price - (price * fee1_percent / 100) - (price * fee2_percent / 100) - loan)<|im_end|>
+Total suceeses: 1/4
+Sample time: 80.14 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([1188,   77,   16,  353, 3349,   16,    8,  481,  320,   77,   17,  353,
+        3349,   17, 4390, 5501], device='cuda:0') / ['((', 'n', '1', ' *', ' price', '1', ')', ' -', ' (', 'n', '2', ' *', ' price', '2', '))\n\n', 'Please'], time: 11.05 (0.05)
+((n1 * price1) - (n2 * price2))
+
+Please
+Sample 1 failed, tokens: tensor([ 6636,    77,    16,   353,  3349,    16,     8,   481,   320,    77,
+           17,   353,  3349,    17, 19235,    32], device='cuda:0') / ['(((', 'n', '1', ' *', ' price', '1', ')', ' -', ' (', 'n', '2', ' *', ' price', '2', ')))\n\n', 'A'], time: 10.97 (0.05)
+(((n1 * price1) - (n2 * price2)))
+
+A
+Sample 2 failed, tokens: tensor([27359,   284], device='cuda:0') / ['discount', ' ='], time: 1.93 (0.00)
+discount =
+Sample 3 success: [1188, 77, 16, 353, 3349, 16, 8, 481, 320, 77, 17, 353, 3349, 17, 593, 151645] / ['((', 'n', '1', ' *', ' price', '1', ')', ' -', ' (', 'n', '2', ' *', ' price', '2', '))', '<|im_end|>'], raw_logprob: -21.56344223022461, cons_logprob: -1.3825592994689941, time: 10.36 (0.02)
+100%|██████████| 1/1 [00:34<00:00, 34.32s/it]100%|██████████| 1/1 [00:34<00:00, 34.32s/it]
+((n1 * price1) - (n2 * price2))<|im_end|>
+Total suceeses: 1/4
+Sample time: 34.32 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([5035,  481,  281,   16,  353,  308,   16,   17,  442,  281,   16,  353,
+         308,   17,  481,  281,   17,  481,  281,   18,  353,  308,   18,  271,
+        2442], device='cuda:0') / ['total', ' -', ' p', '1', ' *', ' n', '1', '2', ' //', ' p', '1', ' *', ' n', '2', ' -', ' p', '2', ' -', ' p', '3', ' *', ' n', '3', '\n\n', '<<'], time: 16.83 (0.07)
+total - p1 * n12 // p1 * n2 - p2 - p3 * n3
+
+<<
+Sample 1 failed, tokens: tensor([27359,   291], device='cuda:0') / ['discount', 'ed'], time: 1.94 (0.00)
+discounted
+Sample 2 failed, tokens: tensor([  12, 2306], device='cuda:0') / ['-', '({'], time: 1.97 (0.00)
+-({
+Sample 3 failed, tokens: tensor([ 5035,   481,   320,    77,    16,    17,   442,   320,    77,    16,
+          488,   308,    17,     8,   353,   281,    16,   488,   308,    16,
+           17,  1018,   320,    77,    16,   488,   308,    17,     8,   353,
+          281,    16,   353,   320,    16,   481, 11089,    14,    16,    15,
+           15,     8,   488,   281,    17,   488,   308,    18,   353,   281,
+           18,   692,  2442], device='cuda:0') / ['total', ' -', ' (', 'n', '1', '2', ' //', ' (', 'n', '1', ' +', ' n', '2', ')', ' *', ' p', '1', ' +', ' n', '1', '2', ' %', ' (', 'n', '1', ' +', ' n', '2', ')', ' *', ' p', '1', ' *', ' (', '1', ' -', ' discount', '/', '1', '0', '0', ')', ' +', ' p', '2', ' +', ' n', '3', ' *', ' p', '3', ')\n\n', '<<'], time: 35.19 (0.18)
+total - (n12 // (n1 + n2) * p1 + n12 % (n1 + n2) * p1 * (1 - discount/100) + p2 + n3 * p3)
+
+<<
+Sample 4 failed, tokens: tensor([ 5035,   481,   281,    16, 23986,    16,    17,   322,    77,    16,
+          488,   281,    16,     9, 27359, 23986,    17,   322,    77,    16,
+          481,   281,    17,   481,   281,    18, 23986,    18,   271,  2442],
+       device='cuda:0') / ['total', ' -', ' p', '1', '*n', '1', '2', '//', 'n', '1', ' +', ' p', '1', '*', 'discount', '*n', '2', '//', 'n', '1', ' -', ' p', '2', ' -', ' p', '3', '*n', '3', '\n\n', '<<'], time: 20.37 (0.09)
+total - p1*n12//n1 + p1*discount*n2//n1 - p2 - p3*n3
+
+<<
+Sample 5 failed, tokens: tensor([22842,   481,   308,    16,    17,   353,   281,    16,   608,   308,
+           16,   481,   308,    17,   353,   281,    16,   608,   308,    16,
+          481,   281,    17,   481,   308,    18,   353,   281,    18,     8,
+          608,  2847], device='cuda:0') / ['(total', ' -', ' n', '1', '2', ' *', ' p', '1', ' /', ' n', '1', ' -', ' n', '2', ' *', ' p', '1', ' /', ' n', '1', ' -', ' p', '2', ' -', ' n', '3', ' *', ' p', '3', ')', ' /', ' cur'], time: 21.52 (0.09)
+(total - n12 * p1 / n1 - n2 * p1 / n1 - p2 - n3 * p3) / cur
+Sample 6 failed, tokens: tensor([66844,  5035,   481,   308,    16,    17,   353,   281,    16,     8,
+          481,   320,    77,    16,    17,   442,   320,    77,    16,   488,
+          308,    17,   593,   353,   308,    17,   353,   281,    16,     8,
+          481,   281,    17,     8,   481,   308,    18,   353,   281,    18,
+         4390], device='cuda:0') / ['((((', 'total', ' -', ' n', '1', '2', ' *', ' p', '1', ')', ' -', ' (', 'n', '1', '2', ' //', ' (', 'n', '1', ' +', ' n', '2', '))', ' *', ' n', '2', ' *', ' p', '1', ')', ' -', ' p', '2', ')', ' -', ' n', '3', ' *', ' p', '3', '))\n\n'], time: 27.37 (0.12)
+((((total - n12 * p1) - (n12 // (n1 + n2)) * n2 * p1) - p2) - n3 * p3))
+
+
+Sample 7 failed, tokens: tensor([5035,  481,  281,   16,  353,  308,   16,   17,  442,  308,   17,  481,
+         281,   17,  481,  281,   18,  353,  308,   18,  271, 2442],
+       device='cuda:0') / ['total', ' -', ' p', '1', ' *', ' n', '1', '2', ' //', ' n', '2', ' -', ' p', '2', ' -', ' p', '3', ' *', ' n', '3', '\n\n', '<<'], time: 15.01 (0.05)
+total - p1 * n12 // n2 - p2 - p3 * n3
+
+<<
+Sample 8 failed, tokens: tensor([   7, 2442], device='cuda:0') / ['(', '<<'], time: 1.96 (0.00)
+(<<
+Sample 9 failed, tokens: tensor([54934,  2352], device='cuda:0') / ['((-', 'cur'], time: 1.95 (0.00)
+((-cur
+Sample 10 failed, tokens: tensor([ 5035,   481,   308,    16,   353,   281,    16,   481,   308,    17,
+          353,   320,    79,    16,   481, 11089,     8,   481,   281,    17,
+          481,   308,    18,   353,   281,    18,   271,  2442],
+       device='cuda:0') / ['total', ' -', ' n', '1', ' *', ' p', '1', ' -', ' n', '2', ' *', ' (', 'p', '1', ' -', ' discount', ')', ' -', ' p', '2', ' -', ' n', '3', ' *', ' p', '3', '\n\n', '<<'], time: 18.93 (0.08)
+total - n1 * p1 - n2 * (p1 - discount) - p2 - n3 * p3
+
+<<
+Sample 11 failed, tokens: tensor([62143, 28068], device='cuda:0') / ['(cost', '_expression'], time: 1.96 (0.00)
+(cost_expression
+Sample 12 failed, tokens: tensor([ 5035,   481,   281,    16,   353,   308,    16,   488, 11089,   353,
+          281,    16,   353,   320,    77,    16,    17,   442,   320,    77,
+           16,   488,   308,    17,   593,   481,   281,    17,   481,   281,
+           18,   353,   308,    18,   271,  2442], device='cuda:0') / ['total', ' -', ' p', '1', ' *', ' n', '1', ' +', ' discount', ' *', ' p', '1', ' *', ' (', 'n', '1', '2', ' //', ' (', 'n', '1', ' +', ' n', '2', '))', ' -', ' p', '2', ' -', ' p', '3', ' *', ' n', '3', '\n\n', '<<'], time: 24.15 (0.11)
+total - p1 * n1 + discount * p1 * (n12 // (n1 + n2)) - p2 - p3 * n3
+
+<<
+Sample 13 failed, tokens: tensor([ 83, 284], device='cuda:0') / ['t', ' ='], time: 1.95 (0.00)
+t =
+Sample 14 success: [5035, 481, 281, 16, 353, 308, 16, 488, 11089, 353, 281, 16, 353, 308, 17, 442, 281, 16, 488, 281, 17, 488, 281, 18, 353, 308, 18, 151645] / ['total', ' -', ' p', '1', ' *', ' n', '1', ' +', ' discount', ' *', ' p', '1', ' *', ' n', '2', ' //', ' p', '1', ' +', ' p', '2', ' +', ' p', '3', ' *', ' n', '3', '<|im_end|>'], raw_logprob: -32.841182708740234, cons_logprob: -12.883411407470703, time: 18.16 (0.06)
+100%|██████████| 1/1 [03:29<00:00, 209.30s/it]100%|██████████| 1/1 [03:29<00:00, 209.30s/it]
+total - p1 * n1 + discount * p1 * n2 // p1 + p2 + p3 * n3<|im_end|>
+Total suceeses: 1/15
+Sample time: 209.30 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([37018,   353,   308,   488,   308,   271,  2442], device='cuda:0') / ['frac', ' *', ' n', ' +', ' n', '\n\n', '<<'], time: 5.20 (0.03)
+frac * n + n
+
+<<
+Sample 1 failed, tokens: tensor([3632, 1115], device='cuda:0') / ['fa', ' <<'], time: 1.94 (0.00)
+fa <<
+Sample 2 failed, tokens: tensor([5035, 1243], device='cuda:0') / ['total', '_in'], time: 1.94 (0.00)
+total_in
+Sample 3 success: [37018, 353, 308, 488, 308, 151645] / ['frac', ' *', ' n', ' +', ' n', '<|im_end|>'], raw_logprob: -22.316099166870117, cons_logprob: -2.353224515914917, time: 3.93 (0.00)
+100%|██████████| 1/1 [00:13<00:00, 13.01s/it]100%|██████████| 1/1 [00:13<00:00, 13.01s/it]
+frac * n + n<|im_end|>
+Total suceeses: 1/4
+Sample time: 13.01 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [5035, 481, 37481, 481, 21564, 442, 526, 1188, 5035, 481, 37481, 481, 21564, 8, 608, 320, 6759, 50985, 488, 21564, 593, 151645] / ['total', ' -', ' graduates', ' -', ' faculty', ' //', ' int', '((', 'total', ' -', ' graduates', ' -', ' faculty', ')', ' /', ' (', 'grad', 'uates', ' +', ' faculty', '))', '<|im_end|>'], raw_logprob: -24.94983673095703, cons_logprob: -3.966313123703003, time: 14.25 (0.06)
+100%|██████████| 1/1 [00:14<00:00, 14.25s/it]100%|██████████| 1/1 [00:14<00:00, 14.25s/it]
+total - graduates - faculty // int((total - graduates - faculty) / (graduates + faculty))<|im_end|>
+Total suceeses: 1/1
+Sample time: 14.25 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([92456,   481,   856,   481,  2745,    16,   353,   856,   481,   320,
+        25875,    16,   353,   856,   481,   379,     8,   481,   320, 25875,
+           16,   353,   856,   481,   379,     8,   353, 53676,     8,   353,
+          220,    16,    17,   271,  2442], device='cuda:0') / ['(cn', ' -', ' x', ' -', ' mult', '1', ' *', ' x', ' -', ' (', 'mult', '1', ' *', ' x', ' -', ' y', ')', ' -', ' (', 'mult', '1', ' *', ' x', ' -', ' y', ')', ' *', ' frac', ')', ' *', ' ', '1', '2', '\n\n', '<<'], time: 23.40 (0.11)
+(cn - x - mult1 * x - (mult1 * x - y) - (mult1 * x - y) * frac) * 12
+
+<<
+Sample 1 failed, tokens: tensor([ 1188,    77,     9,    16,    17,     8,   481,   856,   481,   320,
+        25875,    16, 18481,     8,   481,   320, 25875,    16, 18481,   481,
+          379,     8,   481,  1781, 25875,    16, 18481,   481,   379,     8,
+          353, 53676,  4390,  1986], device='cuda:0') / ['((', 'n', '*', '1', '2', ')', ' -', ' x', ' -', ' (', 'mult', '1', '*x', ')', ' -', ' (', 'mult', '1', '*x', ' -', ' y', ')', ' -', ' ((', 'mult', '1', '*x', ' -', ' y', ')', ' *', ' frac', '))\n\n', 'This'], time: 22.83 (0.10)
+((n*12) - x - (mult1*x) - (mult1*x - y) - ((mult1*x - y) * frac))
+
+This
+Sample 2 failed, tokens: tensor([ 6636,    77,     9,    16,    17,     8,   481,   856,   481,   320,
+        25875,    16, 18481,     8,   481,  1781, 25875,    16, 18481,     8,
+          481,   379,     8,   481, 11600, 25875,    16, 18481,     8,   481,
+          379,     8,   353, 53676, 19235,  1986], device='cuda:0') / ['(((', 'n', '*', '1', '2', ')', ' -', ' x', ' -', ' (', 'mult', '1', '*x', ')', ' -', ' ((', 'mult', '1', '*x', ')', ' -', ' y', ')', ' -', ' (((', 'mult', '1', '*x', ')', ' -', ' y', ')', ' *', ' frac', ')))\n\n', 'This'], time: 24.05 (0.13)
+(((n*12) - x - (mult1*x) - ((mult1*x) - y) - (((mult1*x) - y) * frac)))
+
+This
+Sample 3 failed, tokens: tensor([ 1188,    77,     9,    16,    17,     8,   481,   856,   481,   320,
+        25875,    16, 18481,     8,   481,  1781, 25875,    16, 18481,     8,
+          481,   379,     8,   481, 11600, 25875,    16, 18481,     8,   481,
+          379,     8,   353, 53676,  4390,  2442], device='cuda:0') / ['((', 'n', '*', '1', '2', ')', ' -', ' x', ' -', ' (', 'mult', '1', '*x', ')', ' -', ' ((', 'mult', '1', '*x', ')', ' -', ' y', ')', ' -', ' (((', 'mult', '1', '*x', ')', ' -', ' y', ')', ' *', ' frac', '))\n\n', '<<'], time: 24.08 (0.08)
+((n*12) - x - (mult1*x) - ((mult1*x) - y) - (((mult1*x) - y) * frac))
+
+<<
+Sample 4 failed, tokens: tensor([68920, 35296], device='cuda:0') / ['(force', ' symbolic'], time: 1.96 (0.00)
+(force symbolic
+Sample 5 failed, tokens: tensor([ 1188,    77,     9,    16,    17,     8,   481,   856,   481,   320,
+           87,     9, 25875,    16,     8,   481,  1781,    87,     9, 25875,
+           16,     8,   481,   379,     8,   481,   526,  1188,    87,     9,
+        25875,    16,   481,   379,     8,   353, 53676,  4390,   785],
+       device='cuda:0') / ['((', 'n', '*', '1', '2', ')', ' -', ' x', ' -', ' (', 'x', '*', 'mult', '1', ')', ' -', ' ((', 'x', '*', 'mult', '1', ')', ' -', ' y', ')', ' -', ' int', '((', 'x', '*', 'mult', '1', ' -', ' y', ')', ' *', ' frac', '))\n\n', 'The'], time: 26.02 (0.10)
+((n*12) - x - (x*mult1) - ((x*mult1) - y) - int((x*mult1 - y) * frac))
+
+The
+Sample 6 failed, tokens: tensor([  12, 1188], device='cuda:0') / ['-', '(('], time: 1.95 (0.00)
+-((
+Sample 7 success: [7, 16, 17, 23986, 8, 481, 320, 87, 488, 2745, 16, 18481, 488, 320, 25875, 16, 18481, 481, 379, 8, 488, 526, 955, 19959, 6599, 25875, 16, 18481, 481, 379, 7705, 151645] / ['(', '1', '2', '*n', ')', ' -', ' (', 'x', ' +', ' mult', '1', '*x', ' +', ' (', 'mult', '1', '*x', ' -', ' y', ')', ' +', ' int', '(f', 'rac', '*(', 'mult', '1', '*x', ' -', ' y', ')))', '<|im_end|>'], raw_logprob: -27.062284469604492, cons_logprob: -5.9963297843933105, time: 20.88 (0.11)
+100%|██████████| 1/1 [02:25<00:00, 145.19s/it]100%|██████████| 1/1 [02:25<00:00, 145.19s/it]
+(12*n) - (x + mult1*x + (mult1*x - y) + int(frac*(mult1*x - y)))<|im_end|>
+Total suceeses: 1/8
+Sample time: 145.19 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([4798,  284], device='cuda:0') / ['area', ' ='], time: 2.00 (0.00)
+area =
+Sample 1 failed, tokens: tensor([   7,   18,   21,  353, 1115], device='cuda:0') / ['(', '3', '6', ' *', ' <<'], time: 4.01 (0.01)
+(36 * <<
+Sample 2 success: [6636, 4798, 353, 220, 18, 8, 608, 3084, 488, 320, 4798, 353, 220, 18, 8, 608, 3084, 8, 353, 220, 17, 8, 151645] / ['(((', 'area', ' *', ' ', '3', ')', ' /', ' length', ' +', ' (', 'area', ' *', ' ', '3', ')', ' /', ' length', ')', ' *', ' ', '2', ')', '<|im_end|>'], raw_logprob: -21.216896057128906, cons_logprob: -4.310795783996582, time: 15.18 (0.07)
+100%|██████████| 1/1 [00:21<00:00, 21.20s/it]100%|██████████| 1/1 [00:21<00:00, 21.20s/it]
+(((area * 3) / length + (area * 3) / length) * 2)<|im_end|>
+Total suceeses: 1/3
+Sample time: 21.20 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([  79,   16,  353, 4778], device='cuda:0') / ['p', '1', ' *', ' round'], time: 3.29 (0.02)
+p1 * round
+Sample 1 failed, tokens: tensor([27359,   291], device='cuda:0') / ['discount', 'ed'], time: 1.96 (0.00)
+discounted
+Sample 2 failed, tokens: tensor([258, 419], device='cuda:0') / ['in', ' this'], time: 1.96 (0.00)
+in this
+Sample 3 failed, tokens: tensor([27779, 47067], device='cuda:0') / ['tot', '_sales'], time: 1.96 (0.00)
+tot_sales
+Sample 4 failed, tokens: tensor([68920, 51562], device='cuda:0') / ['(force', ' rounding'], time: 1.96 (0.00)
+(force rounding
+Sample 5 failed, tokens: tensor([   7, 2442], device='cuda:0') / ['(', '<<'], time: 1.97 (0.00)
+(<<
+Sample 6 failed, tokens: tensor([  12, 6636], device='cuda:0') / ['-', '((('], time: 1.96 (0.00)
+-(((
+Sample 7 failed, tokens: tensor([37018,    90], device='cuda:0') / ['frac', '{'], time: 2.00 (0.01)
+frac{
+Sample 8 failed, tokens: tensor([55702,  2038], device='cuda:0') / ['(area', ' code'], time: 1.95 (0.00)
+(area code
+Sample 9 failed, tokens: tensor([  82, 6436], device='cuda:0') / ['s', 'ells'], time: 1.95 (0.00)
+sells
+Sample 10 failed, tokens: tensor([30570,  3491], device='cuda:0') / ['fake', ' problem'], time: 1.95 (0.00)
+fake problem
+Sample 11 failed, tokens: tensor([52798,   105,  6858], device='cuda:0') / ['�', '�', '.has'], time: 2.59 (0.01)
+౬.has
+Sample 12 failed, tokens: tensor([6555,   16,  284], device='cuda:0') / ['price', '1', ' ='], time: 2.62 (0.01)
+price1 =
+Sample 13 failed, tokens: tensor([  77,   16,  353, 4778], device='cuda:0') / ['n', '1', ' *', ' round'], time: 3.23 (0.01)
+n1 * round
+Sample 14 failed, tokens: tensor([44746,    16,  1669], device='cuda:0') / ['(price', '1', ' :='], time: 2.59 (0.01)
+(price1 :=
+Sample 15 failed, tokens: tensor([6636,   77,   16,  353, 4778], device='cuda:0') / ['(((', 'n', '1', ' *', ' round'], time: 3.89 (0.01)
+(((n1 * round
+Sample 16 failed, tokens: tensor([9730, 2088], device='cuda:0') / ['(time', ' range'], time: 1.95 (0.00)
+(time range
+Sample 17 failed, tokens: tensor([68608,    16], device='cuda:0') / ['pri', '1'], time: 1.96 (0.01)
+pri1
+Sample 18 success: [79, 16, 353, 526, 1188, 77, 16, 488, 220, 15, 13, 20, 5620, 16, 8, 488, 281, 17, 353, 526, 1188, 77, 17, 488, 220, 15, 13, 20, 5620, 16, 8, 488, 281, 18, 353, 526, 1188, 77, 18, 488, 220, 15, 13, 20, 5620, 16, 8, 151645] / ['p', '1', ' *', ' int', '((', 'n', '1', ' +', ' ', '0', '.', '5', ')/', '1', ')', ' +', ' p', '2', ' *', ' int', '((', 'n', '2', ' +', ' ', '0', '.', '5', ')/', '1', ')', ' +', ' p', '3', ' *', ' int', '((', 'n', '3', ' +', ' ', '0', '.', '5', ')/', '1', ')', '<|im_end|>'], raw_logprob: -24.140108108520508, cons_logprob: -5.111947059631348, time: 31.30 (0.15)
+100%|██████████| 1/1 [01:13<00:00, 73.05s/it]100%|██████████| 1/1 [01:13<00:00, 73.05s/it]
+p1 * int((n1 + 0.5)/1) + p2 * int((n2 + 0.5)/1) + p3 * int((n3 + 0.5)/1)<|im_end|>
+Total suceeses: 1/19
+Sample time: 73.05 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [77, 16, 488, 308, 16, 353, 53676, 151645] / ['n', '1', ' +', ' n', '1', ' *', ' frac', '<|im_end|>'], raw_logprob: -22.188695907592773, cons_logprob: -1.2385575771331787, time: 5.26 (0.03)
+100%|██████████| 1/1 [00:05<00:00,  5.27s/it]100%|██████████| 1/1 [00:05<00:00,  5.27s/it]
+n1 + n1 * frac<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.27 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([27359,   287], device='cuda:0') / ['discount', 'ing'], time: 1.95 (0.00)
+discounting
+Sample 1 success: [77, 16, 488, 320, 77, 16, 488, 308, 17, 8, 488, 320, 77, 16, 488, 308, 17, 488, 308, 18, 8, 151645] / ['n', '1', ' +', ' (', 'n', '1', ' +', ' n', '2', ')', ' +', ' (', 'n', '1', ' +', ' n', '2', ' +', ' n', '3', ')', '<|im_end|>'], raw_logprob: -24.243335723876953, cons_logprob: -2.051016092300415, time: 14.35 (0.08)
+100%|██████████| 1/1 [00:16<00:00, 16.30s/it]100%|██████████| 1/1 [00:16<00:00, 16.30s/it]
+n1 + (n1 + n2) + (n1 + n2 + n3)<|im_end|>
+Total suceeses: 1/2
+Sample time: 16.30 s
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 failed, tokens: tensor([ 5035, 72403], device='cuda:0') / ['total', '_written'], time: 1.95 (0.00)
+total_written
+Sample 1 failed, tokens: tensor([ 6636, 30223,   370,  1415,   353,   308,    16,     8,   488,   320,
+        37018,   353, 64595,   370,  1415,   593,   353,   220,    17,  4390],
+       device='cuda:0') / ['(((', 'alph', 'ab', 'ets', ' *', ' n', '1', ')', ' +', ' (', 'frac', ' *', ' alph', 'ab', 'ets', '))', ' *', ' ', '2', '))\n\n'], time: 13.70 (0.07)
+(((alphabets * n1) + (frac * alphabets)) * 2))
+
+
+Sample 2 failed, tokens: tensor([64, 16], device='cuda:0') / ['a', '1'], time: 1.95 (0.00)
+a1
+Sample 3 failed, tokens: tensor([27359,   291], device='cuda:0') / ['discount', 'ed'], time: 1.98 (0.01)
+discounted
+Sample 4 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   353,   308,    16,   488, 64595,
+          370,  1415,   353,   308,    16,   353,   320, 37018,   608,   220,
+           16,   692,  2442], device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' *', ' n', '1', ' +', ' alph', 'ab', 'ets', ' *', ' n', '1', ' *', ' (', 'frac', ' /', ' ', '1', ')\n\n', '<<'], time: 15.56 (0.07)
+frac * alphabets * n1 + alphabets * n1 * (frac / 1)
+
+<<
+Sample 5 failed, tokens: tensor([   7, 2442], device='cuda:0') / ['(', '<<'], time: 1.98 (0.00)
+(<<
+Sample 6 failed, tokens: tensor([ 1188,    77,    16,   488, 53676,     8,   353, 64595,   370,  1415,
+          692,  2442], device='cuda:0') / ['((', 'n', '1', ' +', ' frac', ')', ' *', ' alph', 'ab', 'ets', ')\n\n', '<<'], time: 8.44 (0.04)
+((n1 + frac) * alphabets)
+
+<<
+Sample 7 failed, tokens: tensor([37018,   353,   308,    16,   353, 64595,   370,  1415,   488,   308,
+           16,   353, 64595,   370,  1415,   488,   526,   955, 19959,   353,
+          308,    16,   353, 64595,   370,  1415,   692,  2442],
+       device='cuda:0') / ['frac', ' *', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' int', '(f', 'rac', ' *', ' n', '1', ' *', ' alph', 'ab', 'ets', ')\n\n', '<<'], time: 18.89 (0.09)
+frac * n1 * alphabets + n1 * alphabets + int(frac * n1 * alphabets)
+
+<<
+Sample 8 failed, tokens: tensor([  83, 1669], device='cuda:0') / ['t', ' :='], time: 1.96 (0.00)
+t :=
+Sample 9 failed, tokens: tensor([88143,   353,   308,    16,   488,   526,   955, 19959,  6599, 89453,
+         3180], device='cuda:0') / ['(goal', ' *', ' n', '1', ' +', ' int', '(f', 'rac', '*(', 'alphabet', '_count'], time: 7.83 (0.04)
+(goal * n1 + int(frac*(alphabet_count
+Sample 10 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   353,   308,    16,   488, 64595,
+          370,  1415,   353,   308,    16,   353,   320,    16,   488, 53676,
+          692,  2442], device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' *', ' n', '1', ' +', ' alph', 'ab', 'ets', ' *', ' n', '1', ' *', ' (', '1', ' +', ' frac', ')\n\n', '<<'], time: 14.86 (0.04)
+frac * alphabets * n1 + alphabets * n1 * (1 + frac)
+
+<<
+Sample 11 failed, tokens: tensor([ 2413, 17368], device='cuda:0') / ['num', 'erals'], time: 1.96 (0.00)
+numerals
+Sample 12 failed, tokens: tensor([ 6636,    77,    16,   353,  2422, 17643], device='cuda:0') / ['(((', 'n', '1', ' *', ' len', '(al'], time: 4.55 (0.02)
+(((n1 * len(al
+Sample 13 failed, tokens: tensor([37018,   353,   308,    16,   353, 64595,   370,  1415,   488,   308,
+           16,   353, 64595,   370,  1415,   488,   526,  1188, 37018,   353,
+          308,    16,   353, 64595,   370,  1415,   488,   308,    16,   353,
+        64595,   370,  1415,     8,   353, 53676,   692,  2442],
+       device='cuda:0') / ['frac', ' *', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' int', '((', 'frac', ' *', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' n', '1', ' *', ' alph', 'ab', 'ets', ')', ' *', ' frac', ')\n\n', '<<'], time: 25.15 (0.09)
+frac * n1 * alphabets + n1 * alphabets + int((frac * n1 * alphabets + n1 * alphabets) * frac)
+
+<<
+Sample 14 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   488,   308,    16,   353, 64595,
+          370,  1415,   488,   320, 37018,   488,   308,    16,     8,   353,
+        64595,   370,  1415,   271,  2442], device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' +', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' (', 'frac', ' +', ' n', '1', ')', ' *', ' alph', 'ab', 'ets', '\n\n', '<<'], time: 16.86 (0.07)
+frac * alphabets + n1 * alphabets + (frac + n1) * alphabets
+
+<<
+Sample 15 failed, tokens: tensor([44746,   315], device='cuda:0') / ['(price', ' of'], time: 1.96 (0.00)
+(price of
+Sample 16 failed, tokens: tensor([ 4129, 17643], device='cuda:0') / ['length', '(al'], time: 1.96 (0.01)
+length(al
+Sample 17 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   353,   308,    16,   488, 64595,
+          370,  1415,   353,   308,    16,   353,   320, 37018,   353, 64595,
+          370,  1415,   608, 64595,   370,  1415,   488,   220,    16,   692,
+         2442], device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' *', ' n', '1', ' +', ' alph', 'ab', 'ets', ' *', ' n', '1', ' *', ' (', 'frac', ' *', ' alph', 'ab', 'ets', ' /', ' alph', 'ab', 'ets', ' +', ' ', '1', ')\n\n', '<<'], time: 20.81 (0.06)
+frac * alphabets * n1 + alphabets * n1 * (frac * alphabets / alphabets + 1)
+
+<<
+Sample 18 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   488,   308,    16,   353, 64595,
+          370,  1415,   488,   526,   955, 19959,   353, 64595,   370,  1415,
+          692,  9112], device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' +', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' int', '(f', 'rac', ' *', ' alph', 'ab', 'ets', ')\n\n', 'Note'], time: 14.92 (0.05)
+frac * alphabets + n1 * alphabets + int(frac * alphabets)
+
+Note
+Sample 19 failed, tokens: tensor([ 12,  16, 271, 785], device='cuda:0') / ['-', '1', '\n\n', 'The'], time: 3.24 (0.01)
+-1
+
+The
+Sample 20 failed, tokens: tensor([ 273, 2317], device='cuda:0') / ['le', 'aving'], time: 1.96 (0.00)
+leaving
+Sample 21 failed, tokens: tensor([31950,   426], device='cuda:0') / ['gra', 'ht'], time: 1.98 (0.01)
+graht
+Sample 22 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   353,   308,    16,   488, 64595,
+          370,  1415,   488,   526, 17643,   759,   370,  1415,   353, 53676,
+          692,  2442], device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' *', ' n', '1', ' +', ' alph', 'ab', 'ets', ' +', ' int', '(al', 'ph', 'ab', 'ets', ' *', ' frac', ')\n\n', '<<'], time: 15.02 (0.04)
+frac * alphabets * n1 + alphabets + int(alphabets * frac)
+
+<<
+Sample 23 failed, tokens: tensor([ 6636,    77,    16,   353,   526, 17643,   759,   370,  1415,   593,
+          488,   320, 37018,   353,   526, 17643,   759,   370,  1415,   593,
+          353,  1781,    77,    16,   488,   220,    16, 19235,  9112],
+       device='cuda:0') / ['(((', 'n', '1', ' *', ' int', '(al', 'ph', 'ab', 'ets', '))', ' +', ' (', 'frac', ' *', ' int', '(al', 'ph', 'ab', 'ets', '))', ' *', ' ((', 'n', '1', ' +', ' ', '1', ')))\n\n', 'Note'], time: 19.54 (0.08)
+(((n1 * int(alphabets)) + (frac * int(alphabets)) * ((n1 + 1)))
+
+Note
+Sample 24 failed, tokens: tensor([ 2892, 17643], device='cuda:0') / ['len', '(al'], time: 1.95 (0.00)
+len(al
+Sample 25 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   488,   526,  1445,    16,   353,
+        64595,   370,  1415,     8,   488,   526,  1188,    16,   488, 53676,
+            8,   353, 64595,   370,  1415,   692, 11209], device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' +', ' int', '(n', '1', ' *', ' alph', 'ab', 'ets', ')', ' +', ' int', '((', '1', ' +', ' frac', ')', ' *', ' alph', 'ab', 'ets', ')\n\n', 'However'], time: 18.04 (0.06)
+frac * alphabets + int(n1 * alphabets) + int((1 + frac) * alphabets)
+
+However
+Sample 26 failed, tokens: tensor([ 2075, 23986,    16,   488,   856,     9, 37018,     9,    16,   488,
+          320,    87, 23986,    16,   488,   856,     9, 37018,  4806,    16,
+          692,  2442], device='cuda:0') / ['(x', '*n', '1', ' +', ' x', '*', 'frac', '*', '1', ' +', ' (', 'x', '*n', '1', ' +', ' x', '*', 'frac', ')*', '1', ')\n\n', '<<'], time: 15.09 (0.07)
+(x*n1 + x*frac*1 + (x*n1 + x*frac)*1)
+
+<<
+Sample 27 failed, tokens: tensor([ 9284, 22129], device='cuda:0') / ['�', '��'], time: 1.96 (0.00)
+🟥
+Sample 28 failed, tokens: tensor([37018,   353,   308,    16,   353, 64595,   370,  1415,   488, 64595,
+          370,  1415,   353,   320, 30223,   370,  1415,   608, 53676,   488,
+          220,    16,   692,  2442], device='cuda:0') / ['frac', ' *', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' alph', 'ab', 'ets', ' *', ' (', 'alph', 'ab', 'ets', ' /', ' frac', ' +', ' ', '1', ')\n\n', '<<'], time: 17.07 (0.05)
+frac * n1 * alphabets + alphabets * (alphabets / frac + 1)
+
+<<
+Sample 29 failed, tokens: tensor([3632,  284], device='cuda:0') / ['fa', ' ='], time: 2.09 (0.00)
+fa =
+Sample 30 failed, tokens: tensor([   71, 14810], device='cuda:0') / ['h', 'itting'], time: 2.12 (0.00)
+hitting
+Sample 31 failed, tokens: tensor([ 6636,    77,    16,   353,   526, 17643,   759,   370,  1415,   593,
+          488,   320, 37018,   353,   526, 17643,   759,   370,  1415,   593,
+          488,   526, 17643,   759,   370,  1415,   593,   353,   526,  1445,
+           16,   488, 53676,   488,   220,    16,  4390,  1986],
+       device='cuda:0') / ['(((', 'n', '1', ' *', ' int', '(al', 'ph', 'ab', 'ets', '))', ' +', ' (', 'frac', ' *', ' int', '(al', 'ph', 'ab', 'ets', '))', ' +', ' int', '(al', 'ph', 'ab', 'ets', '))', ' *', ' int', '(n', '1', ' +', ' frac', ' +', ' ', '1', '))\n\n', 'This'], time: 25.85 (0.07)
+(((n1 * int(alphabets)) + (frac * int(alphabets)) + int(alphabets)) * int(n1 + frac + 1))
+
+This
+Sample 32 failed, tokens: tensor([1958,  308], device='cuda:0') / ['for', ' n'], time: 1.96 (0.00)
+for n
+Sample 33 failed, tokens: tensor([37018,   353,  2422, 17643], device='cuda:0') / ['frac', ' *', ' len', '(al'], time: 3.26 (0.00)
+frac * len(al
+Sample 34 failed, tokens: tensor([42289,  5136], device='cuda:0') / ['fra', 'ctions'], time: 1.95 (0.00)
+fractions
+Sample 35 failed, tokens: tensor([   12,    16,   353,   320, 37018,   353, 64595,   370,  1415,   488,
+          526,  1445,    16,   353, 64595,   370,  1415,     8,   488,   320,
+           16,   488, 53676,     8,   353, 64595,   370,  1415,   692,  1986],
+       device='cuda:0') / ['-', '1', ' *', ' (', 'frac', ' *', ' alph', 'ab', 'ets', ' +', ' int', '(n', '1', ' *', ' alph', 'ab', 'ets', ')', ' +', ' (', '1', ' +', ' frac', ')', ' *', ' alph', 'ab', 'ets', ')\n\n', 'This'], time: 20.43 (0.08)
+-1 * (frac * alphabets + int(n1 * alphabets) + (1 + frac) * alphabets)
+
+This
+Sample 36 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   353,   308,    16,   488, 64595,
+          370,  1415,   353,   320,    16,   488, 53676,     8,   353,   308,
+           16,   271,  2442], device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' *', ' n', '1', ' +', ' alph', 'ab', 'ets', ' *', ' (', '1', ' +', ' frac', ')', ' *', ' n', '1', '\n\n', '<<'], time: 15.78 (0.04)
+frac * alphabets * n1 + alphabets * (1 + frac) * n1
+
+<<
+Sample 37 failed, tokens: tensor([37018, 23986,    16,     9,  2892, 17643], device='cuda:0') / ['frac', '*n', '1', '*', 'len', '(al'], time: 4.61 (0.01)
+frac*n1*len(al
+Sample 38 failed, tokens: tensor([22842, 67330], device='cuda:0') / ['(total', '_letters'], time: 1.97 (0.00)
+(total_letters
+Sample 39 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   353,   320,    77,    16,   488,
+          220,    16,   692,  2442], device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' *', ' (', 'n', '1', ' +', ' ', '1', ')\n\n', '<<'], time: 9.86 (0.03)
+frac * alphabets * (n1 + 1)
+
+<<
+Sample 40 failed, tokens: tensor([   77,    16,   353,  2422, 17643], device='cuda:0') / ['n', '1', ' *', ' len', '(al'], time: 3.92 (0.01)
+n1 * len(al
+Sample 41 failed, tokens: tensor([   12,    16,   353,   320,   396,  1188, 30223,   370,  1415,   353,
+          308,    16,   488, 53676,   353, 64595,   370,  1415,     8,   608,
+        64595,   370,  1415,     8,   353, 64595,   370,  1415,   488, 64595,
+          370,  1415,   353,   308,    16,   488, 64595,   370,  1415,   353,
+        53676,   692,  1986], device='cuda:0') / ['-', '1', ' *', ' (', 'int', '((', 'alph', 'ab', 'ets', ' *', ' n', '1', ' +', ' frac', ' *', ' alph', 'ab', 'ets', ')', ' /', ' alph', 'ab', 'ets', ')', ' *', ' alph', 'ab', 'ets', ' +', ' alph', 'ab', 'ets', ' *', ' n', '1', ' +', ' alph', 'ab', 'ets', ' *', ' frac', ')\n\n', 'This'], time: 29.01 (0.14)
+-1 * (int((alphabets * n1 + frac * alphabets) / alphabets) * alphabets + alphabets * n1 + alphabets * frac)
+
+This
+Sample 42 failed, tokens: tensor([37018,   353,   308,    16,   353, 64595,   370,  1415,   488, 64595,
+          370,  1415,   353,   320,    16,   488, 53676,     8,   353,   308,
+           16,   271,  2442], device='cuda:0') / ['frac', ' *', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' alph', 'ab', 'ets', ' *', ' (', '1', ' +', ' frac', ')', ' *', ' n', '1', '\n\n', '<<'], time: 15.80 (0.04)
+frac * n1 * alphabets + alphabets * (1 + frac) * n1
+
+<<
+Sample 43 failed, tokens: tensor([30570, 28915], device='cuda:0') / ['fake', '_question'], time: 1.97 (0.00)
+fake_question
+Sample 44 failed, tokens: tensor([   23,   353,   308,    16,   488,   220,    23,   353, 53676,   271,
+         2442], device='cuda:0') / ['8', ' *', ' n', '1', ' +', ' ', '8', ' *', ' frac', '\n\n', '<<'], time: 7.86 (0.03)
+8 * n1 + 8 * frac
+
+<<
+Sample 45 failed, tokens: tensor([37018,   353,   308,    16,   353, 64595,   370,  1415,   488,   308,
+           16,   353, 64595,   370,  1415,   488,   526,     7, 53676,   353,
+          308,    16,   353, 64595,   370,  1415,  5125, 11209],
+       device='cuda:0') / ['frac', ' *', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' int', '(', ' frac', ' *', ' n', '1', ' *', ' alph', 'ab', 'ets', ' )\n\n', 'However'], time: 19.05 (0.04)
+frac * n1 * alphabets + n1 * alphabets + int( frac * n1 * alphabets )
+
+However
+Sample 46 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   353,   308,    16,   488, 64595,
+          370,  1415,   353,   308,    16,   442,   220,    17,   353, 64595,
+          370,  1415,   271,  2442], device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' *', ' n', '1', ' +', ' alph', 'ab', 'ets', ' *', ' n', '1', ' //', ' ', '2', ' *', ' alph', 'ab', 'ets', '\n\n', '<<'], time: 16.38 (0.04)
+frac * alphabets * n1 + alphabets * n1 // 2 * alphabets
+
+<<
+Sample 47 failed, tokens: tensor([37018,   353, 64595,   370,  1415,   488,   308,    16,   353, 64595,
+          370,  1415,   488,   320,    77,    16,   488, 53676,   353, 64595,
+          370,  1415,     8,   353, 64595,   370,  1415,   271,  2442],
+       device='cuda:0') / ['frac', ' *', ' alph', 'ab', 'ets', ' +', ' n', '1', ' *', ' alph', 'ab', 'ets', ' +', ' (', 'n', '1', ' +', ' frac', ' *', ' alph', 'ab', 'ets', ')', ' *', ' alph', 'ab', 'ets', '\n\n', '<<'], time: 19.69 (0.05)
+  0%|          | 0/1 [07:56<?, ?it/s]
+OSError: [Errno 28] No space left on device
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home

@@ -1,0 +1,73 @@
+{
+  "accuracy": 0.42857142857142855,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 7,
+    "total_generation_seconds": 2.9536,
+    "mean_generation_seconds_per_example": 0.421943,
+    "examples_with_generation_timing": 7,
+    "total_output_tokens": 69,
+    "mean_output_tokens_per_example": 9.8571,
+    "examples_with_token_counts": 7,
+    "evaluator_total_time_seconds": 40.3221,
+    "evaluator_max_sample_time_seconds": 1.3081
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "generated_answer": "SELECT COUNT(DISTINCT singer_id) FROM singer>>",
+      "num_tokens": 11,
+      "generation_seconds": 1.308129,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the total number of singers?",
+      "generated_answer": "SELECT COUNT(*) FROM singer>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.131644,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the average, minimum, and maximum age of all singers from France?",
+      "generated_answer": "SELECT AVG(age) ,  MIN(age) ,  MAX(age) FROM singer>>",
+      "num_tokens": 17,
+      "generation_seconds": 0.558949,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many singers are from each country?",
+      "generated_answer": "SELECT country ,  COUNT(*) FROM singer>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.259449,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "List all song names by singers above the average age.",
+      "generated_answer": "SELECT T2.song_name FROM singer>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.213419,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are all the song names by singers who are older than average?",
+      "generated_answer": "SELECT T2.song_name FROM singer>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.189718,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+      "generated_answer": "SELECT stadium.location ,  stadium.name FROM stadium>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.292293,
+      "is_correct": true,
+      "is_syntax_valid": true
+    }
+  ]
+}

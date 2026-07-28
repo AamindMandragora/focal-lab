@@ -1,0 +1,449 @@
+#!/usr/bin/env python3
+"""Detect catastrophic recovery failures, ask Codex for a bounded fix, and verify it."""
+
+from __future__ import annotations
+
+import argparse
+import dataclasses
+import hashlib
+import json
+import logging
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Iterable, Mapping
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.runtime.run_warm_task_recovery_queue import load_manifest
+from scripts.runtime.supervise_warm_task_recovery import recovery_processes
+
+LOGGER = logging.getLogger("codex-incident-monitor")
+
+RULES = (
+    ("unknown_task", ("unknown task", "task_chars=0")),
+    ("gpu_out_of_memory", ("cuda out of memory",)),
+    (
+        "gpu_memory_startup",
+        ("engine core initialization failed", "valueerror: free memory on device"),
+    ),
+    ("disk_full", ("no space left on device",)),
+    ("configuration_error", ("[warm-recovery] configuration error",)),
+    (
+        "missing_persisted_csd",
+        ("synthesis returned success without persisted csd",),
+    ),
+    ("worker_failed", ("[warm-recovery] done status=", "[warm-recovery] release status=")),
+)
+
+SNAPSHOT_ROOTS = ("synthesis", "scripts", "tests", "deploy", "grammars", "syncode")
+SNAPSHOT_FILES = (
+    "pyproject.toml",
+    "pytest.ini",
+    "setup.cfg",
+    "setup.py",
+    "requirements.txt",
+    "results_matrix.md",
+)
+ALLOWED_ROOTS = {"synthesis", "scripts", "tests", "deploy"}
+SECRET_FILENAMES = {".env", "secrets.json", "credentials.json"}
+
+
+@dataclasses.dataclass(frozen=True)
+class Incident:
+    rule: str
+    source: str
+    line: str
+    fingerprint: str
+
+
+@dataclasses.dataclass(frozen=True)
+class RepairResult:
+    status: str
+    summary: str
+    files_changed: list[str]
+    tests: list[str]
+    safe_to_relaunch: bool
+
+    @classmethod
+    def from_path(cls, path: Path) -> "RepairResult":
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return cls(**payload)
+
+
+def read_new_text(
+    path: Path, cursor: dict[str, int] | None, *, bootstrap_at_end: bool
+) -> tuple[str, dict[str, int]]:
+    """Read only bytes added since the last scan, surviving truncation/rotation."""
+    stat = path.stat()
+    if cursor is None:
+        offset = stat.st_size if bootstrap_at_end else 0
+    elif cursor.get("inode") != stat.st_ino or cursor.get("offset", 0) > stat.st_size:
+        offset = 0
+    else:
+        offset = cursor.get("offset", 0)
+    with path.open("rb") as handle:
+        handle.seek(offset)
+        content = handle.read()
+        next_offset = handle.tell()
+    return content.decode("utf-8", "replace"), {"inode": stat.st_ino, "offset": next_offset}
+
+
+def detect_incidents(source: Path, text: str) -> list[Incident]:
+    incidents: list[Incident] = []
+    for line in text.splitlines():
+        lowered = line.lower()
+        for rule, phrases in RULES:
+            if not any(phrase in lowered for phrase in phrases):
+                continue
+            if rule == "worker_failed" and ("status=0" in lowered or "exit=0" in lowered):
+                continue
+            digest = hashlib.sha256(f"{rule}\0{source}\0{line}".encode()).hexdigest()[:20]
+            incidents.append(Incident(rule, str(source), line, digest))
+            break
+    return incidents
+
+
+def is_protected_path(path: Path) -> bool:
+    lowered = "/".join(path.parts).lower()
+    name = path.name.lower()
+    return (
+        name == ".env"
+        or name == "results_matrix.md"
+        or "grammars/" in f"{lowered}/"
+        or lowered.startswith("environment/benchmark_splits/")
+        or any(term in lowered for term in ("grader", "scorer", "equivalence"))
+    )
+
+
+def is_allowed_change(path: Path) -> bool:
+    if not path.parts or path.parts[0] not in ALLOWED_ROOTS or is_protected_path(path):
+        return False
+    suffixes = {
+        "synthesis": {".py"},
+        "scripts": {".py", ".sh"},
+        "tests": {".py"},
+        "deploy": {".service"},
+    }
+    return path.suffix in suffixes[path.parts[0]]
+
+
+def _file_hash(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _tree_files(root: Path) -> dict[Path, str]:
+    return {
+        path.relative_to(root): _file_hash(path)
+        for path in root.rglob("*")
+        if path.is_file() and "__pycache__" not in path.parts and ".git" not in path.parts
+    }
+
+
+def changed_files(before: Path, after: Path) -> dict[Path, str]:
+    old = _tree_files(before)
+    new = _tree_files(after)
+    return {
+        path: "added" if path not in old else "deleted" if path not in new else "modified"
+        for path in sorted(set(old) | set(new))
+        if old.get(path) != new.get(path)
+    }
+
+
+def codex_environment(source: Mapping[str, str]) -> dict[str, str]:
+    blocked_prefixes = ("AWS_", "BEDROCK_")
+    return {
+        key: value
+        for key, value in source.items()
+        if not key.startswith(blocked_prefixes) and not key.endswith("_API_KEY")
+    }
+
+
+def build_repair_prompt(incident: Incident, evidence: Path) -> str:
+    return f"""You are repairing one catastrophic operational failure in Dynamic CSD generation.
+
+Incident rule: {incident.rule}
+Source log: {incident.source}
+Trigger line: {incident.line}
+Evidence bundle: {evidence}
+
+Work only inside this isolated source snapshot. First reproduce the defect with a failing test,
+then make the smallest general fix and run the focused tests. Add useful diagnostic logging.
+
+Hard boundaries:
+- Do not launch synthesis or held-out evaluation.
+- Do not call Bedrock, AWS, OpenAI APIs, or any paid provider.
+- Do not read or write credentials.
+- Do not change grammars, graders, scorers, equivalence rules, dataset splits, datasets,
+  model choices, score bars, recipes, the warm/cold policy, results_matrix.md, or the recovery manifest.
+- Do not delete files.
+- Allowed edits are operational/framework Python, scripts, tests, and focal service files only.
+
+Return the required JSON result. Mark safe_to_relaunch true only after the new failing test and
+the relevant existing tests pass. If the incident cannot be safely repaired within these limits,
+return status not_repaired and safe_to_relaunch false.
+"""
+
+
+def repair_can_relaunch(
+    result: RepairResult,
+    *,
+    codex_exit: int,
+    verifier_exit: int,
+    protected_changed: bool,
+) -> bool:
+    return (
+        codex_exit == 0
+        and verifier_exit == 0
+        and not protected_changed
+        and result.status == "repaired"
+        and result.safe_to_relaunch
+    )
+
+
+def result_matches_changes(result: RepairResult, changes: dict[Path, str]) -> bool:
+    """Require Codex's structured claim to match the independently measured edit set."""
+    actual = {str(path) for path in changes}
+    claimed = set(result.files_changed)
+    return bool(actual) and claimed == actual and bool(result.tests)
+
+
+def _snapshot_ignore(_directory: str, names: list[str]) -> set[str]:
+    ignored = {"__pycache__", "outputs", "logs", ".context"}
+    return {
+        name
+        for name in names
+        if name in ignored
+        or name.endswith(".pyc")
+        or name in SECRET_FILENAMES
+        or name.startswith(".env.")
+    }
+
+
+def _copy_snapshot(repo: Path, target: Path) -> None:
+    for relative in SNAPSHOT_ROOTS:
+        source = repo / relative
+        if source.exists():
+            shutil.copytree(
+                source,
+                target / relative,
+                ignore=_snapshot_ignore,
+            )
+    split_source = repo / "environment" / "benchmark_splits"
+    if split_source.exists():
+        shutil.copytree(split_source, target / "environment" / "benchmark_splits")
+    for relative in SNAPSHOT_FILES:
+        source = repo / relative
+        if source.is_file():
+            (target / relative).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target / relative)
+
+
+def _run(command: list[str], *, cwd: Path | None = None, env: dict[str, str] | None = None) -> int:
+    LOGGER.warning("[codex-incident] command=%s cwd=%s", command, cwd)
+    return subprocess.run(command, cwd=cwd, env=env, stdin=subprocess.DEVNULL).returncode
+
+
+def _verify(python: Path, repo: Path) -> int:
+    changed_python = [str(path) for path in repo.rglob("*.py") if ".git" not in path.parts]
+    compile_status = _run([str(python), "-m", "py_compile", *changed_python], cwd=repo)
+    if compile_status:
+        return compile_status
+    return _run(
+        [
+            str(python), "-m", "pytest", "-q",
+            "tests/runtime",
+            "tests/test_warm_resume_task_context.py",
+            "tests/test_synthesis_run_defaults.py",
+        ],
+        cwd=repo,
+    )
+
+
+def _capture_evidence(repo: Path, incident: Incident, incident_dir: Path) -> Path:
+    incident_dir.mkdir(parents=True, exist_ok=True)
+    source = Path(incident.source)
+    tail = ""
+    if source.is_file():
+        tail = "\n".join(source.read_text(encoding="utf-8", errors="replace").splitlines()[-200:])
+    commands = {
+        "gpu.txt": ["nvidia-smi"],
+        "processes.txt": ["ps", "-eo", "pid,ppid,stat,etime,args"],
+        "recovery-service.txt": ["systemctl", "--user", "status", "csd-warm-recovery.service", "--no-pager"],
+    }
+    for filename, command in commands.items():
+        result = subprocess.run(command, capture_output=True, text=True, stdin=subprocess.DEVNULL)
+        (incident_dir / filename).write_text(result.stdout + result.stderr, encoding="utf-8")
+    payload = dataclasses.asdict(incident) | {"captured_at": datetime.now(timezone.utc).isoformat()}
+    evidence = incident_dir / "incident.json"
+    evidence.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    (incident_dir / "source-tail.log").write_text(tail + "\n", encoding="utf-8")
+    return evidence
+
+
+def _stop_recovery(repo: Path, manifest: Path) -> None:
+    _run(["systemctl", "--user", "stop", "csd-warm-recovery.service"])
+    jobs = load_manifest(manifest)
+    remaining = recovery_processes(Path("/proc"), jobs, expected_repo=repo)
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for pid in remaining:
+            try:
+                os.kill(pid, sig)
+            except ProcessLookupError:
+                pass
+        if sig == signal.SIGTERM and remaining:
+            time.sleep(2)
+            remaining = {pid for pid in remaining if Path(f"/proc/{pid}").exists()}
+
+
+def _deploy_with_rollback(repo: Path, snapshot: Path, changes: dict[Path, str]) -> Path:
+    backup = Path(tempfile.mkdtemp(prefix="csd-incident-backup-"))
+    for relative, kind in changes.items():
+        if kind == "deleted" or not is_allowed_change(relative):
+            raise ValueError(f"unsafe change rejected: {kind} {relative}")
+    try:
+        for relative in changes:
+            live = repo / relative
+            if live.exists():
+                (backup / relative).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(live, backup / relative)
+            live.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(snapshot / relative, live)
+    except Exception:
+        _rollback(repo, backup, changes)
+        raise
+    return backup
+
+
+def _rollback(repo: Path, backup: Path, changes: dict[Path, str]) -> None:
+    for relative, kind in changes.items():
+        saved = backup / relative
+        live = repo / relative
+        if saved.exists():
+            live.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(saved, live)
+        elif kind == "added":
+            live.unlink(missing_ok=True)
+
+
+def repair_incident(args: argparse.Namespace, incident: Incident) -> bool:
+    incident_dir = args.state_dir / f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{incident.fingerprint}"
+    evidence = _capture_evidence(args.repo, incident, incident_dir)
+    _stop_recovery(args.repo, args.manifest)
+    with tempfile.TemporaryDirectory(prefix="csd-codex-incident-") as temporary:
+        baseline = Path(temporary) / "baseline"
+        snapshot = Path(temporary) / "workspace"
+        _copy_snapshot(args.repo, baseline)
+        shutil.copytree(baseline, snapshot)
+        prompt_path = incident_dir / "prompt.txt"
+        prompt_path.write_text(build_repair_prompt(incident, evidence), encoding="utf-8")
+        result_path = incident_dir / "codex-result.json"
+        command = [
+            str(args.codex), "exec", "--model", args.codex_model,
+            "--sandbox", "workspace-write",
+            "--cd", str(snapshot), "--skip-git-repo-check",
+            "--output-schema", str(args.result_schema),
+            "--output-last-message", str(result_path), "-",
+        ]
+        codex = subprocess.run(
+            command,
+            cwd=snapshot,
+            env=codex_environment(os.environ),
+            input=prompt_path.read_text(encoding="utf-8"),
+            text=True,
+        )
+        changes = changed_files(baseline, snapshot)
+        protected_changed = any(is_protected_path(path) for path in changes)
+        unsafe_changed = any(kind == "deleted" or not is_allowed_change(path) for path, kind in changes.items())
+        try:
+            result = RepairResult.from_path(result_path)
+        except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
+            LOGGER.error("[codex-incident] invalid Codex result error=%r", error)
+            return False
+        verifier = _verify(args.python, snapshot) if not unsafe_changed else 1
+        if not repair_can_relaunch(
+            result,
+            codex_exit=codex.returncode,
+            verifier_exit=verifier,
+            protected_changed=protected_changed or unsafe_changed,
+        ) or not result_matches_changes(result, changes):
+            LOGGER.error("[codex-incident] REPAIR_BLOCKED result=%s changes=%s", result, changes)
+            return False
+        backup = _deploy_with_rollback(args.repo, snapshot, changes)
+        live_verifier = _verify(args.python, args.repo)
+        if live_verifier:
+            _rollback(args.repo, backup, changes)
+            LOGGER.error("[codex-incident] REPAIR_BLOCKED live_verifier=%d rollback=%s", live_verifier, backup)
+            return False
+        LOGGER.warning("[codex-incident] repair verified changes=%s", sorted(map(str, changes)))
+    start_status = _run(["systemctl", "--user", "start", "csd-warm-recovery.service"])
+    if start_status:
+        _rollback(args.repo, backup, changes)
+        LOGGER.error(
+            "[codex-incident] REPAIR_BLOCKED recovery restart failed status=%d; deployed files rolled back",
+            start_status,
+        )
+        return False
+    return True
+
+
+def _log_paths(manifest: Path, extra_globs: Iterable[str], own_log: Path | None) -> list[Path]:
+    jobs = load_manifest(manifest)
+    paths = {Path(str(job["log_file"])) for job in jobs if job.get("log_file")}
+    for pattern in extra_globs:
+        paths.update(Path().glob(pattern) if not pattern.startswith("/") else Path("/").glob(pattern[1:]))
+    if own_log:
+        paths.discard(own_log)
+    return sorted(path for path in paths if path.is_file())
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", type=Path, required=True)
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--state-dir", type=Path, required=True)
+    parser.add_argument("--codex", type=Path, required=True)
+    parser.add_argument("--codex-model", default="gpt-5.5")
+    parser.add_argument("--python", type=Path, required=True)
+    parser.add_argument("--result-schema", type=Path, required=True)
+    parser.add_argument("--extra-log-glob", action="append", default=[])
+    parser.add_argument("--own-log", type=Path)
+    parser.add_argument("--poll-seconds", type=float, default=30)
+    parser.add_argument("--once", action="store_true")
+    args = parser.parse_args()
+    logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(message)s")
+    args.state_dir.mkdir(parents=True, exist_ok=True)
+    cursor_path = args.state_dir / "cursors.json"
+    seen_path = args.state_dir / "seen.json"
+    cursors = json.loads(cursor_path.read_text()) if cursor_path.is_file() else {}
+    seen = set(json.loads(seen_path.read_text())) if seen_path.is_file() else set()
+    while True:
+        for path in _log_paths(args.manifest, args.extra_log_glob, args.own_log):
+            # Every newly discovered file starts at its current end, including files added
+            # after monitor startup. This prevents historical failures from being replayed.
+            text, cursor = read_new_text(path, cursors.get(str(path)), bootstrap_at_end=True)
+            cursors[str(path)] = cursor
+            for incident in detect_incidents(path, text):
+                if incident.fingerprint in seen:
+                    continue
+                seen.add(incident.fingerprint)
+                LOGGER.error("[codex-incident] detected rule=%s source=%s line=%s", incident.rule, incident.source, incident.line)
+                repaired = repair_incident(args, incident)
+                LOGGER.warning("[codex-incident] outcome=%s fingerprint=%s", "repaired_and_relaunched" if repaired else "REPAIR_BLOCKED", incident.fingerprint)
+        cursor_path.write_text(json.dumps(cursors, indent=2) + "\n", encoding="utf-8")
+        seen_path.write_text(json.dumps(sorted(seen), indent=2) + "\n", encoding="utf-8")
+        if args.once:
+            return 0
+        time.sleep(args.poll_seconds)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

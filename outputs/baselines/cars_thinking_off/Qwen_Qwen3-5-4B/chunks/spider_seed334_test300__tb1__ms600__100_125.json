@@ -1,0 +1,141 @@
+{
+  "accuracy": 0.28,
+  "syntax_rate": 0.92,
+  "metrics": {
+    "num_examples": 25,
+    "total_generation_seconds": 21304.1369,
+    "mean_generation_seconds_per_example": 852.165477,
+    "examples_with_generation_timing": 25,
+    "run_wall_time_seconds": 21323.4828,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 100,
+    "eval_end_index": 125
+  },
+  "answers": [
+    {
+      "question": "What the smallest version number and its template type code?",
+      "generated_answer": "SELECT min(version_number), template_type_code FROM templates",
+      "generation_seconds": 377.520136
+    },
+    {
+      "question": "Return the lowest version number, along with its corresponding template type code.",
+      "generated_answer": "SELECT MIN(version_number) as lowest_version, template_type_code FROM templates GROUP BY template_type_code",
+      "generation_seconds": 17371.626138
+    },
+    {
+      "question": "What are the different template type codes, and how many documents use each type?",
+      "generated_answer": "",
+      "generation_seconds": 481.761694
+    },
+    {
+      "question": "What is the template type descriptions for template type code \"AD\".",
+      "generated_answer": "SELECT template_type_description FROM ref_template_types WHERE template_type_code = 'AD'",
+      "generation_seconds": 73.206282
+    },
+    {
+      "question": "How many paragraphs in total?",
+      "generated_answer": "SELECT COUNT(*) FROM documents d LEFT JOIN paragraphs p ON d.document_id = p.document_id",
+      "generation_seconds": 12.066289
+    },
+    {
+      "question": "Show paragraph details for paragraph with text 'Korea ' .",
+      "generated_answer": "SELECT * FROM paragraphs WHERE paragraph_text = 'Korea ' AND paragraph_id IN (SELECT paragraph_id FROM documents WHERE document_id IN (SELECT document_id FROM templates WHERE table = 'cre_Doc_Template_Mgt'))",
+      "generation_seconds": 115.789947
+    },
+    {
+      "question": "What are the ids and texts of paragraphs in the document titled 'Welcome to NY'?",
+      "generated_answer": "select paragraph_id, paragraph_text from paragraphs where document_id in (select document_id from documents where document_name = 'Welcome to NY')",
+      "generation_seconds": 57.739391
+    },
+    {
+      "question": "Show all document ids and the number of paragraphs in each document. Order by document id.",
+      "generated_answer": "SELECT d.* FROM documents d JOIN paragraphs p ON d.document_id = p.document_id GROUP BY d.document_id, d.document_name, d.template_id, d.template_type_code",
+      "generation_seconds": 153.264908
+    },
+    {
+      "question": "Return the different document ids along with the number of paragraphs corresponding to each, ordered by id.",
+      "generated_answer": "Select document_id, COUNT(*) as paragraph_count from paragraphs Group by document_id Order by document_id",
+      "generation_seconds": 91.80714
+    },
+    {
+      "question": "What are the ids and names of each document, as well as the number of paragraphs in each?",
+      "generated_answer": "",
+      "generation_seconds": 630.542387
+    },
+    {
+      "question": "List all document ids with at least two paragraphs.",
+      "generated_answer": "SELECT document_id FROM paragraphs GROUP BY document_id HAVING COUNT(*) >= 2",
+      "generation_seconds": 12.978619
+    },
+    {
+      "question": "What are the ids of documents that have 2 or more paragraphs?",
+      "generated_answer": "SELECT document_id FROM documents d JOIN paragraphs p ON d.document_id = p.document_id WHERE d.template_id IS NOT NULL AND p.template_id IS NOT NULL",
+      "generation_seconds": 21.740204
+    },
+    {
+      "question": "What is the document id and name with greatest number of paragraphs?",
+      "generated_answer": "SELECT d.document_id, d.document_name FROM documents d JOIN paragraphs p ON d.document_id = p.document_id GROUP BY d.document_id, d.document_name ORDER BY COUNT(p.paragraph_id) DESC LIMIT 1",
+      "generation_seconds": 339.810207
+    },
+    {
+      "question": "Give the ids of documents that have between one and two paragraphs.",
+      "generated_answer": "SELECT document_id FROM paragraphs WHERE paragraph_id IN (SELECT MIN(p_id) FROM (SELECT document_id, MIN(paragraph_id) as p_id FROM paragraphs GROUP BY document_id) AS sub) GROUP BY document_id",
+      "generation_seconds": 44.400735
+    },
+    {
+      "question": "What is the hometown of the youngest teacher?",
+      "generated_answer": "select age, hometown from (select teacher.name, teacher.age, teacher.hometown from (select course.teacher_id, (select min(age) from teacher t2 where t2.teacher_id = course.teacher_id) as youngest_age from course_arrange course group by course.teacher_id) as t where t.age = youngest_age) sub",
+      "generation_seconds": 86.962351
+    },
+    {
+      "question": "For each hometown, how many teachers are there?",
+      "generated_answer": "select teacher.hometown, count(*) as teacher_count from course_arrange inner join teacher on course_arrange.teacher_id = teacher.teacher_id group by teacher.hometown",
+      "generation_seconds": 189.426897
+    },
+    {
+      "question": "What is the most commmon hometowns for teachers?",
+      "generated_answer": "SELECT city FROM teacher GROUP BY city ORDER BY COUNT(*) DESC LIMIT 20",
+      "generation_seconds": 95.035508
+    },
+    {
+      "question": "What is the name of each teacher and what course they teach?",
+      "generated_answer": "SELECT name, course FROM course_arrange JOIN course ON course_arrange.course_id = course.course_id",
+      "generation_seconds": 22.450977
+    },
+    {
+      "question": "What are the names of the people who teach math courses?",
+      "generated_answer": "select name from teacher where teacher_id in (select teacher_id from course_arrange where course in ('math'))",
+      "generation_seconds": 29.839953
+    },
+    {
+      "question": "Show names of teachers and the number of courses they teach.",
+      "generated_answer": "SELECT name, count(*) FROM course_arrange LEFT JOIN teacher ON teacher_id = teacher.teacher_id GROUP BY teacher_id",
+      "generation_seconds": 397.053317
+    },
+    {
+      "question": "How many visitors below age 30 are there?",
+      "generated_answer": "SELECT COUNT(*) FROM visitor WHERE age < 30",
+      "generation_seconds": 22.581916
+    },
+    {
+      "question": "Find the names of the visitors whose membership level is higher than 4, and order the results by the level from high to low.",
+      "generated_answer": "select name from visitor where level_of_membership > 4 order by level_of_membership desc",
+      "generation_seconds": 17.082677
+    },
+    {
+      "question": "What are the opening year and staff number of the museum named Plaza Museum?",
+      "generated_answer": "Select open_year, num_of_staff from museum where name = 'Plaza Museum'",
+      "generation_seconds": 60.775993
+    },
+    {
+      "question": "find the id, name and age for visitors who visited some museums more than once.",
+      "generated_answer": "SELECT id, name, age FROM visitor WHERE id IN (SELECT DISTINCT visitor_id FROM visit WHERE num_of_ticket > 0) AND id NOT IN (SELECT MIN(visitor_id) t FROM visit GROUP BY visitor_id)",
+      "generation_seconds": 241.682254
+    },
+    {
+      "question": "What are the id, name and membership level of visitors who have spent the largest amount of money in total in all museum tickets?",
+      "generated_answer": "SELECT visitor.id AS visitor_id, visitor.name, visitor.level_of_membership FROM visitor INNER JOIN visit ON visitor.id = visit.visitor_id GROUP BY visitor.id, visitor.name, visitor.level_of_membership ORDER BY SUM(visit.total_spent) DESC LIMIT 1",
+      "generation_seconds": 356.991014
+    }
+  ]
+}

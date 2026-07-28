@@ -1,0 +1,61 @@
+{
+  "accuracy": 0.1111111111111111,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 9,
+    "total_generation_seconds": 357.1845,
+    "mean_generation_seconds_per_example": 39.68717,
+    "examples_with_generation_timing": 9,
+    "run_wall_time_seconds": 380.01,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 70,
+    "eval_end_index": 80
+  },
+  "answers": [
+    {
+      "question": "Which city has the most frequent destination airport?",
+      "generated_answer": "SELECT city FROM airports WHERE airportcode = (SELECT destairport FROM flights GROUP BY destairport ORDER BY COUNT(*) DESC LIMIT 1)",
+      "generation_seconds": 56.187373
+    },
+    {
+      "question": "What is the code of airport that has the highest number of flights?",
+      "generated_answer": "SELECT airportcode FROM flights GROUP BY destairport ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 46.580328
+    },
+    {
+      "question": "Give the code of the airport with the least flights.",
+      "generated_answer": "SELECT airportcode FROM (SELECT airport.destairport as airportcode, COUNT(*) as cnt FROM flights JOIN airports ON flights.destairport = airports.airportcode GROUP BY airport.destairport) t1 ORDER BY t1.cnt ASC LIMIT 1",
+      "generation_seconds": 76.148008
+    },
+    {
+      "question": "What airline serves the most flights?",
+      "generated_answer": "SELECT airline, COUNT(*) as flight_count FROM flights GROUP BY airline ORDER BY flight_count DESC LIMIT 1",
+      "generation_seconds": 35.00243
+    },
+    {
+      "question": "Find the abbreviation and country of the airline that has fewest number of flights?",
+      "generated_answer": "SELECT abbreviation, country FROM airlines ORDER BY COUNT(*) ASC LIMIT 1",
+      "generation_seconds": 56.86371
+    },
+    {
+      "question": "What are airlines that have some flight departing from airport 'AHD'?",
+      "generated_answer": "SELECT distinct airline FROM flights WHERE sourceairport = 'AHD'",
+      "generation_seconds": 21.899526
+    },
+    {
+      "question": "Which airlines have a flight with source airport AHD?",
+      "generated_answer": "SELECT airline FROM flights WHERE sourceairport = 'AHD' AND airline NOT IN (SELECT airline FROM airlines WHERE airline IS NULL)",
+      "generation_seconds": 11.422823
+    },
+    {
+      "question": "Find all airlines that have flights from airport 'CVO' but not from 'APG'.",
+      "generated_answer": "SELECT airline FROM flights WHERE sourceairport = 'CVO' AND sourceairport NOT IN (SELECT sourceairport FROM flights WHERE sourceairport = 'APG') AND airline IN (SELECT airline FROM flights WHERE sourceairport NOT IN (SELECT sourceairport FROM flights WHERE sourceairport = 'APG'))",
+      "generation_seconds": 38.729043
+    },
+    {
+      "question": "Which airlines have at least 10 flights?",
+      "generated_answer": "SELECT airline FROM flights GROUP BY airline HAVING COUNT(*) >= 10",
+      "generation_seconds": 14.351286
+    }
+  ]
+}

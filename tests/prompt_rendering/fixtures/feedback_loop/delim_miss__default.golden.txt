@@ -1,0 +1,4 @@
+
+  ⚠ Delimiter check FAILED: none of the evaluated outputs contained a << >> span, but spans are required.
+    Likely cause: the strategy opens spans by WAITING for the model to emit "<<" (e.g. a `next == "<<"` trigger, or an unconstrained chunk that stops on "<<"). A weak eval model may never emit "<<" on its own, so the trigger never fires, no span opens, and ">>" is never reached.
+    Fix to consider: FORCE the opening delimiter at span entry (append "<<" directly via a forced-delimiter / direct-control helper) instead of depending on the model to produce it, then force ">>" at span exit. This is a decoding-mechanism change, not task guidance.

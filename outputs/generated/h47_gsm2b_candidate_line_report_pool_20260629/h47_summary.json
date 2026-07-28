@@ -1,0 +1,588 @@
+{
+  "all_candidate_count": 1417,
+  "candidate_line_count": 1063,
+  "candidate_line_examples_by_source": {
+    "h24": [
+      {
+        "expression": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}} \\times 100\\%$",
+        "group_id": 1,
+        "source": "h24:candidate_line:A"
+      },
+      {
+        "expression": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}}$",
+        "group_id": 1,
+        "source": "h24:candidate_line:B"
+      },
+      {
+        "expression": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}} \\times 100$",
+        "group_id": 1,
+        "source": "h24:candidate_line:C"
+      },
+      {
+        "expression": "{n} * (1 + {k_2} + {k_3} * (9/8))",
+        "group_id": 3,
+        "source": "h24:candidate_line:A"
+      },
+      {
+        "expression": "{n} + {k_2} * {n} + {k_3} * {n} + 0.125 * {k_3} * {n}",
+        "group_id": 3,
+        "source": "h24:candidate_line:B"
+      }
+    ],
+    "h29": [
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h29:candidate_line:1"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h29:candidate_line:2"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h29:candidate_line:3"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h29:candidate_line:4"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h29:candidate_line:5"
+      }
+    ],
+    "h37_gsm2b_t0": [
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t0:candidate_line:1"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t0:candidate_line:2"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t0:candidate_line:3"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t0:candidate_line:4"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t0:candidate_line:5"
+      }
+    ],
+    "h37_gsm2b_t1": [
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t1:candidate_line:1"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t1:candidate_line:2"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t1:candidate_line:3"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t1:candidate_line:4"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t1:candidate_line:5"
+      }
+    ],
+    "h37_gsm2b_t2": [
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t2:candidate_line:1"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t2:candidate_line:2"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t2:candidate_line:3"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t2:candidate_line:4"
+      },
+      {
+        "expression": "4*(sides - target) / sides^2",
+        "group_id": 1,
+        "source": "h37_gsm2b_t2:candidate_line:5"
+      }
+    ]
+  },
+  "candidate_line_group_count": 48,
+  "credential_scan_hits": [],
+  "description": "CPU-only replay of H45 direct-eval report adapter after adding candidate-line extraction. Correctness is scored only where prior saved analysis already contains candidate-line equivalence labels.",
+  "diagnostic_id": "h47_gsm2b_candidate_line_report_pool_20260629",
+  "final_answer_correct_union": [
+    10,
+    13,
+    16,
+    17,
+    21,
+    30,
+    32,
+    39,
+    47
+  ],
+  "final_answer_correct_union_count": 9,
+  "final_candidate_count": 354,
+  "h24_scored_candidate_line_union": [
+    1,
+    8,
+    10,
+    16,
+    21,
+    26,
+    30,
+    43,
+    47,
+    48
+  ],
+  "h24_scored_candidate_line_union_count": 10,
+  "h24_scored_selected_line_count": 3,
+  "h24_scored_selected_line_indices": [
+    21,
+    43,
+    48
+  ],
+  "inputs": [
+    {
+      "label": "h2",
+      "num_examples": 49,
+      "path": "outputs/generated/h2_gsm2b_final_span_probe_20260629/h2_gsm2b_final_span_probe_20260629_20260628_215702_fdbc73/results/success_report.json"
+    },
+    {
+      "label": "h4",
+      "num_examples": 49,
+      "path": "outputs/generated/h4_gsm2b_semantic_plan_probe_20260629/h4_gsm2b_semantic_plan_probe_20260629_20260628_222132_140e8a/results/success_report.json"
+    },
+    {
+      "label": "h10",
+      "num_examples": 49,
+      "path": "outputs/generated/h10_gsm2b_equation_copy_probe_20260629/h10_gsm2b_equation_copy_probe_20260629_20260628_232012_96dd25/results/success_report.json"
+    },
+    {
+      "label": "h24",
+      "num_examples": 49,
+      "path": "outputs/generated/h24_gsm2b_multicandidate_selector_probe_20260629/results/direct_eval_success.json"
+    },
+    {
+      "label": "h29",
+      "num_examples": 49,
+      "path": "outputs/generated/h29_gsm2b_six_variant_consensus_probe_20260629/results/direct_eval_success.json"
+    },
+    {
+      "label": "h40",
+      "num_examples": 49,
+      "path": "outputs/generated/h37_gsm2b_repeat_probe_20260629_t0/results/direct_eval_success.json"
+    },
+    {
+      "label": "h41",
+      "num_examples": 49,
+      "path": "outputs/generated/h37_gsm2b_repeat_probe_20260629_t1/results/direct_eval_success.json"
+    },
+    {
+      "label": "h42",
+      "num_examples": 49,
+      "path": "outputs/generated/h37_gsm2b_repeat_probe_20260629_t2/results/direct_eval_success.json"
+    }
+  ],
+  "missing_inputs": [],
+  "notes": [
+    "Selection used no expected/is_correct fields; gold/correctness fields are used only in this post-selection diagnostic summary.",
+    "Completed direct-eval reports do not preserve GSM variable_types, so broad newly parsed candidate-line correctness is not claimed here.",
+    "H24 prior analysis provides exact scored candidate-line union for that report: 10/49, below the 12/49 CRANE train bar."
+  ],
+  "num_reports": 8,
+  "prediction_result": {
+    "candidate_line_groups_gte_h24_43": true,
+    "overall": false,
+    "parser_recovered_candidate_lines": true,
+    "scored_candidate_line_union_gte_12": false
+  },
+  "selected_group_count_all_candidates": 48,
+  "selected_group_count_candidate_lines_only": 48,
+  "selected_rows_head": [
+    {
+      "agreement_score": [
+        24,
+        4,
+        24,
+        0.75
+      ],
+      "candidate_count": 24,
+      "cluster_key": "4*(sides - target) / sides^2",
+      "expression": "4*(sides - target) / sides^2",
+      "family_count": 4,
+      "group_id": 1,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 24,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        16,
+        4,
+        16,
+        0.75
+      ],
+      "candidate_count": 16,
+      "cluster_key": "$g - n_1 - 3n_2$",
+      "expression": "$g - n_1 - 3n_2$",
+      "family_count": 4,
+      "group_id": 2,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 16,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        3,
+        3,
+        3,
+        0.7
+      ],
+      "candidate_count": 3,
+      "cluster_key": "50000000000000000000000000000000000000000000000000000000000000",
+      "expression": "50000000000000000000000000000000000000000000000000000000000000",
+      "family_count": 3,
+      "group_id": 3,
+      "source": "h37_gsm2b_t2",
+      "source_count": 3,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "agreement_score": [
+        24,
+        4,
+        24,
+        0.75
+      ],
+      "candidate_count": 24,
+      "cluster_key": "{n * k * x}",
+      "expression": "{n * k * x}",
+      "family_count": 4,
+      "group_id": 4,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 24,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        13,
+        5,
+        13,
+        0.75
+      ],
+      "candidate_count": 13,
+      "cluster_key": "$\\frac{1}{n^2}$",
+      "expression": "$\\frac{1}{n^2}$",
+      "family_count": 5,
+      "group_id": 5,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 13,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        12,
+        4,
+        12,
+        0.75
+      ],
+      "candidate_count": 12,
+      "cluster_key": "$\\frac{2\\text{total} - t}{\\text{currency}}$",
+      "expression": "$\\frac{2\\text{total} - t}{\\text{currency}}$",
+      "family_count": 4,
+      "group_id": 6,
+      "source": "h37_gsm2b_t2:candidate_line:5",
+      "source_count": 12,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        20,
+        4,
+        20,
+        0.75
+      ],
+      "candidate_count": 20,
+      "cluster_key": "{n} - {n1} * {w1} - {n2} * {w2} - {n3} * {w3}",
+      "expression": "{n} - {n1} * {w1} - {n2} * {w2} - {n3} * {w3}",
+      "family_count": 4,
+      "group_id": 7,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 20,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        8,
+        4,
+        8,
+        0.75
+      ],
+      "candidate_count": 8,
+      "cluster_key": "$((k1 + k2) * 100) / (n1 + n2)$",
+      "expression": "$((k1 + k2) * 100) / (n1 + n2)$",
+      "family_count": 4,
+      "group_id": 8,
+      "source": "h37_gsm2b_t2:candidate_line:3",
+      "source_count": 8,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        14,
+        5,
+        14,
+        0.75
+      ],
+      "candidate_count": 14,
+      "cluster_key": "{n1} * {cur} * {c1} + {n2} * {cur} * {c2} + {cur} * {c3}",
+      "expression": "{n1} * {cur} * {c1} + {n2} * {cur} * {c2} + {cur} * {c3}",
+      "family_count": 5,
+      "group_id": 9,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 14,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        3,
+        2,
+        3,
+        1.0
+      ],
+      "candidate_count": 3,
+      "cluster_key": "total - n1 + n2",
+      "expression": "total - n1 + n2",
+      "family_count": 2,
+      "group_id": 10,
+      "source": "h24",
+      "source_count": 3,
+      "source_family": "h24"
+    },
+    {
+      "agreement_score": [
+        2,
+        2,
+        2,
+        0.8
+      ],
+      "candidate_count": 2,
+      "cluster_key": "2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2",
+      "expression": "2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2",
+      "family_count": 2,
+      "group_id": 11,
+      "source": "h37_gsm2b_t0",
+      "source_count": 2,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "agreement_score": [
+        24,
+        4,
+        24,
+        0.75
+      ],
+      "candidate_count": 24,
+      "cluster_key": "`(total - spent) * n / cal`",
+      "expression": "`(total - spent) * n / cal`",
+      "family_count": 4,
+      "group_id": 12,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 24,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        18,
+        5,
+        18,
+        0.75
+      ],
+      "candidate_count": 18,
+      "cluster_key": "`total - frac - daily * period * 7`",
+      "expression": "`total - frac - daily * period * 7`",
+      "family_count": 5,
+      "group_id": 13,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 18,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        6,
+        1,
+        6,
+        0.75
+      ],
+      "candidate_count": 6,
+      "cluster_key": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+      "expression": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+      "family_count": 1,
+      "group_id": 14,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 6,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        7,
+        7,
+        7,
+        1.0
+      ],
+      "candidate_count": 7,
+      "cluster_key": "n1 * p1 + n2 * p2 + n3 * p3",
+      "expression": "n1 * p1 + n2 * p2 + n3 * p3",
+      "family_count": 7,
+      "group_id": 16,
+      "source": "h37_gsm2b_t2",
+      "source_count": 7,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "agreement_score": [
+        16,
+        4,
+        16,
+        0.75
+      ],
+      "candidate_count": 16,
+      "cluster_key": "{n} // ({x} * (1 + {mult}))",
+      "expression": "{n} // ({x} * (1 + {mult}))",
+      "family_count": 4,
+      "group_id": 17,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 16,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        8,
+        4,
+        8,
+        0.75
+      ],
+      "candidate_count": 8,
+      "cluster_key": "$\\frac{5 \\times n \\times t}{3 \\times h}$",
+      "expression": "$\\frac{5 \\times n \\times t}{3 \\times h}$",
+      "family_count": 4,
+      "group_id": 18,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 8,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        27,
+        5,
+        27,
+        0.75
+      ],
+      "candidate_count": 27,
+      "cluster_key": "{total} - {n1} - {mult}",
+      "expression": "{total} - {n1} - {mult}",
+      "family_count": 5,
+      "group_id": 19,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_count": 27,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        1,
+        1,
+        1,
+        0.8
+      ],
+      "candidate_count": 1,
+      "cluster_key": "7 * (1 + percent) * price + extra_price * price + 7 * price * percent + extra_price * price + 7 * price * percent + extra_price * price + 7 * price * percent + extra_price * price + 7 * price * percent + extra_price * price",
+      "expression": "7 * (1 + percent) * price + extra_price * price + 7 * price * percent + extra_price * price + 7 * price * percent + extra_price * price + 7 * price * percent + extra_price * price + 7 * price * percent + extra_price * price",
+      "family_count": 1,
+      "group_id": 20,
+      "source": "h2",
+      "source_count": 1,
+      "source_family": "h2"
+    },
+    {
+      "agreement_score": [
+        4,
+        4,
+        4,
+        0.75
+      ],
+      "candidate_count": 4,
+      "cluster_key": "<<n + mult * n",
+      "expression": "<<n + mult * n",
+      "family_count": 4,
+      "group_id": 21,
+      "source": "h37_gsm2b_t2:candidate_line:1",
+      "source_count": 4,
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    }
+  ],
+  "source_candidate_counts": {
+    "h10": 46,
+    "h2": 48,
+    "h24": 176,
+    "h29": 274,
+    "h37_gsm2b_t0": 274,
+    "h37_gsm2b_t1": 274,
+    "h37_gsm2b_t2": 281,
+    "h4": 44
+  },
+  "source_candidate_line_counts": {
+    "h24": 133,
+    "h29": 231,
+    "h37_gsm2b_t0": 231,
+    "h37_gsm2b_t1": 231,
+    "h37_gsm2b_t2": 237
+  },
+  "source_family_counts": {
+    "h10": 46,
+    "h2": 48,
+    "h24": 43,
+    "h24:candidate_lines": 133,
+    "h29": 43,
+    "h29:candidate_lines": 231,
+    "h37_gsm2b_repeat_probe_20260629_t0": 43,
+    "h37_gsm2b_repeat_probe_20260629_t0:candidate_lines": 231,
+    "h37_gsm2b_repeat_probe_20260629_t1": 43,
+    "h37_gsm2b_repeat_probe_20260629_t1:candidate_lines": 231,
+    "h37_gsm2b_repeat_probe_20260629_t2": 44,
+    "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines": 237,
+    "h4": 44
+  }
+}

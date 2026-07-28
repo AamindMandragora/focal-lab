@@ -1,0 +1,409 @@
+{
+  "accuracy": 0.02040816326530612,
+  "syntax_rate": 0.9387755102040817,
+  "metrics": {
+    "num_examples": 49,
+    "total_generation_seconds": 1462.4034,
+    "mean_generation_seconds_per_example": 29.844968,
+    "examples_with_generation_timing": 49,
+    "total_output_tokens": 8790,
+    "mean_output_tokens_per_example": 179.3878,
+    "examples_with_token_counts": 49,
+    "evaluator_total_time_seconds": 1577.3683,
+    "evaluator_max_sample_time_seconds": 170.0389
+  },
+  "answers": [
+    {
+      "question": "{name} is rolling a {sides} die. How much more likely is it (expressed as a percentage) that he rolls a number greater than {target} than that he rolls two even numbers in a row?",
+      "generated_answer": "Let's think step by step. The probability of rolling a number greater than {target} on a {sides} die is <<(sides - target)>> out of {sides}, which is <<(sides - target)>>/{sides}. The probability of rolling two even numbers in a row is <<1/2>> * <<1/2>> = <<1/4>>. The difference in probability is <<(sides - target)/sides>> - <<1/4>>. To express this difference as a percentage, we multiply by 100, which gives us <<100>> * <<(sides - target)/sides>> - <<100>> * <<1/4>>. The final answer is <<100>> * <<(sides - target)/sides>> - <<100>> * <<1/4>>.",
+      "num_tokens": 201,
+      "generation_seconds": 54.632793,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "A {g} of {n} students has various hobbies. {n_1} like to {h_1}, {n_2} like to play {h_2}, and the rest like to either {h_3} or {h_4}. How many like to {h_3} if the number that like to {h_4} is twice t",
+      "generated_answer": "",
+      "num_tokens": 0,
+      "generation_seconds": 170.038924,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "{name} is popping popcorn for a snack. As the {p} of kernels heats up, the kernels start popping faster. {n} pop in the first {s} seconds of cooking, then {k_2} times that amount in the next {s} secon",
+      "generated_answer": "Let's think step by step. Initially, {n} kernels pop in the first {s} seconds. In the next {s} seconds, {k_2} times that amount pop, which is <<k_2>> * <<n>>. In the next {s} seconds, the popping rate increases to {k_3} times the initial rate, which is <<k_3>> * <<n>>. In the final {s} seconds, the popping rate slows down to half the rate of the past {s} seconds, which is <<0>>.5 * <<k_2>> * <<n>>. After taking the {p} off the heat, a quarter of the number of kernels that popped in the final {s} seconds also pop, which is <<0>>.25 * <<0>>.5 * <<k_2>> * <<n>>. The total number of popped kernels is the sum of all these amounts: <<n>> + <<k_2>> * <<n>> + <<k_3>> * <<n>> + <<0>>.5 * <<k_2>> * <<n>> + <<0>>.25 * <<0>>.5 * <<k_2>> * <<n>>. The final answer is <<n>> + <<k_2>> * <<n>> + <<k_3>> * <<n>> + <<0>>.5 * <<k_2>> * <<n>> + <<0>>.25 * <<0>>.5 * <<k_2>> * <<n>>.",
+      "num_tokens": 363,
+      "generation_seconds": 42.992556,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} has {x} {area} of {fruit} field. There are {k} {fruit} per {area}. {name} can harvest his {fruit} every {n} months. How many {fruit} can {name} harvest within a year?",
+      "generated_answer": "Let's think step by step. Initially, {name} has {x} {area} of {fruit} field. There are {k} {fruit} per {area}, so the total number of {fruit} in one {area} is <<k>>. Therefore, the total number of {fruit} in {x} {area} is <<x>> * <<k>> = <<x>> * <<k>>. {name} can harvest his {fruit} every {n} months, which means in a year (12 months), he can harvest <<1>> / <<n>> times. The total number of {fruit} harvested within a year is <<x>> * <<k>> * <<1>> / <<n>>. The final answer is <<x>> * <<k>> * <<1>> / <<n>>.",
+      "num_tokens": 188,
+      "generation_seconds": 13.528099,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "A juggler can juggle {n} balls. {frac_1} of the balls are {ball_type} balls, and {frac_2} of the {ball_type} balls are {color}. How many {color} {ball_type} balls are there?",
+      "generated_answer": "Let's think step by step. The juggler can juggle {n} balls. {frac_1} of the balls are {ball_type} balls, so the number of {ball_type} balls is <<n>> * <<frac_1>>. Of these {ball_type} balls, {frac_2} are {color}, so the number of {color} {ball_type} balls is <<n>> * <<frac_1>> * <<frac_2>>. The final answer is <<n>> * <<frac_1>> * <<frac_2>>.",
+      "num_tokens": 127,
+      "generation_seconds": 12.579171,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "To make a call from a {dev}, you must pay {currency} {frac1} for each minute of your call. After {t} minutes, that price drops to {currency} {frac2} per minute. How much would a {total}-minute call co",
+      "generated_answer": "Let's think step by step. Initially, the cost for the first {t} minutes is <<frac1>> per minute, so the cost for the first {t} minutes is <<t>> * <<frac1>>. The remaining minutes are <<total>> - <<t>> = <<total>> - <<t>>. The cost for the remaining minutes is <<(total - t)>> * <<frac2>>. The total cost is the sum of the two parts: <<t>> * <<frac1>> + <<(total - t)>>!!!!!!!",
+      "num_tokens": 129,
+      "generation_seconds": 53.897675,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} wants to make different sized ice cubes with {n} {unit}s of water. He can make giant cubes that use {w1} {unit}s per cube, medium cubes that use {w2} {unit}s, and small cubes that use {w3} of {",
+      "generated_answer": "Let's think step by step. Initially, {name} has {n} {unit}s of water. He uses <<n>> {unit}s for making {n1} giant cubes, which is <<n>> * <<w1>>. He uses <<n>> {unit}s for making {n2} medium cubes, which is <<n>> * <<w2>>. He uses <<n>> {unit}s for making {n3} small cubes, which is <<n>> * <<w3>>. The total amount of water used is <<n>> * <<w1>> * <<n>> + <<n>> * <<w2>> * <<n>> + <<n>> * <<w3>> * <<n>>. The water left is <<n>> - <<n>> * <<w1>> * <<n>> - <<n>> * <<w2>> * <<n>> - <<n>> * <<w3>> * <<n>>. The final answer is <<n>> - <<n>> * <<w1>> * <<n>> - <<n>> * <<w2>> * <<n>> - <<n>> * <<w3>> * <<n>>.",
+      "num_tokens": 284,
+      "generation_seconds": 38.519011,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name1}'s dog has {n1} puppies, {k1} of which have spots. {name2}'s dog has {n2} puppies, {k2} of which have spots. What percentage of all the puppies have spots?",
+      "generated_answer": "Let's think step by step. Initially, {name1}'s dog has {n1} puppies, and {name2}'s dog has {n2} puppies. The total number of puppies is <<n1>> + <<n2>> = <<n1>> + <<n2>>. The number of puppies with spots is <<k1>> + <<k2>>. The percentage of puppies with spots is <<(k1 + k2)>> / <<(n1 + n2)>> * 100. The final answer is <<(k1 + k2)>> / <<(n1 + n2)>>!",
+      "num_tokens": 142,
+      "generation_seconds": 39.682917,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} went to buy some school supplies. He bought {n1} {obj1} which cost {cur} {c1} each, {n2} {obj2} which cost {cur} {c2} each, and a rim of bond paper which cost {cur} {c3}. How much did {name} sp",
+      "generated_answer": "Let's think step by step. Initially, {name} spent <<n1>> * <<c1>> on {n1} {obj1}, and <<n2>> * <<c2>> on {n2} {obj2}. The total spent on these items is <<n1>> * <<c1>> + <<n2>> * <<c2>>. Additionally, {name} spent <<c3>> on a rim of bond paper. Therefore, the total amount spent is <<n1>> * <<c1>> + <<n2>> * <<c2>> + <<c3>>. The final answer is <<n1>> * <<c1>> + <<n2>> * <<c2>> + <<c3>>.",
+      "num_tokens": 174,
+      "generation_seconds": 24.465367,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} was preparing for a {event} at her house, where she intended to serve {food}. She noticed that she was out of plastic {obj}, so she bought a new package of {obj}. Later, her husband also bought",
+      "generated_answer": "Let's think step by step. Initially, {name} bought a package of {obj}. Her husband also bought {n1} new {obj}. So, before using any, she had <<n1>> + <<1>> = <<n1>>. After using {n2} {obj} for sampling, she had <<n1>> - <<n2>> = <<n1>>. The total number of {obj} she had when setting the table is <<n1>> + <<1>> - <<n2>>. The final answer is <<n1>>.",
+      "num_tokens": 129,
+      "generation_seconds": 12.840035,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} is knitting winter wear for her {count} grandchildren. They're {children}, so they're all the same size. She wants to make a {c1}, {c2}, {c3}, {c4}, and {c5} for each of them. It takes {n1} ske",
+      "generated_answer": "Let's think step by step. {name} is knitting for {count} grandchildren. For each grandchild, she needs {n1} skeins for a {c1}, {n2} for a {c2}, {n3} for a {c3}, {n4} for a pair of {c4}, and {n5} for a pair of {c5}. The total skeins needed for one grandchild is <<n1>> + <<n2>> + <<n3>> + <<n4>> + <<n5>>. For {count} grandchildren, the total is <<(n1 + n2 + n3 + n4 + n5)>> * <<count >>!",
+      "num_tokens": 156,
+      "generation_seconds": 18.346139,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "According to its nutritional info, a bag of {food} has {cal} calories per serving. If a {size} {unit} bag has {n} servings, how many {unit} can you eat if your daily calorie target is {total} and you ",
+      "generated_answer": "Let's think step by step. Initially, a bag of {food} has {cal} calories per serving, and a {size} {unit} bag has {n} servings, so the total calories in one {size} {unit} bag is <<cal>> * <<n>>. If your daily calorie target is {total} and you have already consumed {spent} calories, the remaining calories you can consume is <<total>> - <<spent>>. The number of {unit} you can eat is the remaining calories divided by the calories per {unit}, which is <<(total - spent)>> / <<cal>> * <<n>>. The final answer is <<(total - spent)>> / <<cal>> * <<n>>.",
+      "num_tokens": 163,
+      "generation_seconds": 13.696315,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "A {facility} has a capacity of {total} {item}s with {frac} occupied. Due to the {event}, {daily} patients are admitted into the {facility} each day. Calculate the total number of unoccupied {item}s in",
+      "generated_answer": "Let's think step by step. Initially, the facility has a capacity of {total} {item}s with {frac} occupied. The number of occupied {item}s is <<total>> * <<frac>>. The number of unoccupied {item}s is <<total>> - <<total>> * <<frac>>. Due to the {event}, {daily} patients are admitted into the {facility} each day. The total number of patients admitted in {period} weeks is <<7>> * <<period>> * <<daily>>. The total number of unoccupied {item}s after {period} weeks is <<total>> - <<total>> * <<frac>> - <<7>> * <<period>> * <<daily>>. The final answer is <<total>> - <<total>> * <<frac>> - <<7>> * <<period>> * <<daily>>.",
+      "num_tokens": 195,
+      "generation_seconds": 17.507608,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} has {cur}{initial_amount} and wants to buy {quantity} {item}s from a bin at the {store_type} store. Each {item} costs {cur}{unit_price}. How much money does {name} have left after paying for th",
+      "generated_answer": "Let's think step by step. {name} starts with {initial_amount}. The total cost for {quantity} {item}s is <<quantity>> * <<unit_price>>. The remaining amount is <<initial_amount>> - <<quantity>> * <<unit_price>>. The final answer is <<initial_amount>> - <<quantity>> * <<unit_price>>.",
+      "num_tokens": 80,
+      "generation_seconds": 9.00881,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} is raising money for a {event}. He has applied for help from the {organization}, which has decided to cover {fraction} of the cost of the {event}. How much money is {name} missing if he has {cu",
+      "generated_answer": "Let's think step by step. Initially, {name} has {cur}{current}. The {organization} will cover <<fraction>> of the cost of the {event}, which is <<total>> * <<fraction>>. The amount covered by the {organization} is <<total>> * <<fraction>>. The amount {name} needs to raise is <<total>> - <<total>> * <<fraction>>. Simplifying, {name} needs to raise <<total>> * (1 - <<fraction>>). The final answer is <<total>> * (1 - <<fraction>>).",
+      "num_tokens": 130,
+      "generation_seconds": 10.376351,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} went to the {shop} and bought various types of {item}. She bought {n1} dozen {item1} which cost ${p1} per dozen, {n2} dozen {item2} which cost ${p2} per dozen, and {n3} dozen {item3} for ${p3} ",
+      "generated_answer": "Let's think step by step. Initially, the cost for {n1} dozen {item1} is <<n1>> * <<p1>>. The cost for {n2} dozen {item2} is <<n2>> * <<p2>>. The cost for {n3} dozen {item3} is <<n3>> * <<p3>>. The total cost is the sum of these three costs, which is <<n1>> * <<p1>> + <<n2>> * <<p2>> + <<n3>> * <<p3>>. The final answer is <<n1>> * <<p1>> + <<n2>> * <<p2>> + <<n3>> * <<p3>>.",
+      "num_tokens": 173,
+      "generation_seconds": 23.434722,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "A {item} has {n} {unit}. If {name1} can eat {x} {unit} a day while {name2} can eat {mult} as much, how many days will the {item} last?",
+      "generated_answer": "Let's think step by step. Initially, the {item} has {n} {unit}. {name1} can eat {x} {unit} a day, and {name2} can eat {mult} times as much, which is <<x>> * <<mult>>. Together, they eat <<x>> + <<x>> * <<mult>> = <<x>> * (1 + <<mult>>). The number of days the {item} will last is <<n>> / <<x>> * (1 + <<mult>>). The final answer is <<n>> / <<x>> * (1 + <<mult>>).",
+      "num_tokens": 144,
+      "generation_seconds": 11.880708,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "A {job} has to clean a {building} with {n} {room}s. They have {d} days to get it done. It takes them {t} minutes per {room}. If they work {h} hours each day, what percentage of their day, on average, ",
+      "generated_answer": "Let's think step by step. The total time needed to clean all the rooms is <<n>> rooms * <<t>> minutes/room = <<n>> * <<t>> minutes. The total available time in minutes is <<h>> hours/day * 60 minutes/hour * <<d>> days = <<6>> * <<h>> * <<d>> minutes. The average time spent cleaning per minute is <<n>> * <<t>> / (<<6>> * <<h>> * <<d>>). To find the percentage of the day spent cleaning, we divide the average time spent cleaning by the total available time and multiply by 100: (<<n>> * <<t>> / (<<6>> * <<h>> * <<d>>)) * 100. The final answer is <<(n * t / (6 * h * d))>> * 100.",
+      "num_tokens": 204,
+      "generation_seconds": 22.587409,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "A {structure} is made out of {n1} {color1} {obj}s, {mult} as many {color2} {obj}s, and an unknown number of {color3} {obj}s. If there are {total} {obj}s in the {structure} in total, how many {color3} ",
+      "generated_answer": "Let's think step by step. The structure has {n1} {color1} {obj}s and {mult} * {n1} {color2} {obj}s. The total number of {color1} and {color2} {obj}s is <<n1>> + <<mult>> * <<n1>> = <<n1>> * (1 + <<mult>>). The total number of {obj}s in the structure is {total}. Therefore, the number of {color3} {obj}s is <<total>> - <<n1>> * (1 + <<mult>>). The final answer is <<total>> - <<n1>> * (1 + <<mult>>).",
+      "num_tokens": 155,
+      "generation_seconds": 13.127505,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} goes to the store to buy some {item}. The normal brand of {item} he buys cost {cur}{price} per {unit}. He had to buy a more expensive brand that cost {percent}% more since his favorite brand wa",
+      "generated_answer": "Let's think step by step. The normal brand of {item} costs {cur}{price} per {unit}. The more expensive brand costs {percent}% more, which is <<(1 + percent / 100)>> times the normal price. So, the price of the more expensive brand is <<price * (1 + percent / 100)>>!",
+      "num_tokens": 79,
+      "generation_seconds": 12.541727,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "There are {n} girls in the {place}. If there are {mult} the number of boys in the {place}, how many kids are in the {place}?",
+      "generated_answer": "Let's think step by step. Initially, there are {n} girls. If there are {mult} the number of boys, then the number of boys is <<n>> * <<mult>>. The total number of kids is the sum of girls and boys, which is <<n>> + <<n>> * <<mult>>. The final answer is <<n>> + <<n>> * <<mult>>.",
+      "num_tokens": 92,
+      "generation_seconds": 6.880351,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} has a flower bed that is {length} {unit_length} long. {name} wants to fill her flower bed with plants. {name}'s flowers grow {plant_width} {unit_length} wide so she needs to leave {space} {unit",
+      "generated_answer": "Let's think step by step. The total length of the flower bed is {length} {unit_length}. Each plant takes up {plant_width} {unit_length} plus {space} {unit_length} space for the next plant, so each plant effectively takes up <<plant_width>> + <<space>> = <<plant_width>> + <<space>> {unit_length}. The number of plants that can fit in the flower bed is <<length>> / ((<<plant_width>> + <<space>>)) = <<length>> / (<<plant_width>> + <<space>>). Since {name} already owns {owned} flowers, the number of plants she needs to buy is <<length>> / (<<plant_width>> + <<space>>) - <<owned>> = <<(length / (plant_width + space))>> - <<owned>>. The cost of each plant is {cur}{cost}, so the total cost is <<(length / (plant_width + space))>> - <<owned>> * <<cost >>!!!!!!!!!",
+      "num_tokens": 231,
+      "generation_seconds": 32.987668,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} can peel {n1} {food}s a minute and saute {n2} {food}s in {t} minutes. How long will it take her to peel and saute {total} {food}s?",
+      "generated_answer": "Let's think step by step. Initially, {name} can peel {n1} {food}s a minute and saute {n2} {food}s in {t} minutes. This means in {t} minutes, she can process {n1 + n2} {food}s. To find out how long it will take her to process {total} {food}s, we need to calculate the time based on the rate of processing. The time required is <<total>> divided by <<n1>> plus <<n2>> and then multiplied by <<t>>. The final answer is <<(total / (n1 + n2))>>.",
+      "num_tokens": 140,
+      "generation_seconds": 11.074664,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} collects garbage from {n} different apartment complexes. The first {n_first} have {a} apartments each and the last one is {p}% bigger than the other {n_first} combined. {name} collects garbage ",
+      "generated_answer": "Let's think step by step. \n1. The first {n_first} apartment complexes have {a} apartments each, so the total number of apartments in these complexes is <<n>> * <<n>> * <<a>> = <<n>> * <<n>> * <<a>>.\n2. The last apartment complex is {p}% bigger than the other {n_first} combined. So, the number of apartments in the last complex is <<n>> * <<n>> * <<a>> * (1 + <<p>> / 100) = <<n>> * <<n>> * <<a>> * (1 + <<p>> / 100).\n3. The total number of apartments is <<n>> * <<n>> * <<a>> + <<n>> * <<n>> * <<a>> * (1 + <<p>> / 100) = <<n>> * <<n>> * <<a>> * (1 + (1 + <<p>> / 100)) = <<n>> * <<n>> * <<a>> * (2 + <<p>> / 100).\n4. {name} collects garbage {f} times a week from each place, so the total number of collections in a week is <<n>> * (<<n>> * <<a>> * (2 + <<p>> / 100)) * <<f>> = <<n>> * <<n>> * <<a>> * (2 + <<p>> / 100) * <<f>>.\n5. He gets paid {r} per collection for each apartment, so the total money he makes in a week is <<n>> * <<n>> * <<a>> * (2 + <<p>> / 100) * <<f>> * <<r>> = <<n>> * <<n>> * <<a>> * (2 + <<p>> / 100) * <<f>> * <<r>>.\n\nThe final answer is <<n>> * <<n>> * <<a>> * (2 + <<p>> / 100) * <<f>> * <<r>>.",
+      "num_tokens": 505,
+      "generation_seconds": 49.807295,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} has {n} {cur}{bill} bills. He buys {m} {item1}s for {cur}{p1} each. He also buys {k} packs of {item2}s for {cur}{p2} each. How much money does he have left?",
+      "generated_answer": "Let's think step by step. Initially, {name} has {n} {cur}{bill} bills. The total cost of {m} {item1}s is <<m>> * <<p1>> = <<m>>{cur}<<p1>>. The total cost of {k} packs of {item2}s is <<k>> * <<p2>> = <<k>>{cur}<<p2>>. The total amount spent is <<m>>{cur}<<p1>> + <<k>>{cur}<<p2>> = <<m>>{cur}<<p1>> + <<k>>{cur}<<p2>>. The remaining money is <<n>>{cur}<<bill>> - <<m>>{cur}<<p1>> - <<k>>{cur}<<p2>>. The final answer is <<n>>{cur}<<bill>> - <<m>>{cur}<<p1>> - <<k>>{cur}<<p2>>.",
+      "num_tokens": 226,
+      "generation_seconds": 29.692058,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name1} has {n1} tubes of {color1} paint and {n2} tubes of {color2} paint. {name2} has {frac1} as many tubes of {color1} paint as {name1}, and {mult1} as many tubes of {color2} paint as {name1}. How m",
+      "generated_answer": "Let's think step by step. {name1} has {n1} tubes of {color1} paint and {n2} tubes of {color2} paint. {name2} has <<frac1>> as many tubes of {color1} paint as {name1}, which is <<n1>> * <<frac1>>. {name2} also has <<mult1>> as many tubes of {color2} paint as {name1}, which is <<n2>> * <<mult1>>. The total number of tubes of paint {name2} has is <<n1>> * <<frac1>> + <<n2>> * <<mult1>>. The final answer is <<n1>> * <<frac1>> + <<n2>> * <<mult1>>.",
+      "num_tokens": 178,
+      "generation_seconds": 18.805101,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "One {worker} can mine {base} {unit} of ore per day with {tool1}. He can mine {mult1} as much with a {tool2} and {mult2} more with a {tool3} than with a {tool2}. How many {unit} of ore can {n} {worker}",
+      "generated_answer": "Let's think step by step. Initially, one worker can mine <<base>> units of ore per day with tool1. With tool2, he can mine <<base>> * <<mult1>> units per day. With tool3, he can mine <<base>> * <<mult1>> + <<mult2>> units per day. For <<n>> workers, the daily mining is <<n>> * (<<base>> * <<mult1>> + <<mult2>>). Over <<days>> days, the total is <<n>> * (<<base>> * <<mult1>> + <<mult2>> * <<days>>). The final answer is <<n>> * (<<base>> * <<mult1>> + <<mult2>> * <<days>>).",
+      "num_tokens": 175,
+      "generation_seconds": 22.284829,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "I have {n1} liters of {fruit1} drink that are {frac1} water and I wish to add it to {n2} liters of {fruit2} drink that is {frac2} water. But as I pour it, I spill {spill} liters of the {fruit1} drink.",
+      "generated_answer": "Let's think step by step. Initially, you have {n1} liters of {fruit1} drink that are {frac1} water. The amount of water in {fruit1} drink is <<n1>> * <<frac1>>. You spill {spill} liters of the {fruit1} drink, so the remaining {fruit1} drink is <<n1>> - <<spill>>. The amount of water in the remaining {fruit1} drink is <<(n1 - spill)>> * <<frac1>>. You also have {n2} liters of {fruit2} drink that is {frac2} water, so the amount of water in {fruit2} drink is <<n2 * frac2>>. The total amount of water in the mixture is <<(n1 - spill)>> * <<frac1>> + <<n2 * frac2>>. The final answer is <<(n1 - spill)>> * <<frac1>> + <<n2 * frac2>>.",
+      "num_tokens": 224,
+      "generation_seconds": 28.273005,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "In a set of {item}'s cards, there are {n1} {c1} cards, and {p}% more {c2} cards. {c3} cards are as many as the sum of {c1} and {c2} cards. How many cards of all mentioned colors are there?",
+      "generated_answer": "Let's think step by step. Initially, there are {n1} {c1} cards. There are {p}% more {c2} cards, which means there are <<n1>> + <<n1>> * <<p>> / <<1>> = <<n1>> * (<<1>> + <<p>> / <<1>>). The total number of {c1} and {c2} cards is <<n1>> + <<n1>> * (<<1>> + <<p>> / <<1>>). {c3} cards are as many as the sum of {c1} and {c2} cards, so there are <<n1>> + <<n1>> * (<<1>> + <<p>> / <<1>>) + <<n1>> + <<n1>> * (<<1>> + <<p>> / <<1>>). The final answer is <<2>> * <<n1>> * (<<1>> + <<p>> / <<1>>).",
+      "num_tokens": 233,
+      "generation_seconds": 28.616323,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} has {n} jars of {item} in her {location}. Each jar of {item} can decorate {m} {food}. {name} wants to bake enough {food} to use up all of her {item}. If each {container} holds {k} {food}, how m",
+      "generated_answer": "Let's think step by step. Initially, {name} has {n} jars of {item}. Each jar can decorate {m} {food}, so in total, she can decorate <<n>> * <<m>> = <<n>> * <<m>> {food}. If each {container} holds {k} {food}, the number of {container}s worth of {food} she should bake is <<(n * m)>> / <<k >>!",
+      "num_tokens": 101,
+      "generation_seconds": 8.970911,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} was a pen pal with {n1} people. He stopped being penpals with {n2} of them. They each send {l} letters a week that are {p} pages long. He responds in kind. He can write a page every {t} minutes",
+      "generated_answer": "Let's think step by step. Initially, {name} was a pen pal with {n1} people. He stopped being penpals with {n2} of them, so he is now pen pals with <<n1>> - <<n2>> = <<n1>> - <<n2>> people. Each of these people sends {l} letters a week, so he receives <<(n1 - n2)>> * <<l>> = <<(n1 - n2)>> * <<l>> letters. Each letter is {p} pages long, so he receives <<(n1 - n2)>> * <<l * p>> = <<(n1 - n2)>> * <<l * p>> pages. He writes a page every <<t >>!!!!!!!!!!!!!!",
+      "num_tokens": 189,
+      "generation_seconds": 69.534755,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Comet {comet_name} orbits the sun every {orbit_period} years. {name}'s {relative} saw the Comet when he was {relative_age} years old. {name} saw the comet a second time when he was {multiple} the age ",
+      "generated_answer": "Let's think step by step. Let's denote the age of {name} when he saw the Comet for the first time as {x}. The {relative} saw the Comet when he was {relative_age} years old. {name} saw the Comet again when he was {multiple} times the age his {relative} was when he saw the Comet, which is <<relative_age>>. So, {name}'s age when he saw the Comet for the second time is <<relative_age>> * {multiple}. The time between the first and second sighting is one orbit period, which is <<orbit_period>> years. Therefore, the age difference between the first and second sighting is <<orbit_period>>. We can set up the equation: <<relative_age>> * {multiple} - {x} = <<orbit_period>>. Solving for {x}, we get {x} = <<relative_age>> * {multiple} - <<orbit_period>>. The final answer is <<relative_age>> * {multiple} - <<orbit_period>>.",
+      "num_tokens": 222,
+      "generation_seconds": 14.259739,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "There are currently {n1} {c1} balls, {n2} {c2} balls, and {n3} {c3} balls in the {place}. {c1} balls cost {cur}{p1}, {c3} balls cost {cur}{p3}, and {c2} balls cost {cur}{p2}. How much will the {place}",
+      "generated_answer": "Let's think step by step. Initially, there are {n1} {c1} balls, {n2} {c2} balls, and {n3} {c3} balls in the {place}. The total number of balls is <<n1>> + <<n2>> + <<n3>>. The total amount received from selling the balls is <<(n1 * p1)>> + <<(n2 * p2)>> + <<(n3 * p3)>>. The final answer is <<(n1 * p1)>> + <<(n2 * p2)>>!",
+      "num_tokens": 133,
+      "generation_seconds": 54.351237,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} caught {n} {fish}s last {day}, the first {fish} he caught weighs {w1} {unit}, the second {fish} he caught weighs {w2} {unit}, and the last {fish} he caught weighs {w3} {unit}. If a {unit} of {f",
+      "generated_answer": "Let's think step by step. Initially, {name} caught {n} {fish}s. The first {fish} weighs {w1} {unit}, the second {fish} weighs {w2} {unit}, and the last {fish} weighs {w3} {unit}. The total weight of the {fish}s is <<w1>> + <<w2>> + <<w3>>. Since the total number of {fish} is {n}, the average weight per {fish} is <<(w1 + w2 + w3)>> / <<n>>. If a {unit} of {fish} costs {cur}{price}, the total earnings are <<(w1 + w2 + w3) / n>> * <<price * cur!!!!!!!!!",
+      "num_tokens": 174,
+      "generation_seconds": 55.176682,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "{name} is required to submit a {n}-page {document}. She already finished writing {frac} of the {document}. How many pages does she have left to write?",
+      "generated_answer": "Let's think step by step. The total number of pages in the document is {n}. {name} has already finished writing {frac} of the document, which means she has written <<frac>> pages. The number of pages left to write is the total number of pages minus the number of pages she has already written, which is <<n>> - <<frac>>. The final answer is <<n>> - <<frac>>.",
+      "num_tokens": 93,
+      "generation_seconds": 4.499239,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "There are {n1} periods in the day for a normal student but {name} has to take {n2} extra classes. Each class is {t} minutes long. He goes to class for {d} days a week. He then spends {frac} of his wee",
+      "generated_answer": "Let's think step by step. Initially, the total time spent in classes per week is <<n1>> periods + <<n2>> extra classes. Each class is <<t>> minutes long, so the total class time is <<(n1 + n2)>> periods * <<t>> minutes/period = <<(n1 + n2)>> * <<t>>. He goes to class for <<d>> days a week, so the total class time per week is <<(n1 + n2)>> * <<t>> * <<d>>. He spends <<frac * 1>> of his weekly minutes on extra learning time, so the extra learning time is <<frac * (n1 + n2)>> * <<t>> * <<d>>. The total learning time per week is the sum of class time and extra learning time, which is <<(n1 + n2) * t * d + frac * (n1 + n2) * t * d>>. Since there are 60 minutes in an hour, the total learning time in hours is <<(n1 + n2)>> * <<t>> * <<d>> * <<1 / 6>> + <<frac * (n1 + n2)>> * <<t>> * <<d * 1>> * <<1 / 6>>. The final answer is <<(n1 + n2)>> * <<t>> * <<d * 1>> * <<1 / 6>> + <<frac * (n1 + n2)>>!",
+      "num_tokens": 350,
+      "generation_seconds": 164.817888,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} finished {frac} of a {n1} piece puzzle, and then started and finished another {n2} piece puzzle within an hour. How many puzzle pieces did {name} place during that hour?",
+      "generated_answer": "Let's think step by step. {name} finished <<frac>> of a <<n1>> piece puzzle, which means {name} placed <<frac>> * <<n1>> pieces. Then, {name} finished another <<n2>> piece puzzle, which means {name} placed <<n2>> pieces. The total number of pieces placed is <<frac>> * <<n1>> + <<n2>>. The final answer is <<frac>> * <<n1>> + <<n2>>.",
+      "num_tokens": 116,
+      "generation_seconds": 13.286318,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "The {event} team hid {total} {item}. The {family} twins each found {n} {item}. All the other {item} except {m} were found by their friends. How many {item} did the friends find?",
+      "generated_answer": "Let's think step by step. The total number of {item} hidden is {total}. The {family} twins each found {n} {item}, so together they found <<2>> * <<n>> = <<2>> * <<n>> {item}. All the other {item} except {m} were found by their friends, so the friends found <<total>> - <<2>> * <<n>> - <<m>> = <<total>> - <<2>> * <<n>> - <<m>> {item}. The final answer is <<total>> - <<2>> * <<n>> - <<m>>.",
+      "num_tokens": 144,
+      "generation_seconds": 13.597381,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "The {family} family is busy making {item}. So far, they've made {total} {item}. They have {n1} {flavor1} {item}, {n2} {flavor2} {item}, and some {flavor3} {item}. How many {flavor3} {item} have they m",
+      "generated_answer": "Let's think step by step. The total number of {item} made is {total}. The family has made {n1} {flavor1} {item} and {n2} {flavor2} {item}. The number of {flavor3} {item} made is <<total>> - <<n1>> - <<n2>>. The final answer is <<total>> - <<n1>> - <<n2>>.",
+      "num_tokens": 99,
+      "generation_seconds": 7.484307,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} buys {n} shares of a stock for {cur}{p} each. The stock price increases {r1}% the first year {name} holds it, then decreases {r2}% in the second year. What is the final value of all {name}'s sh",
+      "generated_answer": "Let's think step by step. Initially, {name} buys {n} shares for {cur}{p} each, so the total cost is <<n>> * <<p>> = <<n>>{p}. The stock price increases {r1}% the first year, so the new price is <<p>> * (1 + <<r1>> / 100) = <<p>> * (1 + r1 / 100). In the second year, the stock price decreases {r2}% from the new price, so the final price is <<p>> * (1 + r1 / 100) * (1 - r2 / 100). The final value of all {name}'s shares is <<n>> * <<p>> * (1 + r1 / 100) * (1 - r2 / 100). The final answer is <<n>> * <<p>> * (1 + r1 / 100) * (1 - r2 / 100).",
+      "num_tokens": 232,
+      "generation_seconds": 11.787722,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} qualified for a spot on the {sport} team, so she went shopping for some athletic gear. She bought a {item1} for {p1}, a pair of {item2} for {p2} more than the {item1} cost, and a pair of {item3",
+      "generated_answer": "Let's think step by step. \n1. The cost of the first item is {p1}.\n2. The cost of the second item is {p1} + {p2}.\n3. The cost of the third item is {p3} * {frac}.\n4. The cost of the fourth item is {p4} * {item4} - {d}.\n\nThe total cost is the sum of the costs of all items: <<p1>> + <<p1>> + <<p1>> + <<p3>> + <<p2>> + <<p3>> * <<frac>> + <<p4>> * <<p4>> - <<d>>.\n\nThe final answer is <<p1>> + <<p1>> + <<p1>> + <<p2>> + <<p3>> * <<frac>> + <<p4>> * <<p4>> - <<d>>.",
+      "num_tokens": 206,
+      "generation_seconds": 23.553202,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} hires a {vehicle} from {start_time} PM to {end_time} PM. He gets {free_hours} hours free. The first paid hour is {cur}${first_hour_cost} and each hour after that is {multiplier} the cost. How m",
+      "generated_answer": "Let's think step by step. The total time hired is from {start_time} PM to {end_time} PM, which is <<(int(end_time) - int(start_time))>> hours. The free hours are {free_hours}, so the paid hours are <<(int(end_time) - int(start_time))>> - {free_hours}. The cost for the first paid hour is {first_hour_cost}$. Each hour after that costs {multiplier} * {first_hour_cost}$. The total cost is <<first_hour_cost>> + {multiplier} * ((int(end_time) - int(start_time)) - {free_hours} - 1) * {first_hour_cost}. The final answer is <<first_hour_cost>> + <<int(first_hour_cost)*((int(end_time)-int(start_time))-int(free_hours)-1!!",
+      "num_tokens": 179,
+      "generation_seconds": 25.615223,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "{name1} slew {n1} {creature} with his mighty {weapon1}, while {name2}, using a {weapon2}, slew {frac1} as many {creature} as {name1}. Using a {weapon3}, {name3} slew {mult1} as many {creature} as {nam",
+      "generated_answer": "Let's think step by step. \n1. {name1} slew {n1} {creature}.\n2. {name2} slew <<n1>> * <<frac1>> = <<n1>> * <<frac1>> = <<n1>> * <<frac1>> {creature}.\n3. {name3} slew <<n1>> * <<frac1>> * <<mult1>> = <<n1>> * <<frac1>> * <<mult1>> {creature}.\n4. {name4} slew <<n1>> * <<frac1>> * <<mult1>> * <<frac2>> = <<n1>> * <<frac1>> * <<mult1>> * <<frac2>> {creature}.\n\nThe final answer is <<n1>> * <<frac1>> * <<mult1>> * <<frac2>>.",
+      "num_tokens": 198,
+      "generation_seconds": 30.226166,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "When the water is cold {name} swims a {unit} in {t1} minutes. When the water is warm {name} swims a {unit} in {n} minutes more than {mult} as long. How much longer does {name} take to swim {d} {unit}s",
+      "generated_answer": "Let's think step by step. Initially, when the water is cold, {name} swims a {unit} in {t1} minutes. When the water is warm, {name} swims a {unit} in {n} minutes more than {mult} times as long. So, on a warm day, {name} swims a {unit} in <<t1>> + <<n>> * <<mult>>. The difference in time between a warm day and a cold day for swimming {d} {unit}s is <<d>> * ((<<t1>> + <<n>> * <<mult>> - <<t1>>)). Simplifying, the final answer is <<d>> * (<<n>> * <<mult>>).\n\nThe final answer is <<d>> * (<<n>> * <<mult>>).",
+      "num_tokens": 179,
+      "generation_seconds": 13.929833,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{n} people apply for a job at {company}. Of the people that apply, only {p1}% receive interviews. Of those who receive interviews, {p2}% receive a job offer. Of those who receive a job offer, {frac} o",
+      "generated_answer": "Let's think step by step. Initially, <<n>> people apply for a job. Only <<p1>>% of them receive interviews, which is <<n>> * <<p1>> / 100. Of those who receive interviews, <<p2>>% receive a job offer, which is <<n * p1 / 100>> * <<p2>> / 100. Of those who receive a job offer, <<frac * 1>> of them accept the position, which is <<n>> * <<p1>> / 100 * <<p2>> / 100 * <<frac * 1>>. The final answer is <<n>> * <<p1>> / 100 * <<p2>> / 100 * <<frac * 1>>.",
+      "num_tokens": 189,
+      "generation_seconds": 38.576612,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "There are {n1} students playing {sport1} and {mult} that number playing {sport2}. There are {n2} boys and {n3} girls playing {sport3}. If each student only participates in one group, how many students",
+      "generated_answer": "Let's think step by step. Initially, there are {n1} students playing {sport1}. Additionally, there are {mult} * {n1} students playing {sport2}. Also, there are {n2} boys and {n3} girls playing {sport3}, making a total of {n2} + {n3} students. The total number of students is the sum of students playing {sport1}, {sport2}, and {sport3}. The final answer is <<n1>> + <<mult>> * <<n1>> + <<n2>> + <<n3>>.",
+      "num_tokens": 131,
+      "generation_seconds": 7.547248,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name1} operates the cash register exactly {mult} as fast as her less-experienced colleague {name2}. Daily, {name2} processes {n} customers. What is the total weekly production for the two if they wor",
+      "generated_answer": "Let's think step by step. {name2} processes {n} customers daily. {name1} operates {mult} times faster, so {name1} processes <<n>> * <<mult>> customers daily. Together, they process <<n>> * <<mult>> + <<n>> customers daily. There are 7 days in a week, so their total weekly production is <<(n * mult + n)>> * 7. The final answer is <<7 * (n * mult + n)>>",
+      "num_tokens": 112,
+      "generation_seconds": 13.051424,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "A new {disease} infects {n0} people. Every day, each infected person infects {r} others. How many people are infected after {d} days?",
+      "generated_answer": "Let's think step by step. Initially, there are {n0} people infected. Each infected person infects {r} others every day. After {d} days, the number of newly infected people each day is {n0} * {r}^(day-1). The total number of infected people after {d} days is the sum of the initial infected people and the newly infected people each day. This can be expressed as {n0} + {n0} * {r} + {n0} * {r}^2 + ... + {n0} * {r}^(d-1). This is a geometric series with the first term {n0} and the common ratio {r}. The sum of a geometric series is given by the formula: S = a * (1 - r^n) / (1 - r), where a is the first term, r is the common ratio, and n is the number of terms. In this case, a = {n0}, r = {r}, and n = {d}. So the total number of infected people after {d} days is <<n0>> + <<n0>> * (<<1>> - <<r>>^<<d>> / (<<1>> - <<r>>)). The final answer is <<n0>> + <<n0>> * (<<1>> - <<r>>^<<d>> / (<<1>> - <<r>>)).",
+      "num_tokens": 309,
+      "generation_seconds": 16.66514,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "If {name} eats {n1} eggs a day for {d1} days and then increases it to {n2} eggs a day for {d2} days, how many dozens of eggs will {name} need for {d3} days?",
+      "generated_answer": "Let's think step by step. Initially, {name} eats {n1} eggs a day for {d1} days, which is <<n1>> * <<d1>> = <<n1>> * <<d1>> eggs. Then, {name} eats {n2} eggs a day for {d2} days, which is <<n2>> * <<d2>> = <<n2>> * <<d2>> eggs. The total number of eggs {name} eats in {d3} days is <<n1>> * <<d1>> + <<n2>> * <<d2>>. Since there are 12 eggs in a dozen, the total number of dozens of eggs {name} needs is <<(n1 * d1 + n2 * d2)>> / <<12>>. The final answer is <<(n1 * d1 + n2 * d2)>> / <<12>>.",
+      "num_tokens": 214,
+      "generation_seconds": 31.367259,
+      "is_correct": false,
+      "is_syntax_valid": true
+    }
+  ]
+}

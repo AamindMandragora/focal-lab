@@ -1,0 +1,337 @@
+{
+  "accuracy": 0.3,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 40,
+    "total_generation_seconds": 13.1145,
+    "mean_generation_seconds_per_example": 0.327863,
+    "examples_with_generation_timing": 40,
+    "total_output_tokens": 392,
+    "mean_output_tokens_per_example": 9.8,
+    "examples_with_token_counts": 40,
+    "evaluator_total_time_seconds": 97.1759,
+    "evaluator_max_sample_time_seconds": 1.3424
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "generated_answer": "SELECT COUNT(DISTINCT singer_id) FROM singer>>",
+      "num_tokens": 11,
+      "generation_seconds": 1.342351,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the total number of singers?",
+      "generated_answer": "SELECT COUNT(*) FROM singer>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.208905,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the average, minimum, and maximum age of all singers from France?",
+      "generated_answer": "SELECT AVG(age) ,  MIN(age) ,  MAX(age) FROM singer>>",
+      "num_tokens": 17,
+      "generation_seconds": 0.609643,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many singers are from each country?",
+      "generated_answer": "SELECT country ,  COUNT(*) FROM singer>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.236048,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "List all song names by singers above the average age.",
+      "generated_answer": "SELECT T2.song_name FROM singer>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.214568,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are all the song names by singers who are older than average?",
+      "generated_answer": "SELECT T2.song_name FROM singer>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.197246,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+      "generated_answer": "SELECT stadium.location ,  stadium.name FROM stadium>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.287164,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the name and capacity for the stadium with the highest average attendance?",
+      "generated_answer": "SELECT stadium.name ,  stadium.capacity FROM stadium>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.300686,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the year that had the most concerts?",
+      "generated_answer": "SELECT YEAR FROM concert>>",
+      "num_tokens": 5,
+      "generation_seconds": 0.125025,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names of all stadiums that did not have a concert in 2014?",
+      "generated_answer": "SELECT stadium.name FROM stadium>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.14814,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names , themes , and number of singers for every concert ?",
+      "generated_answer": "SELECT concert.concert_name ,  concert.theme ,  COUNT(DISTINCT singer.singer_id) FROM concert>>",
+      "num_tokens": 23,
+      "generation_seconds": 0.775658,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "List all singer names in concerts in year 2014.",
+      "generated_answer": "SELECT T2.name FROM concert>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.180826,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
+      "generated_answer": "SELECT T2.name ,  T2.country FROM singer>>",
+      "num_tokens": 12,
+      "generation_seconds": 0.322523,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names and locations of the stadiums that had concerts that occurred in both 2014 and 2015?",
+      "generated_answer": "SELECT stadium.name ,  stadium.location FROM stadium>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.260384,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How much does the youngest dog weigh?",
+      "generated_answer": "SELECT T2.weight FROM pets>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.149522,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "List the maximum weight and type for each type of pet.",
+      "generated_answer": "SELECT pettype ,  MAX(weight) FROM pets>>",
+      "num_tokens": 11,
+      "generation_seconds": 0.2903,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many dog pets are raised by female students?",
+      "generated_answer": "SELECT COUNT(petid) FROM has>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.220266,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many different types of pet are there?",
+      "generated_answer": "SELECT COUNT(DISTINCT pettype) FROM pets>>",
+      "num_tokens": 11,
+      "generation_seconds": 0.254427,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the first names of every student who has a cat or dog as a pet?",
+      "generated_answer": "SELECT DISTINCT T1.fname FROM student>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.228421,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the ids of the students who do not own cats as pets?",
+      "generated_answer": "SELECT stuid FROM student>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.169597,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Find the first name and age of students who have a pet.",
+      "generated_answer": "SELECT T1.fname ,  T1.age FROM student>>",
+      "num_tokens": 12,
+      "generation_seconds": 0.454973,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the id of the pet owned by the student whose last name is 'Smith'?",
+      "generated_answer": "SELECT pets.petid FROM pets>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.188466,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "For students who have pets , how many pets does each student have ? list their ids instead of names .",
+      "generated_answer": "SELECT student.stuid ,  COUNT(pets.petid) FROM student>>",
+      "num_tokens": 15,
+      "generation_seconds": 0.40874,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the last name of the student who has a cat that is 3 years old?",
+      "generated_answer": "SELECT T2.lname FROM student>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.204936,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Find the average age of students who do not have any pet .",
+      "generated_answer": "SELECT AVG(age) FROM student>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.147754,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many countries does each continent have? List the continent id, continent name and the number of countries.",
+      "generated_answer": "SELECT continents.contid, continents.continent, COUNT(car_makers.countryid) AS num_countries FROM continents>>",
+      "num_tokens": 22,
+      "generation_seconds": 0.713453,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many countries are listed?",
+      "generated_answer": "SELECT COUNT(DISTINCT continent) FROM continents>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.227372,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many countries exist?",
+      "generated_answer": "SELECT count(*) FROM countries>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.150808,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which model of the car has the minimum horsepower?",
+      "generated_answer": "SELECT model FROM model>>",
+      "num_tokens": 5,
+      "generation_seconds": 0.181292,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the model for the car with a weight smaller than the average?",
+      "generated_answer": "SELECT model FROM cars>>",
+      "num_tokens": 5,
+      "generation_seconds": 0.176152,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which distinct car models are the produced after 1980?",
+      "generated_answer": "SELECT DISTINCT model FROM car>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.2172,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many car makers are there in each continents? List the continent name and the count.",
+      "generated_answer": "SELECT continents.continent ,  COUNT(car_makers.id) FROM continents>>",
+      "num_tokens": 15,
+      "generation_seconds": 0.610225,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which of the countries has the most car makers? List the country name.",
+      "generated_answer": "SELECT T2.continent FROM countries>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.300147,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are all the makers and models?",
+      "generated_answer": "SELECT maker ,  model FROM car>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.301394,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names and ids of all countries with at least one car maker?",
+      "generated_answer": "SELECT T1.countryname ,  T1.countryid FROM countries>>",
+      "num_tokens": 14,
+      "generation_seconds": 0.604316,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the number of the cars with horsepower more than 150?",
+      "generated_answer": "SELECT COUNT(*) FROM cars>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.204237,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the average weight and year for each year?",
+      "generated_answer": "SELECT AVG(weight) AS avg_weight, year AS year FROM cars>>",
+      "num_tokens": 14,
+      "generation_seconds": 0.541824,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which countries in europe have at least 3 car manufacturers?",
+      "generated_answer": "SELECT DISTINCT T1.continent FROM continents>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.366865,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the maximum horsepower and the make of the car models with 3 cylinders?",
+      "generated_answer": "SELECT MAX(horsepower) ,  make FROM cars>>",
+      "num_tokens": 12,
+      "generation_seconds": 0.384798,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the average horsepower of the cars before 1980?",
+      "generated_answer": "SELECT AVG(horsepower) FROM cars>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.207887,
+      "is_correct": false,
+      "is_syntax_valid": true
+    }
+  ]
+}

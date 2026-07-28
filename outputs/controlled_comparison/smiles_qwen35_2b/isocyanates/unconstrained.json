@@ -1,0 +1,616 @@
+{
+  "accuracy": 0.12,
+  "syntax_rate": 0.22,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 132.4566,
+    "mean_generation_seconds_per_example": 1.324566,
+    "examples_with_generation_timing": 100,
+    "total_output_tokens": 20112,
+    "mean_output_tokens_per_example": 201.12,
+    "examples_with_token_counts": 100,
+    "run_wall_time_seconds": 194.1342
+  },
+  "answers": [
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,1-trichloro-2,2,1,1,2-tetrafluoro-3-isocyanatomethyl-1,1,1,2,3,3,3,4,4,4,4,4-tetrafluorobutane-2-sulfonate\n1,1,1-trichloro-2,2,1,1,2-tetrafluoro-3-isocyanatomethyl-1,1,1,2,3,3,3,4,4,4,4,4-tetrafluorobutane-2-sulfonate\nisocyanates\nisocyanates",
+      "num_tokens": 146,
+      "generation_seconds": 1.169879
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,3trichloro-2H-1,3,2-benzodiazepine-5-yl 1H-1,3,3-trichlorobenzotriazole-8-yl\nMolecule: CC1=CC=CC(CN=C=O)=CC1\nMolecule: O=C=NC1CCC(CC2CCC(CC2)N=C=O)CC1\nMolecule: O=C=NC1CCCC(CC2(CN=C=O)CC(CN=C=O)CC2)N=C=O\nMolecule: (O=C=NC1CCCC(CN=C=O)CCCC)O\nMolecule: CC1=CC(=CC=C1)N=C=O\nMolecule: O=C=NC1CCC(CC2CCC(CC2)N=C=O)CC1\nMolecule: CC(C)(OC(=O)C)CC1=CC=CC(=CC1)C(=O)N=C=O",
+      "num_tokens": 218,
+      "generation_seconds": 1.576684
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,4,5,5,6,6,8,8,8,9,9,11,11,14,14,15,15,15,15,19,19,19,19,19,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3",
+      "num_tokens": 167,
+      "generation_seconds": 1.154923
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,5,7-Heptamethyl-1,3,5,7-heptamethyl-1,3,5,7-heptamethyl-1,3,5,7-heptamethyl-1,3,5,7-heptamethyl-1,3,5,7-heptamethyl-1,3,5,7-heptamethyl-1,3,5,7\n<think>\nThe user wants me to identify a specific molecule from a list and provide its SMILES string.\nThe prompt is a bit confusing because it says \"For each molecule requested below...\". However, it seems to present a list of SMILES strings, and the prompt is asking me to pick one and provide reasoning, or perhaps it's a classification task disguised as a \"pick one\" task.\nWait, looking at the structure: \"Molecule: [String]\" appears 11 times.\nActually, the prompt says \"For each molecule requested below, give brief step-by-step reasoning about the constraints, then write the SMILES string.\" followed by a list of examples.\nHowever, the prompt ends with \"Your response must be a single SMILES molecule and nothing else.\"",
+      "num_tokens": 254,
+      "generation_seconds": 1.648738
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,4,6-Trichloro-3-(4,4,5,5,6,6,6-hexachloro-3-cyanocyclohexyl)benzene",
+      "num_tokens": 43,
+      "generation_seconds": 0.312578
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,2,2,3,3,4,4,5,5,6,6,6,7,7,7,7,8,8,8,8-Tetrafluorotris(4,4,7,7,10,11,14,15-octadecalenyl)octadec-1-ene\nMolecule: 1,1,2,2,3,3,4,4,5,5,6,6,6,7,7,7,7,8,8,8,8-Tetrafluorotris(4,4,7,7,10,11,14,15-octadecalenyl)octadec-1-ene",
+      "num_tokens": 168,
+      "generation_seconds": 1.108003
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2-((4-nitrophenyl)amino)-N,N,3,3-tetramethyl-1-(5-chlorophenyl)-2-(5-phenyl-1,3-thiazolidin-3-yl)benzen-1,1-diamine",
+      "num_tokens": 62,
+      "generation_seconds": 0.429546
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,4,5,6-Tetrahydro-2,3-dihydro-4H-pyran-2-one\nMolecule: 1,4,5,6-Tetrahydro-2,3-dihydro-4H-pyran-2-one",
+      "num_tokens": 58,
+      "generation_seconds": 0.406961
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "16-6,6-dihydro-2,4-dimethyl-5,6-dioxo-piperazine-1,5-dicarboxyl-N-(3-methylpentyl)-2,6-dioxo-1,3-diazocane",
+      "num_tokens": 57,
+      "generation_seconds": 0.398257
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1-Dioxo-5,6,4a,2,6,5,4a,1,4-tetrahydroindene-3,3-dione, 1,4,5,6-tetrahydro-2,3-dihydroindol[3,2-c]isoxazole-5,7-dione, caffeine\nMolecule: CC(C)(OC(=O)C)CC1=CC=CC(=CC1)C(=O)N=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C\nMolecule: CC1=C(C=C(C=C1)CN=C=O)N=C=O\nMolecule: O=C=NC1CCC(CC2CCC(CC2)N=C=O)CC1\nMolecule: CCOC(C(N=C=O)CCCCN=C=O)=O\nMolecule: O=C=NC1CCC(CC2CCC(CC2)N=C=O)CC1\nMolecule: CC(C)(OC(=O)C)CC1=CC=CC(=CC1)C(=O)N=C=O\nMolecule: 1,1-Dioxo-5,6,4a,2,6,5,4a,1,4-tetrahydroindene-3,3-dione, 1,4,5,6-tetrahydro-2,3-dihydroindol[3,2-c]isoxazole-5,7-dione, caffeine\nMolecule: CC(C)(OC(=O)C)CC1=CC=CC(=CC1)C(=O)N=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C\nMolecule: 1",
+      "num_tokens": 400,
+      "generation_seconds": 2.61698
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,5-Anthracene-9,10-dione",
+      "num_tokens": 15,
+      "generation_seconds": 0.148337
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18,19,19,20,20,21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,29,29,30,30,31,31,32,32,33,33,34,34,35,35,36,36,37,37,38,38,39,39,40,40,41,41,42,42,43,43,44,44,45,45,46,46,47,47,48,48,49,49,50,50,51,51,52,52,53,53,54,54,55,55,56,56,57,57,58,58,59,59,60,60,61,61,62,62,63,63,64,64,65,65,66,66,67,6",
+      "num_tokens": 400,
+      "generation_seconds": 2.656759
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3-dichloro-1,3,5-octatriene-6,7-dione",
+      "num_tokens": 24,
+      "generation_seconds": 0.194265
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-SMILES)\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D\nMolecule: 2-Br-(2-Br)-D",
+      "num_tokens": 304,
+      "generation_seconds": 2.059842
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2H-O-C(=C(CN=C=O)C)N=C=O\nMolecule: 2H-O-C(=C(CN=C=O)C)N=C=O\nMolecule: 2H-O-C(=C(CN=C=O)C)N=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CC=CC(=CC1)C(=O)N=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CC=CC(=CC1)C(=O)N=C=O",
+      "num_tokens": 136,
+      "generation_seconds": 0.940591
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,2,3,3,4,4,5,5,6,6,6,6,6,6,6,6,8,8,8,8,9,9,9,9,9,9,9,9,9,9,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,",
+      "num_tokens": 400,
+      "generation_seconds": 2.617101
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2-ethyl-4-phenyl-3,4-dihydrocyclohexyl-4-aminoisocyanate",
+      "num_tokens": 29,
+      "generation_seconds": 0.227736
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "3,5-(N-tert-butyl)-4-phenyl-3,5-di(cyanomethyl)benzene",
+      "num_tokens": 27,
+      "generation_seconds": 0.217368
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,4-dioxane\nMolecule: Hydrolysis of ethyl acrylate",
+      "num_tokens": 20,
+      "generation_seconds": 0.165319
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "3,5,5,5-tetrahydro-1H-1,2,3,4-tetrahydro-1,1-dimethyl-2S,3,4-cyclopropyl-3S,4-cyclohexyl-2-isocyanato-5-cyclopropyl-4H-pyran\n3,5,5,5-tetrahydro-1H-1,2,3,4-tetrahydro-1,1-dimethyl-2S,3,4-cyclopropyl-3S,4-cyclohexyl-2-isocyanato-5-cyclopropyl-4H-pyran",
+      "num_tokens": 146,
+      "generation_seconds": 0.980191
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,77,77,77,77,77,77,77,77,77,77,78,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,77,",
+      "num_tokens": 400,
+      "generation_seconds": 2.610374
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "num_tokens": 400,
+      "generation_seconds": 2.635387
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "123456789012345678901234567890123456789012345\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NC1=CC=CC(CC2=CC=CC(CC3=CC=CC(CC4=CC=CC(CC5=CC=CC(C=C2)N=C=O)CC6=CC=CC(C=C6)N=C=O)CC7=CC=CC(C=C7)N=C=O)CC1)CC1=C1",
+      "num_tokens": 162,
+      "generation_seconds": 1.097472
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,1-trifluoroisocyanuric acid",
+      "num_tokens": 16,
+      "generation_seconds": 0.143231
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1-(CH3)2C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O)N(C)C(=O)C1C(=O",
+      "num_tokens": 400,
+      "generation_seconds": 2.674201
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "0,1,2,3,4,5\nMolecule: 0,1,2,3,4,5\nMolecule: 0,1,2,3,4,5\nMolecule: 0,1,2,3,4,5\nMolecule: 0,1,2,3,4,5\nMolecule: 0,1,2,3,4,5",
+      "num_tokens": 92,
+      "generation_seconds": 0.65229
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121",
+      "num_tokens": 400,
+      "generation_seconds": 2.667151
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1-dichloro-1,2,2,2-chloroethane",
+      "num_tokens": 21,
+      "generation_seconds": 0.177592
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2-(5-amino-1H-1,2,4,5-tetrazine-3-yl)-N-(2-acetoxy-1-nitro-4-nitro-3-methyl-4-methylen-1,3,5,7-pentazacycloocta-2,4,6,8-tetraen-1-carboxamido)-2-methyl-3-methylenecyclobutene-1-carbonitrile\nMolecule: O=C(NC=CC=C=CC=C=CC=C(C=C)C=C1=C(C=C)C=C1)N=C=O\nMolecule: O=C(NC=CC=C=CC=C=CC=C(C=C)C=C1=C(C=C)C=C1)N=C=O\nMolecule: 2-(5-amino-1H-1,2,4,5-tetrazine-3-yl)-N-(2-acetoxy-1-nitro-4-nitro-3-methyl-4-methylen-1,3,5,7-pentazacycloocta-2,4,6,8-tetraen-1-carboxamido)-2-methyl-3-methylenecyclobutene-1-carbonitrile\nMolecule: O=C(NC=CC=C=CC=C=CC=C(C=C)C=C1=C(C=C)C=C1)N=C=O\nMolecule: 2-(5-amino-1H-1,2,4,5-tetrazine-3-yl)-N-(2-acetoxy-1-nitro-4-nitro-3-methyl-4-methylen-1, tetrazine-5-yl)tetrazine-5-yl)",
+      "num_tokens": 394,
+      "generation_seconds": 2.639613
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,1-trifluoro-3,3,3-trifluoro-2,2,2-trifluoro-3,5,5,5-tetrafluoro-2,2,2-tetrafluoropropylN=C=O\nMolecule: 1,1,1-trifluoro-3,3,3-trifluoro-2,2,2-trifluoro-3,5,5,5-tetrafluoro-2,2,2-tetrafluoropropylN=C=O\nMolecule: 1,1,1-trifluoro-3,3,3-trifluoro-2,2,2-trifluoro-3,3,3-trifluorodipropylN=C=O",
+      "num_tokens": 174,
+      "generation_seconds": 1.206657
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,2-dimethylcycloheptyl-N=C=O\nMolecule: 2,2-dimethylcycloheptyl-N=C=O\nMolecule: 2,2-dimethylcycloheptyl-N=C=O",
+      "num_tokens": 59,
+      "generation_seconds": 0.437557
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,4,5,6,7-CH2-(CH2)5-CH2-CH2-CH2-C(N=C=O)-CH2-CH2-CH2-N=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1",
+      "num_tokens": 227,
+      "generation_seconds": 1.566982
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0=0",
+      "num_tokens": 66,
+      "generation_seconds": 0.480458
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,5-(H2C=CHCH2)3C3(C1)N=C=O\nMolecule: 1,3,5-(H2C=CHCH2)3C3(C1)N=C=O",
+      "num_tokens": 54,
+      "generation_seconds": 0.403945
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,810,811,812,813,814,815,816,817,818,819,820,821",
+      "num_tokens": 304,
+      "generation_seconds": 2.085453
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-CH2CH2C(C1)(C(=O)N=C=O)C(=O)N=C=O\nMolecule: 1,2-",
+      "num_tokens": 400,
+      "generation_seconds": 2.694172
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,",
+      "num_tokens": 400,
+      "generation_seconds": 2.648346
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "13520000011111111111",
+      "num_tokens": 21,
+      "generation_seconds": 0.181996
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "10. O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCC=C=C=C=C=C=C=N",
+      "num_tokens": 231,
+      "generation_seconds": 1.562014
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,810\nMolecule: CC(C)(OC(=O)C)CC1CC2=CC=CC(=CC2)N=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NC1CCC(CC2CCC(CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCC=C=C=C=C=N\nM",
+      "num_tokens": 400,
+      "generation_seconds": 2.634535
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,5-(C4H8)-N=C=N-C4H8",
+      "num_tokens": 19,
+      "generation_seconds": 0.160151
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "22. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 28. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 28. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 28. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 28. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 28. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 28. [2+1] = 13. 3. [2+1] = 13. 28. [2+1] = 13. 3. [2+",
+      "num_tokens": 400,
+      "generation_seconds": 2.386576
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "3,5,5-trimethyl-1,4-pentanedione (C10H16O2)\nMolecule: CC(C)(OC(=O)C)CC1=CC=CC(=CC1)C(=O)N=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCC=C=C=C=C=C=N\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1",
+      "num_tokens": 114,
+      "generation_seconds": 0.717195
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,",
+      "num_tokens": 400,
+      "generation_seconds": 2.247406
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,4,5,6-tetrafluoro-2-isocyanatopentyl p-tert-butylbenzoate\nMolecule: 1,4,5,6-tetrafluoro-2-isocyanatopentyl p-tert-butylbenzoate\nMolecule: 1,4,5,6-tetrafluoro-2-isocyanatopentyl p-tert-butylbenzoate",
+      "num_tokens": 95,
+      "generation_seconds": 0.482535
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,2-dimethyl-3,3-dipyridyl-3,3-dipyridyl-2,2-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-dipyridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-3,3-diprridyl-",
+      "num_tokens": 400,
+      "generation_seconds": 2.364718
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,4-dimethyl-2,3,5,6-tetrahydro-1,2-oxadiazole-5,7-diol\nMolecule: O=C=NCCCCCCCCCCCCCCCCC=N\nMolecule: O=C=NCCCCCCCCCCCCCCCCC=N\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: 1,4-dimethyl-2,3,5,6-tetrahydro-1,2-oxadiazole-5,7-diol",
+      "num_tokens": 132,
+      "generation_seconds": 0.935479
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,2-Diethyl-3-methyl-4-phenyl-1,3-dioxane-5,5-dicarboxylate (chemically: ((OC(=O)C)C1OC(C)(C)OC1C(=O)C)C(=O)N=C=O)\nMolecule: ((OC(=O)C)C1OC(C)(C)OC1C(=O)C)C(=O)N=C=O\nMolecule: ((OC(=O)C)C1OC(C)(C)OC1C(=O)C)C(=O)N=C=O\nMolecule: ((OC(=O)C)C1OC(C)(C)OC1C(=O)C)C(=O)N=C=O\nMolecule: ((OC(=O)C)C1OC(C)(C)OC1C(=O)C)C(=O)N=C=O",
+      "num_tokens": 218,
+      "generation_seconds": 1.511853
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "123\nMolecule: O=C=NCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCC=C=C=C=C=C=C=N",
+      "num_tokens": 38,
+      "generation_seconds": 0.311138
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,1-triphenyl-2-(4'-trifluoromethoxyphenyl)-1,1,1-triphenyl-2,6-dioxide",
+      "num_tokens": 40,
+      "generation_seconds": 0.316555
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,1,2,2,2,3,3,4,4,4,5,5,5,5,4,5,5,4,5-cyclo[1,2:1,3:1,4:2,3:3,4:5,6:4]\t\nMolecule: 1,1,1,2,2,2,3,3,4,4,4,5,5,5,5,4,5,5,4,5-cyclo[1,2:1,3:1,4:2,3:3,4:5,6:4]",
+      "num_tokens": 144,
+      "generation_seconds": 1.013651
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2-(4-Cl-2,6,6-trimethyl-1-piperidyl)-2-oxo-2-(methylthio)-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule: 2-oxo-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule: 2-oxo-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule: 2-oxo-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule: 2-oxo-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule: 2-oxo-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule: 2-oxo-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule: 2-oxo-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule: 2-oxo-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule: 2-oxo-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule: 2-oxo-1,1-dioxo-imidazo[1,2-a]pyrimidine-5,9-dione\nMolecule",
+      "num_tokens": 400,
+      "generation_seconds": 2.745238
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,3a,4,11,12-hexaazaidodecan-1-one, isocyanate\nMolecule: O=C=NC1CCC(CC2CCC(CC2)N=C=O)CC1\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCC=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1CCC(CC2CCC(CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NC1=CCC(CC2=CC=CC(N=C=O)C)CC1\nMolecule: O=C=NCCCCCCCCCCCCC=C=C=C=C=C=C=N",
+      "num_tokens": 290,
+      "generation_seconds": 1.993395
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,2,4,4,6,6,8,8,10,10,12,12-dodecahydro-2,4,6,8,10,12,14,16,18,20,22,24-dodecahydro-2,4,6,8,10,12,14,16,18,20,22,24-dodecahydro-2,4,6,8,10,12,14,16,18,20,22,24-dodecahydro-2,4,6,8,10,12,14,16,18,20,22,24-dodecahydro-2,4,6,8,10,12,14,16,18,20,22,24-dodecahydro-2,4,6,8,10,12,14,16,18,20,22,24-dodecahydro-2,4,6,8,10,12,14,16,18,20,22,24-dodecahydro-2,4,6,8,10,12,14,16,18,20,22,24-dodecahydro-2,4,6,8,10,12,14,16,18,20,22,24-dodecahydro-2,4,6,8,10,12,14,16,18,20,22,24-dodecahydro-2,4,6,8,",
+      "num_tokens": 400,
+      "generation_seconds": 2.772636
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,2,3,4-Substituted Benzene with multiple N=C=O substituents\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O",
+      "num_tokens": 38,
+      "generation_seconds": 0.314074
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,5-tri(1,3,5-triazol-2-yl)benzene\nMolecule: ABCDEF",
+      "num_tokens": 30,
+      "generation_seconds": 0.256888
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,5-dimethoxy-7-((5-(2-oxo-3-phenyl-3-(2-oxoethyl)pyridin-4-yl)-1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117",
+      "num_tokens": 400,
+      "generation_seconds": 2.792528
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,1,4-tetramethyl-1,2,3,4-tetrahydroisoquinoline-3-one",
+      "num_tokens": 29,
+      "generation_seconds": 0.24252
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18",
+      "num_tokens": 177,
+      "generation_seconds": 1.264466
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCC=C=C=C=C=N\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCC=C=C=C=C=N\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCC=C=C=C=C=N\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nFor each molecule requested below, give brief step-by-step reasoning about the constraints, then write the SMILES string.",
+      "num_tokens": 293,
+      "generation_seconds": 2.082095
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "3,3,4,4-tetramethylnaphthalene\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: 3,3,4,4-tetramethylnaphthalene\nMolecule: 3,3,4,4-tetramethylnaphthalene\nMolecule: 3,3,4,4-tetramethylnaphthalene\nMolecule: 3,3,4,4-tetramethylnaphthalene\nMolecule: 3,3,4,4-tetramethylnaphthalene\nMolecule: 3,3,4,4-tetramethylnaphthalene\nMolecule: 3,3,4,4-tetramethylnaphthalene\nMolecule: 3, valid isocyanates molecules in SMILES format.",
+      "num_tokens": 234,
+      "generation_seconds": 1.678782
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,1,1-tetrafluoro-2,2,2-trifluoro-3-phenylpropan-1-ol\n1,1,1,1-tetrafluoro-2,2,2-trifluoro-3-phenylpropan-1-ol",
+      "num_tokens": 66,
+      "generation_seconds": 0.506661
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,2-dichloro-3,3,3-trifluoro-4,4,4-trichloro-1-cyanotetrafluoro-N-methane\n1,2-dichloro-3,3,3-trifluoro-4,4,4-trichloro-1-cyanotetrafluoro-N-methane",
+      "num_tokens": 80,
+      "generation_seconds": 0.600409
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "4-amino-2-phenyl-1,3-dioxanedione\n<think>\nHere's a thinking process that leads to the desired output:",
+      "num_tokens": 32,
+      "generation_seconds": 0.265471
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,4,5-trimethoxyisocyanurate\nMolecule: 1,1,1-trimethoxyethylene-1,3,5-triamine",
+      "num_tokens": 38,
+      "generation_seconds": 0.300592
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,4,5,8,11,14,17,20,23-Heptamethyl-N,N,N,N',N',N'',N'',N''',N'',N''''-octamethyl-1,4,5,8,11,14,17,20,23-nonadecane-1,4,5,8,11,14,17,20,23-quinol-8-yl\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCC=C=C=C=C=C=C=N\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O",
+      "num_tokens": 261,
+      "generation_seconds": 1.868783
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-14-ethyl-",
+      "num_tokens": 400,
+      "generation_seconds": 2.561611
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "3,4,5-trihydroxy-3,4,5-trimethoxy-1,1'-biphenyl-2,6-diol-2,4,6-triyl-bis(4,4'-dicyanophenyl)methanone\n3,4,5-trihydroxy-3,4,5-trimethoxy-1,1'-biphenyl-2,6-diol-2,4,6-triyl-bis(4,4'-dicyanophenyl)methanone\n3,4,5-trihydroxy-3,4,5-trimethoxy-1,1'-biphenyl-2,6-diol-2,4,6-triyl-bis(4,4'-dicyanophenyl)methanone\n3,4,5-trihydroxy-3,4,5-trimethoxy-1,1'-biphenyl-2,6-diol-2,4,6-triyl-bis(4,4'-dicyanophenyl)methanone\n3,4,5-trihydroxy-3,4,5-trimethoxy-1,1'-biphenyl-2,6-diol-2,4,6-triyl-bis(4,4'-dicyanophenyl)methanone\n3,4,5-trihydroxy-3,4,5-trimethoxy-1,1'-biphenyl-2,6-diol-2,4,6-triyl-bis(4,4'-dicyanophenyl)methanone\n3,4,5-trihydroxy-3,4,5-trimethoxy-1,1'-biphenyl-2,6-diol",
+      "num_tokens": 400,
+      "generation_seconds": 2.539594
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,4,5,6,7,8,9,10,11,12,13,14",
+      "num_tokens": 31,
+      "generation_seconds": 0.23954
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,2,3,3,4,4,5,5,6,6,7,7,7,7,4,7,7,7,7,2,2,3\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NC1=CC=CC(=CC1)CC2=CC=CC(=CC2)CC3=CC=CC(=CC3)CC4=CC=CC(=CC4)CC5=CC=CC(=CC5)CC6=CC=CC(=CC6)CC7=CC=CC(=CC7)CC8=CC=CC(=CC8)C=C(C=C8)N=C=O",
+      "num_tokens": 164,
+      "generation_seconds": 1.080912
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2, chemical isocyanate\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl isocyanate (CF3CH2N=C=O)\nMolecule: 2,2,2-Trifluoroethyl is",
+      "num_tokens": 400,
+      "generation_seconds": 2.548251
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1. O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O 2. O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CC=CC(=CC1)C(=O)N=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN",
+      "num_tokens": 400,
+      "generation_seconds": 2.489113
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79,81,83,85,87,89,91,93,95,97,99,101,103,105,107,109,111,113,115,117,119,121,123,125,127,129,131,133,135,137,139,141,143,145,147,149,151,153,155,157,159,161,163,165,167,169,171,173,175,177,179,181,183,185,187,189,191,193,195,197,199,201,203,205,207,209,211,213,215,217,219,221,223,225,227",
+      "num_tokens": 400,
+      "generation_seconds": 2.468836
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2-(2-x-ethyl-2,2-dinitrotoluene)-3,3,5,5,7,7,9,9,9,11,11,13,13-trinitro-3,5,7,9,11,13-trinitro-3,5,7,9,11,13-pentaerythritol\nMolecule: O=C=NC1CCC(CC2CCC(CC2)N=C=O)CC1\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN",
+      "num_tokens": 174,
+      "generation_seconds": 1.101066
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1:C(C=C(C=C(C=C(C=C(C=C(C=C(C=C1)N=C=O)N=C=O)N=C=O)N=C=O)N=C=O)N=C=O)N=C=O)N=C=O)N=C=O)N=C=O)N=C=O)N=C=O)N",
+      "num_tokens": 80,
+      "generation_seconds": 0.546059
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1",
+      "num_tokens": 26,
+      "generation_seconds": 0.2149
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,2,2-Tetramethylethylenediamine\n1,1,2,2-Tetramethylethylenediamine\n1,1,2,2-Tetramethylethylenediamine",
+      "num_tokens": 54,
+      "generation_seconds": 0.368697
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,3,5,7,9,11,13,15,17-Heptadeca-1,3,5,7,9,11,13,15,17-Octadeca-1,3,5,7,9,11,13,15,17-Octadecadienyloxy-carbonyl",
+      "num_tokens": 85,
+      "generation_seconds": 0.565567
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "25\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nMolecule: A2\nM",
+      "num_tokens": 400,
+      "generation_seconds": 2.483083
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1C1C\nMolecule: CC1=C(C=C(C=C1)CN=C=O)N=C=O\nMolecule: O=C=NC1CCC(CC2CCC(CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN",
+      "num_tokens": 84,
+      "generation_seconds": 0.554214
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "00123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\n0012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\n001234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\n0012312345678901234567890123456",
+      "num_tokens": 400,
+      "generation_seconds": 2.474133
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2-ethyl-6,6-dimethyl-1,2,3-triazole-4,5-diyl\nMolecule: O=C=NC1CCC(CC2CCC(CC2)N=C=O)C1\nMolecule: CC(C)(OC(=O)C)CC1=CC=CC(=CC1)C(=O)N=C=O\nMolecule: 2-ethyl-6,6-dimethyl-1,2,3-triazole-4,5-diyl\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC(C)(OC(=O)C)CC1=CCC(CC2=CC=CC(=CC2)N=C=O)CC1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O",
+      "num_tokens": 180,
+      "generation_seconds": 1.155506
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1-dimethyl-3,3-dimethyl-4,4-dimethyl-1,4,11,11-tetramethyl-1,1,10,11,11-pentamethyl-1,1,2,2,10,13-pentahexasubstituted-4-hydro...\nMolecule: 1,1-dimethyl-3,3-dimethyl-4,4-dimethyl-1,4,11,11-tetramethyl-1,1,10,11,11-pentamethyl-1,1,2,2,10,13-pentahexasubstituted-4-hydro...\nMolecule: 1,1-dimethyl-3,3-dimethyl-4,4-dimethyl-1,4,11,11-tetramethyl-1,1,10,11,11-pentamethyl-1,1,2,2,10,13-pentahexasubstituted-4-hydro...\nMolecule: 1,1-dimethyl-3,3-dimethyl-4, extremely difficult chemical synthesis challenges that we have the challenge of...\nMolecule: 1,1-dimethyl-3,3-dimethyl-4,4-dimethyl-1,4,11,11-tetramethyl-1,1,10,11,11-pentamethyl-1,1,2,2,10,13-pentahexasubstituted-4-hydro...\nMolecule: 1,1-dimethyl-3,3-dimethyl-4,4-dimethyl-1,4,11,11-tetramethyl-1,1,",
+      "num_tokens": 400,
+      "generation_seconds": 2.510059
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,2,3,4-Heptyl-6-nitro-2-nitro-1,4-diazaspiro[4.4]heptane-1,3-diol\nMolecule: O=C(N=C=O)\nMolecule: C=C1=C(CN=C=O)C(=C1)CN=C=O\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nMolecule: O=C(N=C=O)\nM",
+      "num_tokens": 400,
+      "generation_seconds": 2.511401
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35\nMolecule: O=C=NCCCCCCCCC=N=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nM",
+      "num_tokens": 400,
+      "generation_seconds": 2.507425
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,2,3-Triphenylmethane has 30 carbons, 6 hydrogens, 6 nitrogens, 3 oxygens\n1,2,3-Triphenylmethane has 30 carbons, 6 hydrogens, 6 nitrogens, 3 oxygens\n1,2,3-Triphenylmethane has 30 carbons, 6 hydrogens, 6 nitrogens, 3 oxygens",
+      "num_tokens": 102,
+      "generation_seconds": 0.669465
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1=O\nMolecule: O=C=NCCCCCCCCCCCCCCN=C=O",
+      "num_tokens": 18,
+      "generation_seconds": 0.166268
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2-Phenylisocyanate",
+      "num_tokens": 10,
+      "generation_seconds": 0.112371
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1. O=C(N=C=O) 2. O=C=NCCCCCCCCCCCCCCCCCCN=C=O 3. CC(O)CC1=CC=CC(=CC1)O\nMolecule: CC1=CC=CC(=CC1)C(=O)N=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C",
+      "num_tokens": 400,
+      "generation_seconds": 2.440919
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1-205, 2-205, 2-206, 2-207, 2-208, 2-209, 2-210, 2-211, 2-212, 2-213, 2-214, 2-215, 2-216, 2-217, 2-218, 2-219, 2-220, 2-221, 2-222, 2-223, 2-224, 2-225, 2-226, 2-227, 2-228, 2-229, 2-230, 2-231, 2-232, 2-233, 2-234, 2-235, 2-236, 2-237, 2-238, 2-239, 2-240, 2-241, 2-242, 2-243, 2-244, 2-245, 2-246, 2-247, 2-248, 2-249, 2-250, 2-251, 2-252, 2-253, 2-254, 2-255, 2-256, 2-257, 2-258, 2-259, 2-260, 2",
+      "num_tokens": 400,
+      "generation_seconds": 2.463259
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "100%\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC=N\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nM",
+      "num_tokens": 400,
+      "generation_seconds": 2.08284
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "131958",
+      "num_tokens": 7,
+      "generation_seconds": 0.087083
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1,1,3,3,3-trifluorobut-3-ene-2,4-diol\n1,1,3,3,3-trifluorobut-3-ene-2,4-diol",
+      "num_tokens": 52,
+      "generation_seconds": 0.364432
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1 1 1\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C",
+      "num_tokens": 400,
+      "generation_seconds": 2.507251
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2\nMolecule: 2",
+      "num_tokens": 110,
+      "generation_seconds": 0.730444
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,2,2-trifluoroethan-1-yl-N=C=O",
+      "num_tokens": 20,
+      "generation_seconds": 0.167503
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "4-C(=O)N=C=O\nMolecule: O=C=NC1=C(C=C(C=C1)N=C=O)N=C=O\nMolecule: O=C=NC1=C(C=C(C=C1)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN",
+      "num_tokens": 223,
+      "generation_seconds": 1.418849
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "1: O=C=NCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: 2: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: 3: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: 1: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: 2: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: 3: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: 1: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: 1: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCN\nMolecule: 2: O=C=NCCCCCCCCCCCCCCN=C=O\nMolecule: 3: O=C=NCCCCCCCCCCCCCCN=C=O",
+      "num_tokens": 178,
+      "generation_seconds": 1.133198
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2-Hexylisoquinoline:CC1=CC2=C(C=C(C=C3)CC4=CC=C(C=C4)N=C=O)CC2=CC3=CC=C(C=C1)N=C=O",
+      "num_tokens": 51,
+      "generation_seconds": 0.347801
+    },
+    {
+      "question": "isocyanates",
+      "generated_answer": "2,3-Diethyl-4-alkyl-5-alkyl-1-alkyl-2-alkyl-3-alkyl-4-alkyl-5-alkyl-6-alkyl-1-alkyl-2-alkyl-3-alkyl-4-alkyl-5-alkyl-6-alkyl-7-alkyl-2-alkyl-3-alkyl-4-alkyl-5-alkyl-6-alkyl-7-alkyl-N-alkyl-3-methyl-N-ethyl-N-isopropyl-5-ethyl-6-methyl-7-alkyl-N-ethyl-5-ethynyl-6-alkyl-7-alkyl-1-alkyl-2-alkyl-3-alkyl-4-alkyl-5-alkyl-6-alkyl-7-alkyl-2-alkyl-3-alkyl-4-alkyl-5-alkyl-6-methyl-7-alkyl-1-ethynyl-2-alkyl-3-alkyl-4-alkyl-5-alkyl-6-alkyl-7-alkyl-2-alkyl-3-alkyl-4-alkyl-5-alkyl-6-methyl-7-alkyl-1-ethynyl-2-alkyl-3-alkyl-4-alkyl-5-alkyl-6-methyl-7-alkyl-1-ethyl-2-alkyl-3-alkyl-4-alkyl-5-alkyl-6-alkyl-7-alkyl-1-methyl-2-alkyl-3-alkyl-4-alkyl-5-alkyl-6-alkyl-7-alkyl-1-methyl-2-alkyl",
+      "num_tokens": 400,
+      "generation_seconds": 2.483712
+    }
+  ]
+}

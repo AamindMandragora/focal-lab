@@ -1,0 +1,617 @@
+{
+  "accuracy": 0.33,
+  "syntax_rate": 0.73,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 255.3047,
+    "mean_generation_seconds_per_example": 2.553047,
+    "examples_with_generation_timing": 100,
+    "total_output_tokens": 3527,
+    "mean_output_tokens_per_example": 35.27,
+    "examples_with_token_counts": 100,
+    "evaluator_total_time_seconds": 317.8155,
+    "evaluator_max_sample_time_seconds": 90.4045
+  },
+  "answers": [
+    {
+      "question": "List the title of all cartoons in alphabetical order.",
+      "generated_answer": "SQL: <<SELECT title FROM cartoon ORDER BY title ASC >>",
+      "num_tokens": 13,
+      "generation_seconds": 1.661177
+    },
+    {
+      "question": "What are the different template type codes, and how many templates correspond to each?",
+      "generated_answer": "SQL: <<SELECT ref_template_types.template_type_code, COUNT(templates.template_id) FROM ref_template_types JOIN templates ON templates.template_type_code = ref_template_types.template_type_code GROUP BY ref_template_types.template_type_code >>",
+      "num_tokens": 45,
+      "generation_seconds": 2.049349
+    },
+    {
+      "question": "What are the different years in which there were cars produced that weighed less than 4000 and also cars that weighted more than 3000 ?",
+      "generated_answer": "SQL: <<SELECT DISTINCT year FROM cars_data WHERE weight < 4000 INTERSECT SELECT DISTINCT year FROM cars_data WHERE weight > 3000 >>",
+      "num_tokens": 36,
+      "generation_seconds": 1.503515
+    },
+    {
+      "question": "Show paragraph details for paragraph with text 'Korea ' .",
+      "generated_answer": "SQL: <<SELECT paragraphs.paragraph_id, paragraphs.paragraph_text, paragraphs.other_details FROM paragraphs JOIN documents ON paragraphs.document_id = documents.document_id WHERE paragraphs.paragraph_text = 'Korea ' >>",
+      "num_tokens": 41,
+      "generation_seconds": 1.732818
+    },
+    {
+      "question": "How many official languages are spoken in Afghanistan?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM countrylanguage WHERE countrycode = (SELECT code FROM country WHERE name = 'Afghanistan') AND isofficial = 1 >>",
+      "num_tokens": 34,
+      "generation_seconds": 1.450827
+    },
+    {
+      "question": "How many flights depart from City Aberdeen?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM flights JOIN airports ON flights.sourceairport = airports.airportcode WHERE airports.city = 'Aberdeen'>",
+      "num_tokens": 29,
+      "generation_seconds": 1.23249
+    },
+    {
+      "question": "What is the id, line 1, and line 2 of the address with the most students?",
+      "generated_answer": "SQL: <<SELECT addresses.address_id, addresses.line_1, addresses.line_2 FROM addresses JOIN students ON addresses.address_id = students.permanent_address_id GROUP BY addresses.address_id ORDER BY COUNT(students.student_id) DESC LIMIT 1 ?>>",
+      "num_tokens": 51,
+      "generation_seconds": 2.045214
+    },
+    {
+      "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+      "generated_answer": "SQL: <<SELECT location, name FROM stadium WHERE capacity BETWEEN 5000 AND 10000 >>",
+      "num_tokens": 26,
+      "generation_seconds": 1.120677
+    },
+    {
+      "question": "What is the document id with 1 to 2 paragraphs?",
+      "generated_answer": "SQL: <<SELECT document_id FROM documents WHERE document_id IN (SELECT document_id FROM paragraphs WHERE paragraph_id BETWEEN 1 AND 2)>>",
+      "num_tokens": 29,
+      "generation_seconds": 1.199014
+    },
+    {
+      "question": "What are the names, countries, and ages for every singer in descending order of age?",
+      "generated_answer": "SQL: <<SELECT name, country, age FROM singer ORDER BY age DESC >>",
+      "num_tokens": 17,
+      "generation_seconds": 0.753842
+    },
+    {
+      "question": "What are the maximum and minimum share of performances whose type is not \"Live final\".",
+      "generated_answer": "SQL: <<SELECT min(T1.share), max(T1.share) FROM performance AS T1 JOIN orchestra AS T2 ON T1.orchestra_id = T2.orchestra_id WHERE T1.type != 'Live final' >>",
+      "num_tokens": 51,
+      "generation_seconds": 2.102337
+    },
+    {
+      "question": "Find the average life expectancy and total population for each continent where the average life expectancy is shorter than 72?",
+      "generated_answer": "SQL: <<SELECT continent, AVG(lifeexpectancy) AS avg_life_expectancy, SUM(population) AS total_population FROM country WHERE lifeexpectancy < 72 GROUP BY continent >>",
+      "num_tokens": 40,
+      "generation_seconds": 1.626884
+    },
+    {
+      "question": "What are the towns from which at least two teachers come from?",
+      "generated_answer": "SQL: <<SELECT hometown FROM teacher GROUP BY hometown HAVING COUNT(*) >= 2 >>",
+      "num_tokens": 19,
+      "generation_seconds": 0.818804
+    },
+    {
+      "question": "Which city has most number of arriving flights?",
+      "generated_answer": "SQL: <<SELECT airports.city FROM flights JOIN airports ON flights.destairport = airports.airportcode GROUP BY airports.city ORDER BY COUNT(*) DESC LIMIT 1 >>",
+      "num_tokens": 33,
+      "generation_seconds": 1.180857
+    },
+    {
+      "question": "Show the years in which orchestras that have given more than one performance are founded.",
+      "generated_answer": "SQL: <<SELECT year_of_founded FROM orchestra WHERE orchestra_id IN (SELECT orchestra_id FROM performance GROUP BY orchestra_id HAVING COUNT(performance_id) > 1)>>",
+      "num_tokens": 36,
+      "generation_seconds": 1.294057
+    },
+    {
+      "question": "List all singer names in concerts in year 2014.",
+      "generated_answer": "SQL: <<SELECT singer.name FROM singer JOIN singer_in_concert ON singer.singer_id = singer_in_concert.singer_id JOIN concert ON singer_in_concert.concert_id = concert.concert_id WHERE concert.year = 2014 >>",
+      "num_tokens": 52,
+      "generation_seconds": 2.170069
+    },
+    {
+      "question": "What are the id, name and membership level of visitors who have spent the largest amount of money in total in all museum tickets?",
+      "generated_answer": "SQL: <<SELECT visitor.id, visitor.name, visitor.level_of_membership FROM visitor JOIN visit ON visitor.id = visit.visitor_id GROUP BY visitor.id, visitor.name, visitor.level_of_membership ORDER BY SUM(visit.total_spent) DESC LIMIT 1 ?>>",
+      "num_tokens": 53,
+      "generation_seconds": 2.305169
+    },
+    {
+      "question": "What is the name of the conductor who has worked the greatest number of years?",
+      "generated_answer": "SQL: <<SELECT name FROM conductor WHERE year_of_work = (SELECT MAX(year_of_work) FROM conductor)>>",
+      "num_tokens": 23,
+      "generation_seconds": 1.028687
+    },
+    {
+      "question": "What is the program id and the summary of the degree that has the most students enrolled?",
+      "generated_answer": "SQL: <<SELECT dp.degree_program_id, dp.degree_summary_name FROM degree_programs dp JOIN student_enrolment se ON dp.degree_program_id = se.degree_program_id GROUP BY dp.degree_program_id, dp.degree_summary_name ORDER BY COUNT(se.student_id) DESC LIMIT 1 ?>>",
+      "num_tokens": 58,
+      "generation_seconds": 2.572422
+    },
+    {
+      "question": "How many likes does Kyle have?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM likes WHERE student_id = (SELECT id FROM highschooler WHERE name = 'Kyle') >>",
+      "num_tokens": 27,
+      "generation_seconds": 1.171346
+    },
+    {
+      "question": "What are the names of the singers who are not French citizens?",
+      "generated_answer": "SQL: <<SELECT name FROM singer WHERE citizenship != 'French' >>",
+      "num_tokens": 15,
+      "generation_seconds": 0.666698
+    },
+    {
+      "question": "What is the episode for the TV series named \"Sky Radio\"?",
+      "generated_answer": "SQL: <<SELECT episode FROM tv_series WHERE series_name = 'Sky Radio' >>",
+      "num_tokens": 18,
+      "generation_seconds": 0.792995
+    },
+    {
+      "question": "How many countries have governments that are republics?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM country WHERE governmentform = 'Republic'>",
+      "num_tokens": 16,
+      "generation_seconds": 0.704788
+    },
+    {
+      "question": "List the arrival date and the departure date for all the dogs.",
+      "generated_answer": "",
+      "num_tokens": 0,
+      "generation_seconds": 90.404459
+    },
+    {
+      "question": "What is the name and capacity for the stadium with the highest average attendance?",
+      "generated_answer": "SQL: <<SELECT stadium.name, stadium.capacity FROM stadium INNER JOIN (SELECT concert.stadium_id, AVG(singer_in_concert.concert_id) AS average_attendance FROM concert INNER JOIN singer_in_concert ON concert.concert_id = singer_in_concert.concert_id GROUP BY concert.stadium_id ORDER BY average_attendance DESC LIMIT 1) AS avg_attendance ON stadium.stadium_id = avg_attendance.stadium_id WHERE avg_attendance.average_attendance = (SELECT MAX(average_attendance) FROM (SELECT AVG(singer_in_concert.concert_id) AS average_attendance FROM concert INNER JOIN singer_in_concert ON concert.concert_id = singer_in_concert.concert_id GROUP BY concert.stadium_id) AS subquery)>>",
+      "num_tokens": 153,
+      "generation_seconds": 7.393548
+    },
+    {
+      "question": "What are the names of the teachers and the courses they teach in ascending alphabetical order by the name of the teacher?",
+      "generated_answer": "SQL: <<SELECT teacher.name, course.course FROM course_arrange, teacher, course WHERE course_arrange.teacher_id = teacher.teacher_id AND course_arrange.course_id = course.course_id ORDER BY teacher.name ASC >>",
+      "num_tokens": 44,
+      "generation_seconds": 1.974039
+    },
+    {
+      "question": "What is the average age of all the dogs?",
+      "generated_answer": "SQL: <<SELECT AVG(age) FROM dogs >>",
+      "num_tokens": 11,
+      "generation_seconds": 0.462237
+    },
+    {
+      "question": "Which models are lighter than 3500 but not built by the 'Ford Motor Company'?",
+      "generated_answer": "SQL: <<SELECT model FROM model_list WHERE maker != 'Ford Motor Company' AND edispl < 3500 AND model IN (SELECT model FROM car_names WHERE makeid IN (SELECT id FROM cars_data WHERE weight < 3500)) AND model IN (SELECT model FROM car_names)>>",
+      "num_tokens": 65,
+      "generation_seconds": 2.774969
+    },
+    {
+      "question": "Tell me the owner id and last name of the owner who spent the most on treatments of his or her dogs.",
+      "generated_answer": "SQL: <<SELECT dogs.owner_id, owners.last_name FROM owners JOIN dogs ON dogs.owner_id = owners.owner_id JOIN treatments ON dogs.dog_id = treatments.dog_id GROUP BY dogs.owner_id, owners.last_name ORDER BY SUM(treatments.cost_of_treatment) DESC LIMIT 1 >>",
+      "num_tokens": 61,
+      "generation_seconds": 2.518455
+    },
+    {
+      "question": "What are the names of nations where both English and French are official languages?",
+      "generated_answer": "SQL: <<SELECT c.name FROM countrylanguage cl JOIN country c ON cl.countrycode = c.code WHERE cl.language = 'English' AND cl.isofficial = 'T' INTERSECT SELECT c.name FROM countrylanguage cl JOIN country c ON cl.countrycode = c.code WHERE cl.language = 'French' AND cl.isofficial = 'T' >>",
+      "num_tokens": 72,
+      "generation_seconds": 3.381793
+    },
+    {
+      "question": "Find the major and age of students who do not have a cat pet.",
+      "generated_answer": "SQL: <<SELECT major, age FROM student WHERE stuid NOT IN (SELECT stuid FROM has_pet JOIN pets ON has_pet.petid = pets.petid WHERE pettype = 'cat')>>",
+      "num_tokens": 41,
+      "generation_seconds": 1.797547
+    },
+    {
+      "question": "Return the id of the document with the fewest paragraphs.",
+      "generated_answer": "SQL: <<SELECT document_id FROM paragraphs GROUP BY document_id ORDER BY COUNT(paragraph_id) ASC LIMIT 1 ?>>",
+      "num_tokens": 25,
+      "generation_seconds": 1.084742
+    },
+    {
+      "question": "Which states have both owners and professionals living there?",
+      "generated_answer": "SQL: <<SELECT DISTINCT o.state, p.state FROM owners o JOIN professionals p ON o.state = p.state WHERE o.state IS NOT NULL AND p.state IS NOT NULL AND o.state = p.state GROUP BY o.state, p.state HAVING COUNT(o.state) > 0 AND COUNT(p.state) > 0 >>",
+      "num_tokens": 66,
+      "generation_seconds": 3.250771
+    },
+    {
+      "question": "What are the first names of all players, and their total ranking points?",
+      "generated_answer": "SQL: <<SELECT p.first_name, SUM(r.ranking_points) FROM players p JOIN rankings r ON p.player_id = r.player_id GROUP BY p.first_name >>",
+      "num_tokens": 35,
+      "generation_seconds": 1.59252
+    },
+    {
+      "question": "Find the maximum weight for each type of pet. List the maximum weight and pet type.",
+      "generated_answer": "SQL: <<SELECT pettype, MAX(weight) FROM pets GROUP BY pettype ?>>",
+      "num_tokens": 18,
+      "generation_seconds": 0.777928
+    },
+    {
+      "question": "In 1980, how many cars were made?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM cars_data WHERE year = 1980 >>",
+      "num_tokens": 19,
+      "generation_seconds": 0.880729
+    },
+    {
+      "question": "Give the ids of documents that have between one and two paragraphs.",
+      "generated_answer": "SQL: <<SELECT document_id FROM paragraphs GROUP BY document_id HAVING COUNT(paragraph_id) BETWEEN 1 AND 2 >>",
+      "num_tokens": 27,
+      "generation_seconds": 1.125851
+    },
+    {
+      "question": "What are the names and release years for all the songs of the youngest singer?",
+      "generated_answer": "SQL: <<SELECT song_name, song_release_year FROM singer JOIN singer_in_concert ON singer.singer_id = singer_in_concert.singer_id JOIN concert ON singer_in_concert.concert_id = concert.concert_id WHERE singer.age = (SELECT MIN(age) FROM singer)>>",
+      "num_tokens": 58,
+      "generation_seconds": 2.251381
+    },
+    {
+      "question": "What are the different models wthat are lighter than 3500 but were not built by the Ford Motor Company?",
+      "generated_answer": "SQL: <<SELECT model FROM model_list WHERE maker != 'Ford Motor Company' AND edispl < 3500 AND model IN (SELECT make FROM car_names)>>",
+      "num_tokens": 37,
+      "generation_seconds": 1.127112
+    },
+    {
+      "question": "What are the names of high schoolers who both have friends and are liked?",
+      "generated_answer": "SQL: <<SELECT name FROM highschooler WHERE id IN (SELECT student_id FROM friend WHERE student_id IN (SELECT student_id FROM likes)) AND id IN (SELECT liked_id FROM likes)>>",
+      "num_tokens": 40,
+      "generation_seconds": 1.442811
+    },
+    {
+      "question": "Show the date of the transcript which shows the least number of results, also list the id.",
+      "generated_answer": "SQL: <<SELECT transcript_id, transcript_date FROM transcripts WHERE transcript_id = (SELECT transcript_id FROM transcript_contents GROUP BY transcript_id ORDER BY COUNT(*) ASC LIMIT 1)>>",
+      "num_tokens": 36,
+      "generation_seconds": 1.462998
+    },
+    {
+      "question": "What are the names of poker players in descending order of earnings?",
+      "generated_answer": "SQL: <<SELECT p.name FROM people p JOIN poker_player pp ON p.people_id = pp.people_id ORDER BY pp.earnings DESC >>",
+      "num_tokens": 30,
+      "generation_seconds": 1.258024
+    },
+    {
+      "question": "Who are enrolled in 2 degree programs in one semester? List the first name, middle name and last name and the id.",
+      "generated_answer": "SQL: <<SELECT s.first_name, s.middle_name, s.last_name, s.student_id FROM students s JOIN student_enrolment se ON s.student_id = se.student_id WHERE se.semester_id IN (SELECT se2.semester_id FROM student_enrolment se2 WHERE se2.student_id = s.student_id GROUP BY se2.semester_id HAVING COUNT(DISTINCT se2.degree_program_id) = 2) GROUP BY s.first_name, s.middle_name, s.last_name, s.student_id HAVING COUNT(DISTINCT se.semester_id) = 1 >>",
+      "num_tokens": 121,
+      "generation_seconds": 6.574263
+    },
+    {
+      "question": "What are the names of all courses that have some students enrolled?",
+      "generated_answer": "SQL: <<SELECT course_name FROM courses WHERE course_id IN (SELECT course_id FROM student_enrolment_courses)>>",
+      "num_tokens": 24,
+      "generation_seconds": 1.078035
+    },
+    {
+      "question": "Which employee received the most awards in evaluations? Give me the employee name.",
+      "generated_answer": "SQL: <<SELECT name FROM employee WHERE employee_id = (SELECT employee_id FROM evaluation GROUP BY employee_id ORDER BY COUNT(*) DESC LIMIT 1)>>",
+      "num_tokens": 31,
+      "generation_seconds": 1.241627
+    },
+    {
+      "question": "List the cost of each treatment and the corresponding treatment type description.",
+      "generated_answer": "SQL: <<SELECT treatments.cost_of_treatment, treatment_types.treatment_type_description FROM treatments JOIN treatment_types ON treatments.treatment_type_code = treatment_types.treatment_type_code >>",
+      "num_tokens": 36,
+      "generation_seconds": 1.473127
+    },
+    {
+      "question": "How much does the most expensive charge type costs?",
+      "generated_answer": "SQL: <<SELECT MAX(charge_amount) FROM charges WHERE charge_type = (SELECT charge_type FROM charges ORDER BY charge_amount DESC LIMIT 1)>>",
+      "num_tokens": 31,
+      "generation_seconds": 1.171577
+    },
+    {
+      "question": "What are the first name and last name of the professionals who have done treatment with cost below average?",
+      "generated_answer": "SQL: <<SELECT p.first_name, p.last_name FROM professionals p JOIN treatments t ON p.professional_id = t.professional_id WHERE t.cost_of_treatment < (SELECT AVG(cost_of_treatment) FROM treatments)>>",
+      "num_tokens": 46,
+      "generation_seconds": 2.044739
+    },
+    {
+      "question": "What is the maximum accelerate for different number of cylinders?",
+      "generated_answer": "SQL: <<SELECT cylinders, MAX(accelerate) FROM cars_data GROUP BY cylinders ?>>",
+      "num_tokens": 19,
+      "generation_seconds": 0.851665
+    },
+    {
+      "question": "Return the number of likes that the high schooler named Kyle has.",
+      "generated_answer": "SQL: <<SELECT count(*) FROM likes WHERE student_id = (SELECT id FROM highschooler WHERE name = 'Kyle') >>",
+      "num_tokens": 27,
+      "generation_seconds": 1.065045
+    },
+    {
+      "question": "List each charge type and its amount.",
+      "generated_answer": "SQL: <<SELECT charge_type , charge_amount FROM charges >>",
+      "num_tokens": 13,
+      "generation_seconds": 0.572661
+    },
+    {
+      "question": "For a volvo model, how many cylinders does the version with least accelerate have?",
+      "generated_answer": "SQL: <<SELECT cylinders FROM cars_data WHERE model = (SELECT model FROM car_names WHERE make = 'volvo') AND accelerate = (SELECT MIN(accelerate) FROM cars_data WHERE model = (SELECT model FROM car_names WHERE make = 'volvo')) >>",
+      "num_tokens": 55,
+      "generation_seconds": 2.225721
+    },
+    {
+      "question": "How many courses are there?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM courses >>",
+      "num_tokens": 10,
+      "generation_seconds": 0.425019
+    },
+    {
+      "question": "What are the names of the teachers whose hometown is not `` Little Lever Urban District '' ?",
+      "generated_answer": "SQL: <<SELECT name FROM teacher WHERE hometown != 'Little Lever Urban District'>",
+      "num_tokens": 17,
+      "generation_seconds": 0.788414
+    },
+    {
+      "question": "How many friends does the high school student Kyle have?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM friend WHERE name = 'Kyle' AND friend_id = student_id >>",
+      "num_tokens": 22,
+      "generation_seconds": 0.885005
+    },
+    {
+      "question": "List the email, cell phone and home phone of all the professionals.",
+      "generated_answer": "SQL: <<SELECT email_address, cell_number, home_phone FROM professionals >>",
+      "num_tokens": 16,
+      "generation_seconds": 0.653825
+    },
+    {
+      "question": "find the minimum and maximum number of products of all stores.",
+      "generated_answer": "SQL: <<SELECT min(number_products), max(number_products) FROM shop >>",
+      "num_tokens": 16,
+      "generation_seconds": 0.708078
+    },
+    {
+      "question": "Which language is the most popular on the Asian continent?",
+      "generated_answer": "SQL: <<SELECT language FROM countrylanguage WHERE isofficial = 'T' AND countrycode IN (SELECT code FROM country WHERE continent = 'Asia') GROUP BY language ORDER BY SUM(percentage) DESC LIMIT 1 >>",
+      "num_tokens": 45,
+      "generation_seconds": 1.860909
+    },
+    {
+      "question": "What's the name of the course with most number of enrollments?",
+      "generated_answer": "SQL: <<SELECT c.course_name FROM courses c JOIN student_enrolment_courses sec ON c.course_id = sec.course_id GROUP BY c.course_id ORDER BY COUNT(sec.student_course_id) DESC LIMIT 1 ?>>",
+      "num_tokens": 44,
+      "generation_seconds": 1.662343
+    },
+    {
+      "question": "What is the name of the semester with no students enrolled?",
+      "generated_answer": "SQL: <<SELECT semester_name FROM semesters WHERE semester_id NOT IN (SELECT semester_id FROM student_enrolment)>>",
+      "num_tokens": 25,
+      "generation_seconds": 0.95786
+    },
+    {
+      "question": "How many countries have a republic as their form of government?",
+      "generated_answer": "SQL: <<SELECT count(*) FROM country WHERE governmentform = 'Republic'>",
+      "num_tokens": 16,
+      "generation_seconds": 0.689823
+    },
+    {
+      "question": "Find the id and name of the museum that has the most staff members?",
+      "generated_answer": "SQL: <<SELECT museum_id, name FROM museum ORDER BY num_of_staff DESC LIMIT 1 ?>>",
+      "num_tokens": 21,
+      "generation_seconds": 0.962495
+    },
+    {
+      "question": "Give the number of Jetblue Airways flights.",
+      "generated_answer": "SQL: <<SELECT count(*) FROM flights WHERE airline = 'Jetblue Airways' >>",
+      "num_tokens": 18,
+      "generation_seconds": 0.882752
+    },
+    {
+      "question": "What are the create dates, states, and phone numbers of the votes that were for the contestant named 'Tabatha Gehling'?",
+      "generated_answer": "SQL: <<SELECT created, state, phone_number FROM votes JOIN contestants ON votes.contestant_number = contestants.contestant_number JOIN area_code_state ON votes.state = area_code_state.state WHERE contestants.contestant_name = 'Tabatha Gehling' >>",
+      "num_tokens": 53,
+      "generation_seconds": 2.108618
+    },
+    {
+      "question": "Which regions speak Dutch or English?",
+      "generated_answer": "SQL: <<SELECT DISTINCT c.region FROM country AS c JOIN countrylanguage AS cl ON c.code = cl.countrycode WHERE cl.language IN ('Dutch', 'English') AND cl.isofficial = 'T' >>",
+      "num_tokens": 44,
+      "generation_seconds": 1.683574
+    },
+    {
+      "question": "What are the package options and the name of the series for the TV Channel that supports high definition TV?",
+      "generated_answer": "SQL: <<SELECT tv_channel.package_option, tv_series.series_name FROM tv_channel JOIN tv_series ON tv_channel.id = tv_series.channel WHERE tv_channel.hight_definition_tv = 'yes' >>",
+      "num_tokens": 40,
+      "generation_seconds": 1.791662
+    },
+    {
+      "question": "What is the average horsepower for all cars produced before 1980 ?",
+      "generated_answer": "SQL: <<SELECT AVG(horsepower) FROM cars_data WHERE year < 1980 >>",
+      "num_tokens": 22,
+      "generation_seconds": 0.999138
+    },
+    {
+      "question": "What is the name and country of origin of every singer who has a song with the word 'Hey' in its title?",
+      "generated_answer": "SQL: <<SELECT s.name, s.country FROM singer s WHERE s.song_name LIKE '%Hey%'>",
+      "num_tokens": 22,
+      "generation_seconds": 0.986914
+    },
+    {
+      "question": "Return the different document ids along with the number of paragraphs corresponding to each, ordered by id.",
+      "generated_answer": "SQL: <<SELECT document_id, COUNT(paragraph_id) AS num_paragraphs FROM paragraphs GROUP BY document_id ORDER BY document_id ?>>",
+      "num_tokens": 28,
+      "generation_seconds": 1.016578
+    },
+    {
+      "question": "What country is Jetblue Airways affiliated with?",
+      "generated_answer": "SQL: <<SELECT airports.country FROM airlines JOIN flights ON airlines.uid = flights.airline WHERE airlines.airline = 'Jetblue Airways' AND airlines.abbreviation = 'BQI' JOIN",
+      "num_tokens": 39,
+      "generation_seconds": 15.460811
+    },
+    {
+      "question": "List the names of all winners who played in both 2013 and 2016.",
+      "generated_answer": "SQL: <<SELECT winner_name FROM matches WHERE winner_id IS NOT NULL AND YEAR = 2013 INTERSECT SELECT winner_name FROM matches WHERE winner_id IS NOT NULL AND YEAR = 2016 GROUP BY winner_name >>",
+      "num_tokens": 50,
+      "generation_seconds": 1.823534
+    },
+    {
+      "question": "How many continents speak Chinese?",
+      "generated_answer": "SQL: <<SELECT COUNT(DISTINCT country.continent) FROM countrylanguage JOIN country ON countrycode = code WHERE language = 'Chinese' AND isofficial = 1 >>",
+      "num_tokens": 36,
+      "generation_seconds": 1.494828
+    },
+    {
+      "question": "List the record company shared by the most number of orchestras.",
+      "generated_answer": "SQL: <<SELECT record_company FROM orchestra GROUP BY record_company ORDER BY COUNT(*) DESC LIMIT 1 ?>>",
+      "num_tokens": 22,
+      "generation_seconds": 0.950706
+    },
+    {
+      "question": "What is the code of the country with the most players?",
+      "generated_answer": "SQL: <<SELECT country_code FROM players GROUP BY country_code ORDER BY COUNT(*) DESC LIMIT 1 ?>>",
+      "num_tokens": 22,
+      "generation_seconds": 0.945635
+    },
+    {
+      "question": "Give the language that is spoken in the most countries.",
+      "generated_answer": "SQL: <<SELECT language FROM countrylanguage WHERE isofficial = 'T' GROUP BY language ORDER BY COUNT(countrycode) DESC LIMIT 1 ?>>",
+      "num_tokens": 30,
+      "generation_seconds": 1.175856
+    },
+    {
+      "question": "Which model of the car has the minimum horsepower?",
+      "generated_answer": "SQL: <<SELECT model FROM model_list WHERE id IN (SELECT makeid FROM cars_data ORDER BY horsepower LIMIT 1)>>",
+      "num_tokens": 26,
+      "generation_seconds": 1.031969
+    },
+    {
+      "question": "Show ids of all students who do not have any friends.",
+      "generated_answer": "SQL: <<SELECT id FROM highschooler WHERE id NOT IN (SELECT student_id FROM friend)>>",
+      "num_tokens": 21,
+      "generation_seconds": 0.926794
+    },
+    {
+      "question": "How many friends does each student have?",
+      "generated_answer": "SQL: <<SELECT name, COUNT(friend_id) AS num_friends FROM highschooler JOIN friend ON highschooler.id = friend.student_id GROUP BY name ?>>",
+      "num_tokens": 34,
+      "generation_seconds": 1.413257
+    },
+    {
+      "question": "Show all template type codes with less than three templates.",
+      "generated_answer": "SQL: <<SELECT template_type_code FROM ref_template_types WHERE template_type_code NOT IN (SELECT template_type_code FROM templates GROUP BY template_type_code HAVING COUNT(template_id) >= 3) OR template_type_code IN (SELECT template_type_code FROM templates GROUP BY template_type_code HAVING COUNT(template_id) < 3)>>",
+      "num_tokens": 67,
+      "generation_seconds": 2.655808
+    },
+    {
+      "question": "How many countries does each continent have? List the continent id, continent name and the number of countries.",
+      "generated_answer": "SQL: <<SELECT c.contid, con.continent, COUNT(*) FROM countries c JOIN continents con ON c.continent = con.contid GROUP BY c.contid, con.continent ?>>",
+      "num_tokens": 39,
+      "generation_seconds": 1.511664
+    },
+    {
+      "question": "List all airline names and their abbreviations in \"USA\".",
+      "generated_answer": "SQL: <<SELECT airline, abbreviation FROM airlines WHERE country = 'USA'>",
+      "num_tokens": 16,
+      "generation_seconds": 0.709604
+    },
+    {
+      "question": "What is the description of the treatment type that costs the least money in total?",
+      "generated_answer": "SQL: <<SELECT t.treatment_type_description FROM treatment_types t JOIN treatments tr ON t.treatment_type_code = tr.treatment_type_code GROUP BY t.treatment_type_description ORDER BY SUM(tr.cost_of_treatment) ASC LIMIT 1 >>",
+      "num_tokens": 50,
+      "generation_seconds": 1.974558
+    },
+    {
+      "question": "Find the id and weight of all pets whose age is older than 1.",
+      "generated_answer": "SQL: <<SELECT has_pet.stuid, pets.weight FROM has_pet JOIN pets ON has_pet.petid = pets.petid WHERE pets.pet_age > 1 >>",
+      "num_tokens": 34,
+      "generation_seconds": 1.507039
+    },
+    {
+      "question": "What is the name and directors of all the cartoons that are ordered by air date?",
+      "generated_answer": "SQL: <<SELECT c.title, ca.directed_by FROM cartoon c JOIN tv_series ts ON c.channel = ts.id ORDER BY ts.air_date >>",
+      "num_tokens": 31,
+      "generation_seconds": 1.371042
+    },
+    {
+      "question": "List the language used least number of TV Channel. List language and number of TV Channel.",
+      "generated_answer": "SQL: <<SELECT language, COUNT(*) AS channel_count FROM tv_channel GROUP BY language ORDER BY channel_count ASC LIMIT 1 ?>>",
+      "num_tokens": 27,
+      "generation_seconds": 1.134374
+    },
+    {
+      "question": "Show all countries and the number of singers in each country.",
+      "generated_answer": "SQL: <<SELECT country, COUNT(*) FROM singer GROUP BY country ?>>",
+      "num_tokens": 15,
+      "generation_seconds": 0.666245
+    },
+    {
+      "question": "What is the abbreviation of the airilne has the fewest flights and what country is it in?",
+      "generated_answer": "SQL: <<SELECT abbreviation, country FROM airlines WHERE uid = (SELECT airline FROM flights GROUP BY airline ORDER BY COUNT(*) ASC LIMIT 1)>>",
+      "num_tokens": 30,
+      "generation_seconds": 1.227155
+    },
+    {
+      "question": "Which languages are spoken by only one country in republic governments?",
+      "generated_answer": "SQL: <<SELECT language FROM countrylanguage WHERE isofficial=1 AND percentage=100 AND countrycode IN (SELECT countrycode FROM country WHERE governmentform='Republic') GROUP BY language HAVING COUNT(DISTINCT countrycode)=1 >>",
+      "num_tokens": 50,
+      "generation_seconds": 2.165076
+    },
+    {
+      "question": "How many people live in Asia, and what is the largest GNP among them?",
+      "generated_answer": "SQL: <<SELECT SUM(population) AS total_population, MAX(country.gnp) AS largest_gnp FROM city JOIN country ON city.countrycode = country.code WHERE country.continent = 'Asia' >>",
+      "num_tokens": 42,
+      "generation_seconds": 1.740658
+    },
+    {
+      "question": "What is Weekly Rank of TV series with Episode \"A Love of a Lifetime\"?",
+      "generated_answer": "SQL: <<SELECT t2.weekly_rank FROM tv_series AS t2 JOIN tv_channel AS t1 ON t2.channel = t1.id WHERE t2.episode = 'A Love of a Lifetime' >>",
+      "num_tokens": 44,
+      "generation_seconds": 1.653351
+    },
+    {
+      "question": "How many cars have a larger accelerate than the car with the largest horsepower?",
+      "generated_answer": "SQL: <<SELECT COUNT(*) FROM cars_data WHERE accelerate > (SELECT horsepower FROM cars_data ORDER BY horsepower DESC LIMIT 1)>>",
+      "num_tokens": 27,
+      "generation_seconds": 1.110282
+    },
+    {
+      "question": "What are the ids for templates that are not used in any documents?",
+      "generated_answer": "SQL: <<SELECT template_id FROM templates WHERE template_id NOT IN (SELECT template_id FROM documents)>>",
+      "num_tokens": 21,
+      "generation_seconds": 0.921221
+    },
+    {
+      "question": "What are the names of conductors as well as the corresonding orchestras that they have conducted?",
+      "generated_answer": "SQL: <<SELECT c.name, o.orchestra FROM conductor c JOIN orchestra o ON c.conductor_id = o.conductor_id >>",
+      "num_tokens": 30,
+      "generation_seconds": 1.191957
+    },
+    {
+      "question": "What are the manager name and district of the shop that sells the largest number of products?",
+      "generated_answer": "SQL: <<SELECT T2.manager_name, T2.district FROM shop AS T2 JOIN hiring AS T1 ON T2.shop_id = T1.shop_id GROUP BY T2.shop_id ORDER BY SUM(T2.number_products) DESC LIMIT 1 >>",
+      "num_tokens": 53,
+      "generation_seconds": 2.215647
+    },
+    {
+      "question": "When is the first transcript released? List the date and details.",
+      "generated_answer": "SQL: <<SELECT transcript_date, other_details FROM transcripts ORDER BY transcript_date LIMIT 1 ?>>",
+      "num_tokens": 20,
+      "generation_seconds": 0.905839
+    },
+    {
+      "question": "Which language is spoken by the largest number of countries?",
+      "generated_answer": "SQL: <<SELECT language FROM countrylanguage WHERE isofficial = 'T' GROUP BY language ORDER BY COUNT(countrycode) DESC LIMIT 1 ?>>",
+      "num_tokens": 30,
+      "generation_seconds": 1.130226
+    },
+    {
+      "question": "What is the first, middle, and last name of the earliest school graduate?",
+      "generated_answer": "SQL: <<SELECT first_name, middle_name, last_name FROM students WHERE date_left = (SELECT MIN(date_left) FROM students)>>",
+      "num_tokens": 28,
+      "generation_seconds": 1.240874
+    },
+    {
+      "question": "Show the document id with paragraph text 'Brazil' and 'Ireland'.",
+      "generated_answer": "SQL: <<SELECT documents.document_id FROM paragraphs JOIN documents ON paragraphs.document_id = documents.document_id WHERE paragraphs.paragraph_text = 'Brazil' AND paragraphs.paragraph_text = 'Ireland'>",
+      "num_tokens": 39,
+      "generation_seconds": 1.679492
+    },
+    {
+      "question": "What are the distinct template type descriptions for the templates ever used by any document?",
+      "generated_answer": "SQL: <<SELECT DISTINCT ref_template_types.template_type_description FROM ref_template_types JOIN templates ON templates.template_type_code = ref_template_types.template_type_code JOIN documents ON documents.template_id = templates.template_id >>",
+      "num_tokens": 41,
+      "generation_seconds": 1.71951
+    },
+    {
+      "question": "Return the template type code of the template that is used by a document named Data base.",
+      "generated_answer": "SQL: <<SELECT ref_template_types.template_type_code FROM templates INNER JOIN documents ON templates.template_id = documents.template_id INNER JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code WHERE documents.document_name = 'Data base' >>",
+      "num_tokens": 51,
+      "generation_seconds": 2.142279
+    }
+  ]
+}

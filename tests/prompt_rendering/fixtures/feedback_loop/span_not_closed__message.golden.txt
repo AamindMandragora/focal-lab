@@ -1,0 +1,3 @@
+
+  ⚠ Span-closure check: 2/10 evaluated outputs opened a `<<` span but never emitted the closing `>>` before the generation step budget ran out. When a span never closes, the eval records no usable answer for that example, so accuracy and syntax collapse toward zero even though the model did start a span.
+    What to reconsider: this is a decoding-mechanism issue with how the strategy behaves *inside* a span — how it makes forward progress and how it decides the span is finished — not the task or the prompt. Aim for a strategy that reliably reaches and emits `>>` within the step budget. (General direction only — the specific mechanism is yours to design.)

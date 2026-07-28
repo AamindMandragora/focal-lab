@@ -1,0 +1,1773 @@
+{
+  "actual_result": "Confirmed as a possible stuck/no-log state, not as a completed GSM-9B result. No report exists; run.log and newest output file are stale at 2026-06-29T01:04:15Z; parent PID 284546 and child PID 287539 remain CPU-active; source loop says the next normal visible event after the last marker should be example 49/49 or a report.",
+  "belief_update": "Belief rises from 70% to about 85% that GSM-9B is stuck or in an unexpectedly silent post-example state after example 48. H58 does not prove the strategy failed and does not justify touching the paid-backed run without explicit direction.",
+  "children": {
+    "cmd": "pgrep -P 284546 -a || true",
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "287538 /apps/conda/aadivyar/envs/csd/bin/python -c from multiprocessing.resource_tracker import main;main(50)\n287539 VLLM::EngineCore                                                                                                                                          \n"
+  },
+  "created_utc": "2026-06-29T11:34:09Z",
+  "fd_targets": {
+    "0": "/dev/null",
+    "1": "/home/aadivyar/csd-generation/outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/run.log",
+    "2": "/home/aadivyar/csd-generation/outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/run.log"
+  },
+  "h": "H58",
+  "inference": {
+    "has_report": false,
+    "last_visible_eval_marker": "example 48/49 Generated 210 tokens in 20.77s",
+    "latest_file_mtime_utc": "2026-06-29T01:04:15Z",
+    "run_log_stale_since_utc": "2026-06-29T01:04:15Z",
+    "status": "possible_stuck_or_silent_post_eval_state"
+  },
+  "kept_or_reverted": "Kept as diagnostic artifact only; no process intervention, no model/API/GPU launch.",
+  "last_markers": {
+    "cmd": "rg -n 'Processing example|Generated|success_report|failure_report|accuracy|syntax|Attempt|Saved|report|Threshold|threshold' outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/run.log 2>/dev/null | tail -n 100",
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "606423:// 3. The threshold: if the model has generated 3+ complete spans, the NEXT close\n606435:// FIX: Lower the forceOpenAt threshold to detect the correct final span earlier,\n606567:    // Force-open if we've hit the threshold without opening a span in final mode\n606614:      // If the closed span had substantial content OR we're past the force-open threshold,\n606665:  [EVAL] Processing example 1/49...\n608474:  [EVAL]   Generated 634 tokens in 54.95s\n608475:  [EVAL] Processing example 2/49...\n609276:  [EVAL]   Generated 270 tokens in 25.60s\n609277:  [EVAL] Processing example 3/49...\n611086:  [EVAL]   Generated 634 tokens in 54.24s\n611087:  [EVAL] Processing example 4/49...\n611860:  [EVAL]   Generated 260 tokens in 23.19s\n611861:  [EVAL] Processing example 5/49...\n612410:  [EVAL]   Generated 178 tokens in 18.17s\n612411:  [EVAL] Processing example 6/49...\n613016:  [EVAL]   Generated 193 tokens in 17.52s\n613017:  [EVAL] Processing example 7/49...\n614826:  [EVAL]   Generated 632 tokens in 59.42s\n614827:  [EVAL] Processing example 8/49...\n615516:  [EVAL]   Generated 237 tokens in 23.34s\n615517:  [EVAL] Processing example 9/49...\n616122:  [EVAL]   Generated 190 tokens in 19.59s\n616123:  [EVAL] Processing example 10/49...\n617904:  [EVAL]   Generated 632 tokens in 61.57s\n617905:  [EVAL] Processing example 11/49...\n618930:  [EVAL]   Generated 348 tokens in 33.62s\n618931:  [EVAL] Processing example 12/49...\n620768:  [EVAL]   Generated 637 tokens in 59.63s\n620769:  [EVAL] Processing example 13/49...\n621934:  [EVAL]   Generated 406 tokens in 38.75s\n621935:  [EVAL] Processing example 14/49...\n624500:  [EVAL]   Generated 898 tokens in 87.25s\n624501:  [EVAL] Processing example 15/49...\n625218:  [EVAL]   Generated 239 tokens in 24.42s\n625219:  [EVAL] Processing example 16/49...\n625740:  [EVAL]   Generated 168 tokens in 18.09s\n625741:  [EVAL] Processing example 17/49...\n627522:  [EVAL]   Generated 629 tokens in 60.05s\n627523:  [EVAL] Processing example 18/49...\n628044:  [EVAL]   Generated 165 tokens in 17.30s\n628045:  [EVAL] Processing example 19/49...\n629014:  [EVAL]   Generated 332 tokens in 32.54s\n629015:  [EVAL] Processing example 20/49...\n630880:  [EVAL]   Generated 653 tokens in 63.41s\n630881:  [EVAL] Processing example 21/49...\n631374:  [EVAL]   Generated 158 tokens in 16.51s\n631375:  [EVAL] Processing example 22/49...\n633212:  [EVAL]   Generated 645 tokens in 59.87s\n633213:  [EVAL] Processing example 23/49...\n635022:  [EVAL]   Generated 633 tokens in 58.40s\n635023:  [EVAL] Processing example 24/49...\n636860:  [EVAL]   Generated 634 tokens in 59.89s\n636861:  [EVAL] Processing example 25/49...\n638642:  [EVAL]   Generated 631 tokens in 56.50s\n638643:  [EVAL] Processing example 26/49...\n639444:  [EVAL]   Generated 264 tokens in 25.40s\n639445:  [EVAL] Processing example 27/49...\n641254:  [EVAL]   Generated 634 tokens in 59.24s\n641255:  [EVAL] Processing example 28/49...\n643064:  [EVAL]   Generated 635 tokens in 58.62s\n643065:  [EVAL] Processing example 29/49...\n644874:  [EVAL]   Generated 632 tokens in 57.20s\n644875:  [EVAL] Processing example 30/49...\n645648:  [EVAL]   Generated 254 tokens in 22.88s\n645649:  [EVAL] Processing example 31/49...\n647458:  [EVAL]   Generated 633 tokens in 61.40s\n647459:  [EVAL] Processing example 32/49...\n649016:  [EVAL]   Generated 625 tokens in 48.83s\n649017:  [EVAL] Processing example 33/49...\n650826:  [EVAL]   Generated 632 tokens in 57.12s\n650827:  [EVAL] Processing example 34/49...\n652636:  [EVAL]   Generated 634 tokens in 58.02s\n652637:  [EVAL] Processing example 35/49...\n652990:  [EVAL]   Generated 113 tokens in 11.37s\n652991:  [EVAL] Processing example 36/49...\n654800:  [EVAL]   Generated 633 tokens in 61.48s\n654801:  [EVAL] Processing example 37/49...\n655574:  [EVAL]   Generated 259 tokens in 26.29s\n655575:  [EVAL] Processing example 38/49...\n657440:  [EVAL]   Generated 641 tokens in 62.02s\n657441:  [EVAL] Processing example 39/49...\n657990:  [EVAL]   Generated 180 tokens in 17.35s\n657991:  [EVAL] Processing example 40/49...\n659800:  [EVAL]   Generated 633 tokens in 61.48s\n659801:  [EVAL] Processing example 41/49...\n661610:  [EVAL]   Generated 634 tokens in 56.48s\n661611:  [EVAL] Processing example 42/49...\n663420:  [EVAL]   Generated 635 tokens in 57.80s\n663421:  [EVAL] Processing example 43/49...\n664026:  [EVAL]   Generated 199 tokens in 19.58s\n664027:  [EVAL] Processing example 44/49...\n665836:  [EVAL]   Generated 632 tokens in 58.05s\n665837:  [EVAL] Processing example 45/49...\n666610:  [EVAL]   Generated 255 tokens in 24.53s\n666611:  [EVAL] Processing example 46/49...\n667496:  [EVAL]   Generated 298 tokens in 27.76s\n667497:  [EVAL] Processing example 47/49...\n669306:  [EVAL]   Generated 632 tokens in 61.76s\n669307:  [EVAL] Processing example 48/49...\n669940:  [EVAL]   Generated 210 tokens in 20.77s\n"
+  },
+  "latest_files": [
+    {
+      "exists": true,
+      "mtime_epoch": 1782695055.7817042,
+      "mtime_utc": "2026-06-29T01:04:15Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/run.log",
+      "size": 53510073
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.8311613,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/__pycache__/module_.cpython-311.pyc",
+      "size": 747
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.8311613,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/__pycache__/GeneratedCSD.cpython-311.pyc",
+      "size": 7365
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.8311613,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/System_/__pycache__/__init__.cpython-311.pyc",
+      "size": 1339
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.8271613,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/__pycache__/VerifiedDecoderAgent.cpython-311.pyc",
+      "size": 85865
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.8111615,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/_dafny/__pycache__/__init__.cpython-311.pyc",
+      "size": 41086
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.7351615,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/__pycache__/module_.cpython-312.pyc",
+      "size": 480
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.7311616,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/_dafny/__pycache__/__init__.cpython-312.pyc",
+      "size": 35761
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.7271616,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/__pycache__/VerifiedDecoderAgent.cpython-312.pyc",
+      "size": 77354
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.7271616,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/__pycache__/__main__.cpython-312.pyc",
+      "size": 403
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.7111616,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/__pycache__/GeneratedCSD.cpython-312.pyc",
+      "size": 6434
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.7111616,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/System_/__pycache__/__init__.cpython-312.pyc",
+      "size": 999
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.651162,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/synth_gsm_9b_z3fix_seed123train_0628b-py.dtr",
+      "size": 221
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.651162,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/module_.py",
+      "size": 301
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.651162,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/GeneratedCSD.py",
+      "size": 10451
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.651162,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/VerifiedDecoderAgent.py",
+      "size": 76157
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.651162,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/__main__.py",
+      "size": 222
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.651162,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/_dafny/__init__.py",
+      "size": 17567
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782692949.651162,
+      "mtime_utc": "2026-06-29T00:29:09Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260629_002909_146c0d/System_/__init__.py",
+      "size": 356
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.5166996,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/__pycache__/VerifiedDecoderAgent.cpython-311.pyc",
+      "size": 85865
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.5166996,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/__pycache__/module_.cpython-311.pyc",
+      "size": 747
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.5166996,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/__pycache__/GeneratedCSD.cpython-311.pyc",
+      "size": 7282
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.5166996,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/System_/__pycache__/__init__.cpython-311.pyc",
+      "size": 1339
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.5006995,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/_dafny/__pycache__/__init__.cpython-311.pyc",
+      "size": 41086
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.4326997,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/__pycache__/module_.cpython-312.pyc",
+      "size": 480
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.4246998,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/_dafny/__pycache__/__init__.cpython-312.pyc",
+      "size": 35761
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.4206998,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/__pycache__/VerifiedDecoderAgent.cpython-312.pyc",
+      "size": 77354
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.4206998,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/__pycache__/__main__.cpython-312.pyc",
+      "size": 403
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.4046998,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/__pycache__/GeneratedCSD.cpython-312.pyc",
+      "size": 6367
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.4046998,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/System_/__pycache__/__init__.cpython-312.pyc",
+      "size": 999
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.3487,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/synth_gsm_9b_z3fix_seed123train_0628b-py.dtr",
+      "size": 221
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.3487,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/module_.py",
+      "size": 301
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.3487,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/GeneratedCSD.py",
+      "size": 10233
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.3487,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/VerifiedDecoderAgent.py",
+      "size": 76157
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.3487,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/__main__.py",
+      "size": 222
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.3487,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/_dafny/__init__.py",
+      "size": 17567
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782690819.3487,
+      "mtime_utc": "2026-06-28T23:53:39Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_235339_e65e22/System_/__init__.py",
+      "size": 356
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782688847.4537768,
+      "mtime_utc": "2026-06-28T23:20:47Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_232047_752605/__pycache__/VerifiedDecoderAgent.cpython-311.pyc",
+      "size": 85865
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782688847.4537768,
+      "mtime_utc": "2026-06-28T23:20:47Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_232047_752605/__pycache__/module_.cpython-311.pyc",
+      "size": 747
+    },
+    {
+      "exists": true,
+      "mtime_epoch": 1782688847.4537768,
+      "mtime_utc": "2026-06-28T23:20:47Z",
+      "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/synth_gsm_9b_z3fix_seed123train_0628b_20260628_171159_121368/python/synth_gsm_9b_z3fix_seed123train_0628b_20260628_232047_752605/__pycache__/GeneratedCSD.cpython-311.pyc",
+      "size": 7679
+    }
+  ],
+  "no_api_launch": true,
+  "no_debugger_attach": true,
+  "no_kill": true,
+  "no_model_launch": true,
+  "paid_credential_key_name_hits": [],
+  "pid": 284546,
+  "process_tree": {
+    "cmd": "ps -eo user,pid,ppid,stat,etime,%cpu,%mem,rss,cmd | awk '$2==284546 || $3==284546 || $2==284542 || $3==284542 {print}'",
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "aadivyar  284542       1 Ss      18:22:14  0.0  0.0  3368 bash run_synth_cell.sh\naadivyar  284546  284542 Rl      18:22:14 70.4  5.9 11602552 /apps/conda/aadivyar/envs/csd/bin/python -m synthesis.run_synthesis --task Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters. --generation-model us.anthropic.claude-sonnet-4-6 --generation-backend bedrock --eval-model Qwen/Qwen3.5-9B --eval-backend vllm --max-iterations 40 --output-name synth_gsm_9b_z3fix_seed123train_0628b --output-dir outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b --min-accuracy 0.531 --min-syntax-rate 0.980 --eval-sample-size 49 --eval-max-steps 900 --eval-step-token-budget 1 --eval-max-seconds-per-example 600 --eval-min-examples-before-threshold-stop 49 --max-tokens 32768 --restart-after-stuck-iters 0 --vllm-gpu-memory-utilization 0.55 --device auto --adaptive-helper-mask --helper-selection-policy bandit --refinement-beam-size 2 --anthropic-thinking enabled --anthropic-effort high --anthropic-thinking-display summarized --vllm-tensor-parallel-size 1 --dataset gsm_symbolic --gsm-split-file /home/aadivyar/csd-generation/environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json --gsm-split-name train\naadivyar  287538  284546 S       18:21:15  0.0  0.0  7604 /apps/conda/aadivyar/envs/csd/bin/python -c from multiprocessing.resource_tracker import main;main(50)\naadivyar  287539  284546 Sl      18:21:15 32.5  0.9 1787580 VLLM::EngineCore\n"
+  },
+  "ps_threads": {
+    "cmd": "ps -L -p 284546 -o pid,tid,stat,etime,pcpu,pmem,wchan:32,comm --no-headers",
+    "returncode": 0,
+    "stderr": "",
+    "stdout": " 284546  284546 Rl      18:22:14 64.9  5.9 -                                python\n 284546  284549 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284550 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284551 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284552 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284553 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284554 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284555 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284556 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284557 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284558 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284559 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284560 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284561 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284562 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284563 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284564 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284565 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284566 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284567 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284568 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284569 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284570 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284571 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284572 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284573 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284574 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284575 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284576 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284577 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284578 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284579 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284580 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284581 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284582 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284583 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284584 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284585 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284586 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284587 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284588 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284589 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284590 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284591 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284592 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284593 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284594 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284595 Sl      18:22:14  0.0  5.9 futex_wait_queue_me              python\n 284546  284741 Sl      18:22:11  0.0  5.9 do_poll.constprop.0              cuda00001400006\n 284546  286449 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286450 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286451 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286452 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286453 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286454 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286455 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286456 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286457 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286458 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286459 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286460 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286461 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286462 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286463 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286464 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286465 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286466 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286467 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286468 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286469 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286470 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286471 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286472 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286473 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286474 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286475 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286476 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286477 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286478 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286479 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286480 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286481 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286482 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286483 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286484 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286485 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286486 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286487 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286488 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286489 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286490 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286491 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286492 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286493 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286494 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  286495 Sl      18:21:37  0.0  5.9 futex_wait_queue_me              python\n 284546  287526 Sl      18:21:15  0.0  5.9 ep_poll                          ZMQbg/Reaper\n 284546  287527 Sl      18:21:15  0.0  5.9 ep_poll                          ZMQbg/IO/0\n 284546  287528 Sl      18:21:15  0.0  5.9 ep_poll                          ZMQbg/IO/1\n 284546  289523 Sl      18:20:36  0.0  5.9 do_poll.constprop.0              python\n 284546  289524 Sl      18:20:36  0.1  5.9 do_poll.constprop.0              python\n 284546  289558 Sl      18:20:34  0.0  5.9 do_poll.constprop.0              cuda-EvtHandlr\n 284546  289559 Sl      18:20:34  0.0  5.9 do_poll.constprop.0              python\n 284546  289584 Sl      18:20:32  0.0  5.9 futex_wait_queue_me              jemalloc_bg_thd\n 284546  289709 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289710 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289711 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289712 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289713 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289714 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289715 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289716 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289717 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289718 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289719 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289720 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289721 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289722 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289723 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289724 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289725 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289726 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289727 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289728 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289729 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289730 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289731 Sl      18:20:30  0.2  5.9 futex_wait_queue_me              python\n 284546  289891 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289892 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289893 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289894 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289895 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289896 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289897 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289898 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289899 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289900 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289901 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289902 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289903 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289904 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289905 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289906 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289907 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289908 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289909 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289910 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289911 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289912 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289913 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289914 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289915 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289916 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289917 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289918 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289919 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289920 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289921 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289922 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289923 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289924 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289925 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289926 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289927 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289928 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289929 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289930 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289931 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289932 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289933 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289934 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289935 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289936 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289937 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  289938 Sl      18:20:27  0.0  5.9 futex_wait_queue_me              python\n 284546  298001 Sl      18:17:47  0.0  5.9 futex_wait_queue_me              python\n"
+  },
+  "reports_found": [],
+  "run_log": {
+    "exists": true,
+    "mtime_epoch": 1782695055.7817042,
+    "mtime_utc": "2026-06-29T01:04:15Z",
+    "path": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b/run.log",
+    "size": 53510073
+  },
+  "run_root": "outputs/generated/synth_gsm_9b_z3fix_seed123train_0628b",
+  "source_context": {
+    "eval_loop_markers": {
+      "cmd": "rg -n 'Processing example|Generated .* tokens|evaluate_sample|sample_outputs|success_report|failure_report|write.*report|json.dump|save.*report' synthesis -S | head -n 200",
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "synthesis/evaluate/export_baseline_json.py:9:from synthesis.evaluate.baseline_store import baseline_payload_from_success_report\nsynthesis/evaluate/export_baseline_json.py:13:    return baseline_payload_from_success_report(report)\nsynthesis/evaluate/export_baseline_json.py:24:        help=\"Path to success_report.json\",\nsynthesis/evaluate/export_baseline_json.py:34:    report = json.loads(args.success_report.read_text())\nsynthesis/evaluate/export_baseline_json.py:38:    args.output.write_text(json.dumps(payload, indent=2) + \"\\n\")\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:56:    samples = result.sample_outputs or []\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:98:def baseline_payload_from_success_report(report: dict[str, Any]) -> dict[str, Any]:\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:99:    \"\"\"Build the same baseline JSON shape as legacy exports from ``success_report.json``.\"\"\"\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:101:    samples = report.get(\"sample_outputs\") or []\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:137:    json_path.write_text(json.dumps(payload, indent=2) + \"\\n\")\nsynthesis/evaluate/run_reference_strategy.py:119:        result = evaluator.evaluate_sample(compiled_module, sample_size=sample_size)\nsynthesis/evaluate/run_reference_strategy.py:124:    for sample in result.sample_outputs or []:\nsynthesis/evaluate/run_reference_strategy.py:137:        result.sample_outputs or [],\nsynthesis/evaluate/run_reference_strategy.py:220:    args.output_json.write_text(json.dumps(payload, indent=2) + \"\\n\")\nsynthesis/evaluate/run_legacy_fixed_strategy.py.bak_cars_fix:277:        output_json.write_text(json.dumps(payload, indent=2) + \"\\n\")\nsynthesis/evaluate/run_legacy_fixed_strategy.py.bak_cars_fix:322:    output_json.write_text(json.dumps(payload, indent=2) + \"\\n\")\nsynthesis/feedback_loop.py:237:            lines.append(f\"Full report saved to: {self.report_path}\")\nsynthesis/feedback_loop.py:294:        save_reports: bool = True,\nsynthesis/feedback_loop.py:313:            save_reports: Whether to save failure reports to disk\nsynthesis/feedback_loop.py:327:        self.save_reports = save_reports\nsynthesis/feedback_loop.py:1269:        samples = result.sample_outputs or []\nsynthesis/feedback_loop.py:1591:        samples = result.sample_outputs\nsynthesis/feedback_loop.py:1623:            samples = result.sample_outputs\nsynthesis/feedback_loop.py:1752:        n = len(result.sample_outputs) or result.num_examples\nsynthesis/feedback_loop.py:2492:            eval_result = self.evaluator.evaluate_sample(\nsynthesis/feedback_loop.py:2583:            self._save_success_report(\nsynthesis/feedback_loop.py:2614:        if self.save_reports:\nsynthesis/feedback_loop.py:2615:            report_path = self._save_failure_report(attempts, task_description, run_dir)\nsynthesis/feedback_loop.py:2624:    def _save_failure_report(self, attempts: list[SynthesisAttempt], task_description: str, run_dir: Path) -> Path:\nsynthesis/feedback_loop.py:2626:        report_path = run_dir / \"failure_report.json\"\nsynthesis/feedback_loop.py:2637:            json.dump(report, f, indent=2)\nsynthesis/feedback_loop.py:2639:        print(f\"Failure report saved to: {report_path}\")\nsynthesis/feedback_loop.py:2653:    def _save_success_report(\nsynthesis/feedback_loop.py:2676:        report_path = run_dir / \"success_report.json\"\nsynthesis/feedback_loop.py:2685:            \"sample_outputs\": evaluation_result.sample_outputs,\nsynthesis/feedback_loop.py:2689:            json.dump(report, f, indent=2)\nsynthesis/feedback_loop.py:2692:        print(f\"Success report saved to: {report_path}\")\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:28:def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:46:    if sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:47:        n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:48:        n_with = sum(1 for s in sample_outputs if s.get(\"contains_delimiters\", False))\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:55:    if sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:56:        n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:58:            1 for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:97:def _span_not_closed_hint(require_delimiters: bool, sample_outputs) -> str:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:110:    if not require_delimiters or not sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:112:    n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:114:        1 for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:120:        1 for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:140:def _constraint_bypassed_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:158:    if not require_delimiters or not contains_delimiters or not sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:164:        s for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:174:    n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:196:def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> str:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:214:    if not require_delimiters or not sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:224:    for s in sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:291:def _unit_rewind_hint(strategy_source: str, sample_outputs) -> str:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:304:    if not sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:310:    n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:314:    n_correct = sum(1 for s in sample_outputs if s.get(\"is_correct\"))\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:315:    n_syntax_valid = sum(1 for s in sample_outputs if s.get(\"is_syntax_valid\"))\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:326:        1 for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:548:            lines.append(f\"Full report saved to: {self.report_path}\")\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:705:        save_reports: bool = True,\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:742:            save_reports: Whether to save failure reports to disk\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:774:        self.save_reports = save_reports\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:981:            samples = getattr(result, \"sample_outputs\", None) or []\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:1446:            for sample in result.sample_outputs or []:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:1923:            eval_result = self.evaluator.evaluate_sample(\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:1984:                        self.require_delimiters, eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:1987:                        strategy_code, eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2074:                    eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2079:                    self.require_delimiters, eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2085:                    eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2113:                        eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2116:                        self.require_delimiters, eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2120:                        eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2123:                        self.require_delimiters, eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2126:                        strategy_code, eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2214:            self._save_success_report(\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2248:        if self.save_reports:\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2249:            report_path = self._save_failure_report(\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2279:                    json.dump(\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2316:    def _save_failure_report(\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2325:        report_path = results_dir / \"failure_report.json\"\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2337:            json.dump(report, f, indent=2)\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2339:        print(f\"Failure report saved to: {report_path}\")\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2353:    def _save_success_report(\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2383:        report_path = results_dir / \"success_report.json\"\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2397:            \"sample_outputs\": evaluation_result.sample_outputs,\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2401:            json.dump(report, f, indent=2)\nsynthesis/evaluate/feedback_loop.py.bak_delimgate_20260624_223855:2404:        print(f\"Success report saved to: {report_path}\")\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:142:    sample_outputs: List[Dict[str, Any]] = field(default_factory=list)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:156:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:290:        if self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:291:            n_total = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:293:                1 for s in self.sample_outputs if s.get(\"runtime_budget_exceeded\")\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:328:            self.sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:498:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:512:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:514:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:523:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:547:        correct = [sample for sample in self.sample_outputs if sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:548:        wrong = [sample for sample in self.sample_outputs if not sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:553:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:567:        wrong_samples = [sample for sample in self.sample_outputs if not sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:596:        traced_examples = [s for s in self.sample_outputs if s.get(\"helper_trace\")]\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:632:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:743:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:806:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:837:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:839:        n = self.num_examples or len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:981:        samples = self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1083:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1086:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1087:        errors = [str(sample.get(\"error\") or \"\") for sample in self.sample_outputs if sample.get(\"error\")]\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1088:        timeouts = sum(1 for sample in self.sample_outputs if sample.get(\"runtime_budget_exceeded\"))\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1091:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1113:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1157:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1160:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1163:            for s in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1169:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1192:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1197:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1201:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1211:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1215:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1220:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1228:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1232:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1236:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1244:            1 for sample in self.sample_outputs if sample.get(\"hit_max_steps\")\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1355:            \"sample_outputs\": self.sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2047:            # same semantics apply in both evaluate_sample and reevaluate_compiled_csd.\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2077:        sample_outputs: List[Dict[str, Any]],\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2080:        return logic.compute_aux_metrics(self, sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2125:    def evaluate_sample(\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2162:        sample_outputs: List[Dict[str, Any]] = []\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2191:                remaining = max(0, planned_num_examples - len(sample_outputs))\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2201:                evaluated_count = len(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2203:                    (float(sample.get(\"time_seconds\", 0.0)) for sample in sample_outputs),\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2218:                aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2231:                    for sample in sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2261:                    sample_outputs=sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2271:                if callable(collected_stop) and sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2272:                    reason = collected_stop(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2276:                if not early_stop_enabled or not sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2279:                evaluated_count = len(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2282:                    1 for sample in sample_outputs if sample.get(\"runtime_budget_exceeded\")\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2302:                print(f\"  [EVAL] Processing example {i+1}/{len(dataset)}...\", flush=True)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2323:                    print(f\"  [EVAL]   Generated {token_count} tokens in {example_time:.2f}s\", flush=True)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2440:                    sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2493:                    sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2507:                            f\"N={len(sample_outputs)} of {planned_num_examples}\"\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2525:                sample_outputs=sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2528:                    for sample in sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:136:    sample_outputs: List[Dict[str, Any]] = field(default_factory=list)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:150:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:284:        if self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:286:                1 for s in self.sample_outputs if s.get(\"runtime_budget_exceeded\")\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:319:            self.sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:489:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:503:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:505:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:514:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:538:        correct = [sample for sample in self.sample_outputs if sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:539:        wrong = [sample for sample in self.sample_outputs if not sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:544:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:558:        wrong_samples = [sample for sample in self.sample_outputs if not sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:587:        traced_examples = [s for s in self.sample_outputs if s.get(\"helper_trace\")]\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:623:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:734:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:797:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:828:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:830:        n = self.num_examples or len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:972:        samples = self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1074:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1077:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1078:        errors = [str(sample.get(\"error\") or \"\") for sample in self.sample_outputs if sample.get(\"error\")]\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1079:        timeouts = sum(1 for sample in self.sample_outputs if sample.get(\"runtime_budget_exceeded\"))\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1082:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1104:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1148:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1151:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1154:            for s in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1160:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1183:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1188:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1192:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1202:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1206:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1211:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1219:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1223:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1227:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1235:            1 for sample in self.sample_outputs if sample.get(\"hit_max_steps\")\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1346:            \"sample_outputs\": self.sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2061:        sample_outputs: List[Dict[str, Any]],\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2064:        return logic.compute_aux_metrics(self, sample_outputs)\n"
+    },
+    "run_synthesis_report_context": {
+      "cmd": "rg -n 'success_report|failure_report|sample_outputs|write.*json|json.dump|results' synthesis/run_synthesis.py synthesis -S | head -n 240",
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "synthesis/run_synthesis.py:653:    # - outputs/generated/: synthesis run artifacts (dafny/python/results)\nsynthesis/evaluate/run_reference_strategy.py:124:    for sample in result.sample_outputs or []:\nsynthesis/evaluate/run_reference_strategy.py:137:        result.sample_outputs or [],\nsynthesis/evaluate/run_reference_strategy.py:220:    args.output_json.write_text(json.dumps(payload, indent=2) + \"\\n\")\nsynthesis/evaluate/export_baseline_json.py:9:from synthesis.evaluate.baseline_store import baseline_payload_from_success_report\nsynthesis/evaluate/export_baseline_json.py:13:    return baseline_payload_from_success_report(report)\nsynthesis/evaluate/export_baseline_json.py:24:        help=\"Path to success_report.json\",\nsynthesis/evaluate/export_baseline_json.py:34:    report = json.loads(args.success_report.read_text())\nsynthesis/evaluate/export_baseline_json.py:38:    args.output.write_text(json.dumps(payload, indent=2) + \"\\n\")\nsynthesis/evaluate/baselines/crane_repo_runner.py.bak_indices:48:def _latest_crane_results(crane_src_dir: Path, dataset: str) -> Path | None:\nsynthesis/evaluate/baselines/crane_repo_runner.py.bak_indices:74:    \"\"\"Subprocess the upstream CRANE main.py and write our standard baseline JSON.\"\"\"\nsynthesis/evaluate/baselines/crane_repo_runner.py.bak_indices:106:        \"--overwrite_results\", \"True\",\nsynthesis/evaluate/baselines/crane_repo_runner.py.bak_indices:141:    latest = _latest_crane_results(CRANE_SRC_DIR, dataset)\nsynthesis/evaluate/feedback_loop.py.h6bak:28:def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:\nsynthesis/evaluate/feedback_loop.py.h6bak:46:    if sample_outputs:\nsynthesis/evaluate/feedback_loop.py.h6bak:47:        n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.h6bak:48:        n_with = sum(1 for s in sample_outputs if s.get(\"contains_delimiters\", False))\nsynthesis/evaluate/feedback_loop.py.h6bak:55:    if sample_outputs:\nsynthesis/evaluate/feedback_loop.py.h6bak:56:        n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.h6bak:58:            1 for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.h6bak:97:def _span_not_closed_hint(require_delimiters: bool, sample_outputs) -> str:\nsynthesis/evaluate/feedback_loop.py.h6bak:110:    if not require_delimiters or not sample_outputs:\nsynthesis/evaluate/feedback_loop.py.h6bak:112:    n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.h6bak:114:        1 for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.h6bak:120:        1 for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.h6bak:140:def _constraint_bypassed_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:\nsynthesis/evaluate/feedback_loop.py.h6bak:158:    if not require_delimiters or not contains_delimiters or not sample_outputs:\nsynthesis/evaluate/feedback_loop.py.h6bak:164:        s for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.h6bak:174:    n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.h6bak:289:    # Results from each stage (None if stage not reached)\nsynthesis/evaluate/feedback_loop.py.h6bak:1249:            for sample in result.sample_outputs or []:\nsynthesis/evaluate/feedback_loop.py.h6bak:1443:        #     - results/\nsynthesis/evaluate/feedback_loop.py.h6bak:1448:        run_results_dir = run_dir / \"results\"\nsynthesis/evaluate/feedback_loop.py.h6bak:1451:        run_results_dir.mkdir(parents=True, exist_ok=True)\nsynthesis/evaluate/feedback_loop.py.h6bak:1869:                    eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.h6bak:1874:                    self.require_delimiters, eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.h6bak:1880:                    eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.h6bak:1895:                print(\"  Refining based on evaluation results...\")\nsynthesis/evaluate/feedback_loop.py.h6bak:1908:                        eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.h6bak:1911:                        self.require_delimiters, eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.h6bak:1915:                        eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.h6bak:2003:            self._save_success_report(\nsynthesis/evaluate/feedback_loop.py.h6bak:2012:                run_results_dir,\nsynthesis/evaluate/feedback_loop.py.h6bak:2038:            report_path = self._save_failure_report(\nsynthesis/evaluate/feedback_loop.py.h6bak:2043:                run_results_dir,\nsynthesis/evaluate/feedback_loop.py.h6bak:2064:            fb_path = run_results_dir / \"fallback_winner.json\"\nsynthesis/evaluate/feedback_loop.py.h6bak:2067:                    json.dump(\nsynthesis/evaluate/feedback_loop.py.h6bak:2090:                print(f\"[FALLBACK] Failed to write fallback_winner.json: {fb_err}\")\nsynthesis/evaluate/feedback_loop.py.h6bak:2104:    def _save_failure_report(\nsynthesis/evaluate/feedback_loop.py.h6bak:2110:        results_dir: Path,\nsynthesis/evaluate/feedback_loop.py.h6bak:2113:        report_path = results_dir / \"failure_report.json\"\nsynthesis/evaluate/feedback_loop.py.h6bak:2125:            json.dump(report, f, indent=2)\nsynthesis/evaluate/feedback_loop.py.h6bak:2141:    def _save_success_report(\nsynthesis/evaluate/feedback_loop.py.h6bak:2151:        results_dir: Path,\nsynthesis/evaluate/feedback_loop.py.h6bak:2171:        report_path = results_dir / \"success_report.json\"\nsynthesis/evaluate/feedback_loop.py.h6bak:2185:            \"sample_outputs\": evaluation_result.sample_outputs,\nsynthesis/evaluate/feedback_loop.py.h6bak:2189:            json.dump(report, f, indent=2)\nsynthesis/evaluate/baselines/crane_repo_runner.py:48:def _latest_crane_results(crane_src_dir: Path, dataset: str) -> Path | None:\nsynthesis/evaluate/baselines/crane_repo_runner.py:74:    \"\"\"Subprocess the upstream CRANE main.py and write our standard baseline JSON.\"\"\"\nsynthesis/evaluate/baselines/crane_repo_runner.py:137:        \"--overwrite_results\", \"True\",\nsynthesis/evaluate/baselines/crane_repo_runner.py:182:    latest = _latest_crane_results(CRANE_SRC_DIR, dataset)\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:28:def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:46:    if sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:47:        n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:48:        n_with = sum(1 for s in sample_outputs if s.get(\"contains_delimiters\", False))\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:55:    if sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:56:        n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:58:            1 for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:97:def _span_not_closed_hint(require_delimiters: bool, sample_outputs) -> str:\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:110:    if not require_delimiters or not sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:112:    n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:114:        1 for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:120:        1 for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:150:def _constraint_bypassed_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:168:    if not require_delimiters or not contains_delimiters or not sample_outputs:\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:174:        s for s in sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:184:    n = len(sample_outputs)\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:299:    # Results from each stage (None if stage not reached)\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1259:            for sample in result.sample_outputs or []:\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1453:        #     - results/\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1458:        run_results_dir = run_dir / \"results\"\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1461:        run_results_dir.mkdir(parents=True, exist_ok=True)\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1879:                    eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1884:                    self.require_delimiters, eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1890:                    eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1905:                print(\"  Refining based on evaluation results...\")\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1918:                        eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1921:                        self.require_delimiters, eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:1925:                        eval_result.sample_outputs\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2013:            self._save_success_report(\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2022:                run_results_dir,\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2048:            report_path = self._save_failure_report(\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2053:                run_results_dir,\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2074:            fb_path = run_results_dir / \"fallback_winner.json\"\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2077:                    json.dump(\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2100:                print(f\"[FALLBACK] Failed to write fallback_winner.json: {fb_err}\")\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2114:    def _save_failure_report(\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2120:        results_dir: Path,\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2123:        report_path = results_dir / \"failure_report.json\"\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2135:            json.dump(report, f, indent=2)\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2151:    def _save_success_report(\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2161:        results_dir: Path,\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2181:        report_path = results_dir / \"success_report.json\"\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2195:            \"sample_outputs\": evaluation_result.sample_outputs,\nsynthesis/evaluate/feedback_loop.py.bak_before_closespan:2199:            json.dump(report, f, indent=2)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:136:    sample_outputs: List[Dict[str, Any]] = field(default_factory=list)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:150:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:171:            f\"Evaluation Results ({eval_count_label} examples):\",\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:284:        if self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:286:                1 for s in self.sample_outputs if s.get(\"runtime_budget_exceeded\")\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:319:            self.sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:489:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:503:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:505:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:514:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:538:        correct = [sample for sample in self.sample_outputs if sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:539:        wrong = [sample for sample in self.sample_outputs if not sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:544:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:558:        wrong_samples = [sample for sample in self.sample_outputs if not sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:587:        traced_examples = [s for s in self.sample_outputs if s.get(\"helper_trace\")]\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:623:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:734:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:797:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:828:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:830:        n = self.num_examples or len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:972:        samples = self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1074:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1077:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1078:        errors = [str(sample.get(\"error\") or \"\") for sample in self.sample_outputs if sample.get(\"error\")]\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1079:        timeouts = sum(1 for sample in self.sample_outputs if sample.get(\"runtime_budget_exceeded\"))\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1082:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1104:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1148:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1151:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1154:            for s in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1160:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1183:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1188:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1192:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1202:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1206:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1211:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1219:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1223:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1227:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1235:            1 for sample in self.sample_outputs if sample.get(\"hit_max_steps\")\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:1346:            \"sample_outputs\": self.sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2061:        sample_outputs: List[Dict[str, Any]],\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2064:        return logic.compute_aux_metrics(self, sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2146:        sample_outputs: List[Dict[str, Any]] = []\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2173:                remaining = max(0, planned_num_examples - len(sample_outputs))\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2183:                evaluated_count = len(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2185:                    (float(sample.get(\"time_seconds\", 0.0)) for sample in sample_outputs),\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2202:                aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2215:                    for sample in sample_outputs\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2234:                    sample_outputs=sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2244:                if callable(collected_stop) and sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2245:                    reason = collected_stop(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2249:                if not early_stop_enabled or not sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2252:                evaluated_count = len(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2255:                    1 for sample in sample_outputs if sample.get(\"runtime_budget_exceeded\")\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2397:                    sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2445:                    sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2471:                sample_outputs=sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_uvmetric_20260610:2474:                    for sample in sample_outputs\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:56:    samples = result.sample_outputs or []\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:98:def baseline_payload_from_success_report(report: dict[str, Any]) -> dict[str, Any]:\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:99:    \"\"\"Build the same baseline JSON shape as legacy exports from ``success_report.json``.\"\"\"\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:101:    samples = report.get(\"sample_outputs\") or []\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:134:    \"\"\"Write a minimal baseline JSON file and return its path.\"\"\"\nsynthesis/evaluate/baseline_store.py.bak_uvmetric_20260610:137:    json_path.write_text(json.dumps(payload, indent=2) + \"\\n\")\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:142:    sample_outputs: List[Dict[str, Any]] = field(default_factory=list)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:156:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:177:            f\"Evaluation Results ({eval_count_label} examples):\",\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:290:        if self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:291:            n_total = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:293:                1 for s in self.sample_outputs if s.get(\"runtime_budget_exceeded\")\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:328:            self.sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:498:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:512:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:514:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:523:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:547:        correct = [sample for sample in self.sample_outputs if sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:548:        wrong = [sample for sample in self.sample_outputs if not sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:553:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:567:        wrong_samples = [sample for sample in self.sample_outputs if not sample.get(\"is_correct\")]\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:596:        traced_examples = [s for s in self.sample_outputs if s.get(\"helper_trace\")]\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:632:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:743:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:806:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:837:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:839:        n = self.num_examples or len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:981:        samples = self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1083:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1086:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1087:        errors = [str(sample.get(\"error\") or \"\") for sample in self.sample_outputs if sample.get(\"error\")]\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1088:        timeouts = sum(1 for sample in self.sample_outputs if sample.get(\"runtime_budget_exceeded\"))\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1091:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1113:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1157:        if not self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1160:        n = len(self.sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1163:            for s in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1169:        for sample in self.sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1192:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1197:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1201:            for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1211:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1215:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1220:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1228:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1232:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1236:            1 for sample in self.sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1244:            1 for sample in self.sample_outputs if sample.get(\"hit_max_steps\")\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:1355:            \"sample_outputs\": self.sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2077:        sample_outputs: List[Dict[str, Any]],\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2080:        return logic.compute_aux_metrics(self, sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2162:        sample_outputs: List[Dict[str, Any]] = []\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2191:                remaining = max(0, planned_num_examples - len(sample_outputs))\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2201:                evaluated_count = len(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2203:                    (float(sample.get(\"time_seconds\", 0.0)) for sample in sample_outputs),\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2218:                aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2231:                    for sample in sample_outputs\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2261:                    sample_outputs=sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2271:                if callable(collected_stop) and sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2272:                    reason = collected_stop(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2276:                if not early_stop_enabled or not sample_outputs:\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2279:                evaluated_count = len(sample_outputs)\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2282:                    1 for sample in sample_outputs if sample.get(\"runtime_budget_exceeded\")\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2440:                    sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2493:                    sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2507:                            f\"N={len(sample_outputs)} of {planned_num_examples}\"\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2525:                sample_outputs=sample_outputs,\nsynthesis/evaluate/evaluator.py.bak_delimgate_20260624_223855:2528:                    for sample in sample_outputs\nsynthesis/evaluate/run_legacy_fixed_strategy.py.bak_cars_fix:277:        output_json.write_text(json.dumps(payload, indent=2) + \"\\n\")\nsynthesis/evaluate/run_legacy_fixed_strategy.py.bak_cars_fix:322:    output_json.write_text(json.dumps(payload, indent=2) + \"\\n\")\nsynthesis/evaluate/run_legacy_fixed_strategy.py.bak_cars_fix:325:def _load_latest_crane_results(crane_src_dir: Path, dataset: str) -> list[dict[str, Any]]:\nsynthesis/evaluate/run_legacy_fixed_strategy.py.bak_cars_fix:450:def _load_latest_cars_results(cars_root_dir: Path, class_name: str) -> list[dict[str, Any]]:\nsynthesis/evaluate/run_legacy_fixed_strategy.py.bak_cars_fix:471:def _load_cars_results_from_log_dir(log_dir: Path) -> list[dict[str, Any]]:\nsynthesis/evaluate/run_legacy_fixed_strategy.py.bak_cars_fix:486:        match = re.search(r\"Saving results in folder\\s+(.+)$\", line.strip())\nsynthesis/evaluate/run_legacy_fixed_strategy.py.bak_cars_fix:687:        raise RuntimeError(\"CARS produced no rows; refusing to write an empty baseline JSON\")\n"
+    }
+  },
+  "source_loop_interpretation": {
+    "after_last_seen_print": "extract actual, score correctness, check syntax, build sample, append sample_outputs, optionally early-stop, then continue to next example or return build_result",
+    "inference": "Because no next marker or report appeared and log/output mtimes stayed stale, the job is most consistent with a silent post-generation scoring/syntax/append path after example 48, or an unflushed/silent phase immediately after that path. It is not proven safe to kill/restart without user direction because this is an existing paid-backed job.",
+    "last_seen_print_line": 2524,
+    "missing_expected_next_marker": "Processing example 49/49 or a returned success/failure report",
+    "relevant_lines": "2502-2714",
+    "source_file": "synthesis/evaluate/evaluator.py"
+  },
+  "thread_count": 176,
+  "threads": [
+    {
+      "nonvoluntary_ctxt_switches": "933351",
+      "schedstat": "42974647418257 1036294971675 1296891",
+      "state": "R (running)",
+      "tid": 284546,
+      "voluntary_ctxt_switches": "363540",
+      "wchan": "0"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "18",
+      "schedstat": "111821004 337667 19",
+      "state": "S (sleeping)",
+      "tid": 284549,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "43",
+      "schedstat": "110383371 1804351 44",
+      "state": "S (sleeping)",
+      "tid": 284550,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "18",
+      "schedstat": "112005664 143609 19",
+      "state": "S (sleeping)",
+      "tid": 284551,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "75",
+      "schedstat": "98779032 13371767 76",
+      "state": "S (sleeping)",
+      "tid": 284552,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "49",
+      "schedstat": "111668026 480020 50",
+      "state": "S (sleeping)",
+      "tid": 284553,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "46",
+      "schedstat": "111148609 997595 47",
+      "state": "S (sleeping)",
+      "tid": 284554,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "14",
+      "schedstat": "112054788 87217 15",
+      "state": "S (sleeping)",
+      "tid": 284555,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "6",
+      "schedstat": "112078344 139857 7",
+      "state": "S (sleeping)",
+      "tid": 284556,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "17",
+      "schedstat": "111984250 210045 18",
+      "state": "S (sleeping)",
+      "tid": 284557,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "10",
+      "schedstat": "111830171 313483 11",
+      "state": "S (sleeping)",
+      "tid": 284558,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "28",
+      "schedstat": "110830922 1359626 29",
+      "state": "S (sleeping)",
+      "tid": 284559,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "32",
+      "schedstat": "111823747 371228 33",
+      "state": "S (sleeping)",
+      "tid": 284560,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "16",
+      "schedstat": "110732783 1407384 17",
+      "state": "S (sleeping)",
+      "tid": 284561,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "16",
+      "schedstat": "111945564 248947 17",
+      "state": "S (sleeping)",
+      "tid": 284562,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "37",
+      "schedstat": "111206655 938362 38",
+      "state": "S (sleeping)",
+      "tid": 284563,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "24",
+      "schedstat": "111865600 277112 25",
+      "state": "S (sleeping)",
+      "tid": 284564,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "27",
+      "schedstat": "111497285 691576 28",
+      "state": "S (sleeping)",
+      "tid": 284565,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "25",
+      "schedstat": "112017066 183284 26",
+      "state": "S (sleeping)",
+      "tid": 284566,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "2",
+      "schedstat": "112075267 118800 3",
+      "state": "S (sleeping)",
+      "tid": 284567,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "12",
+      "schedstat": "112070357 60124 13",
+      "state": "S (sleeping)",
+      "tid": 284568,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "16",
+      "schedstat": "111796881 391819 17",
+      "state": "S (sleeping)",
+      "tid": 284569,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "15",
+      "schedstat": "89685409 22442027 16",
+      "state": "S (sleeping)",
+      "tid": 284570,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "46",
+      "schedstat": "108450442 3712790 47",
+      "state": "S (sleeping)",
+      "tid": 284571,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1",
+      "schedstat": "112140356 24462 2",
+      "state": "S (sleeping)",
+      "tid": 284572,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "22",
+      "schedstat": "111441389 707624 23",
+      "state": "S (sleeping)",
+      "tid": 284573,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "18",
+      "schedstat": "109869064 2278618 19",
+      "state": "S (sleeping)",
+      "tid": 284574,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "16",
+      "schedstat": "111959871 191353 17",
+      "state": "S (sleeping)",
+      "tid": 284575,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "16",
+      "schedstat": "111861750 296975 17",
+      "state": "S (sleeping)",
+      "tid": 284576,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "45",
+      "schedstat": "111246324 904429 46",
+      "state": "S (sleeping)",
+      "tid": 284577,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "68",
+      "schedstat": "111707282 440800 69",
+      "state": "S (sleeping)",
+      "tid": 284578,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "3",
+      "schedstat": "112023477 124350 4",
+      "state": "S (sleeping)",
+      "tid": 284579,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "23",
+      "schedstat": "111635428 510823 24",
+      "state": "S (sleeping)",
+      "tid": 284580,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "91",
+      "schedstat": "110836916 1314087 92",
+      "state": "S (sleeping)",
+      "tid": 284581,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "22",
+      "schedstat": "111641511 506706 23",
+      "state": "S (sleeping)",
+      "tid": 284582,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "23",
+      "schedstat": "111437774 710794 24",
+      "state": "S (sleeping)",
+      "tid": 284583,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "7",
+      "schedstat": "111929266 219470 8",
+      "state": "S (sleeping)",
+      "tid": 284584,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "31",
+      "schedstat": "111261083 880709 32",
+      "state": "S (sleeping)",
+      "tid": 284585,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "112143168 0 1",
+      "state": "S (sleeping)",
+      "tid": 284586,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "6",
+      "schedstat": "111976734 173722 7",
+      "state": "S (sleeping)",
+      "tid": 284587,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "23",
+      "schedstat": "111992894 148929 24",
+      "state": "S (sleeping)",
+      "tid": 284588,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "7",
+      "schedstat": "111948736 197468 8",
+      "state": "S (sleeping)",
+      "tid": 284589,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "13",
+      "schedstat": "111989123 149043 14",
+      "state": "S (sleeping)",
+      "tid": 284590,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "182",
+      "schedstat": "110685570 1462511 183",
+      "state": "S (sleeping)",
+      "tid": 284591,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "55",
+      "schedstat": "110239987 1890268 57",
+      "state": "S (sleeping)",
+      "tid": 284592,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "33",
+      "schedstat": "111407413 737440 34",
+      "state": "S (sleeping)",
+      "tid": 284593,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "3",
+      "schedstat": "64233913 76699870 4",
+      "state": "S (sleeping)",
+      "tid": 284594,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "23",
+      "schedstat": "62629998 66274240 24",
+      "state": "S (sleeping)",
+      "tid": 284595,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "155277 0 2",
+      "state": "S (sleeping)",
+      "tid": 284741,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "do_poll.constprop.0"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "45660",
+      "schedstat": "61173289 51020567 45661",
+      "state": "S (sleeping)",
+      "tid": 286449,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "55",
+      "schedstat": "110232013 1982908 56",
+      "state": "S (sleeping)",
+      "tid": 286450,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "24",
+      "schedstat": "111623496 543961 25",
+      "state": "S (sleeping)",
+      "tid": 286451,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "6",
+      "schedstat": "111828020 372944 10",
+      "state": "S (sleeping)",
+      "tid": 286452,
+      "voluntary_ctxt_switches": "4",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "8",
+      "schedstat": "108988135 3179986 10",
+      "state": "S (sleeping)",
+      "tid": 286453,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "8",
+      "schedstat": "111799007 387560 10",
+      "state": "S (sleeping)",
+      "tid": 286454,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "53",
+      "schedstat": "110664961 1515997 55",
+      "state": "S (sleeping)",
+      "tid": 286455,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "23",
+      "schedstat": "111191300 979208 27",
+      "state": "S (sleeping)",
+      "tid": 286456,
+      "voluntary_ctxt_switches": "4",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "45697",
+      "schedstat": "60961128 51208272 45698",
+      "state": "S (sleeping)",
+      "tid": 286457,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "3",
+      "schedstat": "112079093 61074 4",
+      "state": "S (sleeping)",
+      "tid": 286458,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "27",
+      "schedstat": "111077547 1103654 28",
+      "state": "S (sleeping)",
+      "tid": 286459,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "16",
+      "schedstat": "111038555 1205535 26",
+      "state": "S (sleeping)",
+      "tid": 286460,
+      "voluntary_ctxt_switches": "10",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "59",
+      "schedstat": "108025390 4150852 61",
+      "state": "S (sleeping)",
+      "tid": 286461,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "39",
+      "schedstat": "110528315 1646280 41",
+      "state": "S (sleeping)",
+      "tid": 286462,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "11",
+      "schedstat": "111864544 325463 14",
+      "state": "S (sleeping)",
+      "tid": 286463,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "31",
+      "schedstat": "105487512 6805720 37",
+      "state": "S (sleeping)",
+      "tid": 286464,
+      "voluntary_ctxt_switches": "6",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "43",
+      "schedstat": "110125451 2070080 45",
+      "state": "S (sleeping)",
+      "tid": 286465,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "46",
+      "schedstat": "109905066 2267889 48",
+      "state": "S (sleeping)",
+      "tid": 286466,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "19",
+      "schedstat": "110902110 1274827 20",
+      "state": "S (sleeping)",
+      "tid": 286467,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "33",
+      "schedstat": "109365541 2842316 35",
+      "state": "S (sleeping)",
+      "tid": 286468,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "4",
+      "schedstat": "112068028 91961 6",
+      "state": "S (sleeping)",
+      "tid": 286469,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "8",
+      "schedstat": "111446469 3555550 9",
+      "state": "S (sleeping)",
+      "tid": 286470,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1",
+      "schedstat": "112136460 1253497 2",
+      "state": "S (sleeping)",
+      "tid": 286471,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "12",
+      "schedstat": "112070912 1854726 15",
+      "state": "S (sleeping)",
+      "tid": 286472,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "10",
+      "schedstat": "111999479 242458 11",
+      "state": "S (sleeping)",
+      "tid": 286473,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "2",
+      "schedstat": "112156435 1323099 3",
+      "state": "S (sleeping)",
+      "tid": 286474,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "3",
+      "schedstat": "112136210 1132655 4",
+      "state": "S (sleeping)",
+      "tid": 286475,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "2",
+      "schedstat": "112140398 163076 3",
+      "state": "S (sleeping)",
+      "tid": 286476,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "46015",
+      "schedstat": "56829685 57805706 46016",
+      "state": "S (sleeping)",
+      "tid": 286477,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "2",
+      "schedstat": "112170702 1321668 4",
+      "state": "S (sleeping)",
+      "tid": 286478,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1",
+      "schedstat": "112178054 1593078 3",
+      "state": "S (sleeping)",
+      "tid": 286479,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "12",
+      "schedstat": "111912187 1611487 13",
+      "state": "S (sleeping)",
+      "tid": 286480,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "46246",
+      "schedstat": "56120731 56640980 46247",
+      "state": "S (sleeping)",
+      "tid": 286481,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1",
+      "schedstat": "112145878 3502976 2",
+      "state": "S (sleeping)",
+      "tid": 286482,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1",
+      "schedstat": "112050865 986332 4",
+      "state": "S (sleeping)",
+      "tid": 286483,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "11",
+      "schedstat": "111931729 1628555 13",
+      "state": "S (sleeping)",
+      "tid": 286484,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "46246",
+      "schedstat": "56033587 56606518 46247",
+      "state": "S (sleeping)",
+      "tid": 286485,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "112226535 935377 7",
+      "state": "S (sleeping)",
+      "tid": 286486,
+      "voluntary_ctxt_switches": "7",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "112197185 735885 2",
+      "state": "S (sleeping)",
+      "tid": 286487,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "46017",
+      "schedstat": "56598171 57685787 46018",
+      "state": "S (sleeping)",
+      "tid": 286488,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "5",
+      "schedstat": "112074371 1336579 6",
+      "state": "S (sleeping)",
+      "tid": 286489,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "8",
+      "schedstat": "111243202 1886672 10",
+      "state": "S (sleeping)",
+      "tid": 286490,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "2",
+      "schedstat": "112115059 1127540 4",
+      "state": "S (sleeping)",
+      "tid": 286491,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "45699",
+      "schedstat": "60548061 59609168 45700",
+      "state": "S (sleeping)",
+      "tid": 286492,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "2",
+      "schedstat": "112136728 621429 4",
+      "state": "S (sleeping)",
+      "tid": 286493,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "45659",
+      "schedstat": "60746928 59413991 45660",
+      "state": "S (sleeping)",
+      "tid": 286494,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "112234047 826207 7",
+      "state": "S (sleeping)",
+      "tid": 286495,
+      "voluntary_ctxt_switches": "7",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "86863 0 1",
+      "state": "S (sleeping)",
+      "tid": 287526,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "ep_poll"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "163",
+      "schedstat": "17329260947 92316853 247740",
+      "state": "S (sleeping)",
+      "tid": 287527,
+      "voluntary_ctxt_switches": "247577",
+      "wchan": "ep_poll"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "99",
+      "schedstat": "16652643523 40132938 291992",
+      "state": "S (sleeping)",
+      "tid": 287528,
+      "voluntary_ctxt_switches": "291893",
+      "wchan": "ep_poll"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "365539 0 1",
+      "state": "S (sleeping)",
+      "tid": 289523,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "do_poll.constprop.0"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "277",
+      "schedstat": "68208851315 55963927 294506",
+      "state": "S (sleeping)",
+      "tid": 289524,
+      "voluntary_ctxt_switches": "294229",
+      "wchan": "do_poll.constprop.0"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "259",
+      "schedstat": "43048749544 3421856845 659439",
+      "state": "S (sleeping)",
+      "tid": 289558,
+      "voluntary_ctxt_switches": "659180",
+      "wchan": "do_poll.constprop.0"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "116",
+      "schedstat": "20399508176 3317986868 659472",
+      "state": "S (sleeping)",
+      "tid": 289559,
+      "voluntary_ctxt_switches": "659356",
+      "wchan": "do_poll.constprop.0"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "159326 0 1",
+      "state": "S (sleeping)",
+      "tid": 289584,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1361",
+      "schedstat": "150686006233 366028784 13220",
+      "state": "S (sleeping)",
+      "tid": 289709,
+      "voluntary_ctxt_switches": "11859",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1612",
+      "schedstat": "151101538864 359564073 13522",
+      "state": "S (sleeping)",
+      "tid": 289710,
+      "voluntary_ctxt_switches": "11910",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1408",
+      "schedstat": "149455152664 420543167 13337",
+      "state": "S (sleeping)",
+      "tid": 289711,
+      "voluntary_ctxt_switches": "11929",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1299",
+      "schedstat": "151479562320 414800831 13204",
+      "state": "S (sleeping)",
+      "tid": 289712,
+      "voluntary_ctxt_switches": "11905",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1401",
+      "schedstat": "151354680291 467216823 13302",
+      "state": "S (sleeping)",
+      "tid": 289713,
+      "voluntary_ctxt_switches": "11901",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1562",
+      "schedstat": "150879753371 415718651 13437",
+      "state": "S (sleeping)",
+      "tid": 289714,
+      "voluntary_ctxt_switches": "11875",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1376",
+      "schedstat": "151369744731 385992511 13244",
+      "state": "S (sleeping)",
+      "tid": 289715,
+      "voluntary_ctxt_switches": "11868",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1306",
+      "schedstat": "151675077102 228062964 13211",
+      "state": "S (sleeping)",
+      "tid": 289716,
+      "voluntary_ctxt_switches": "11905",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1422",
+      "schedstat": "149462861980 284908685 13328",
+      "state": "S (sleeping)",
+      "tid": 289717,
+      "voluntary_ctxt_switches": "11906",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1405",
+      "schedstat": "149945774073 235437711 13292",
+      "state": "S (sleeping)",
+      "tid": 289718,
+      "voluntary_ctxt_switches": "11887",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1308",
+      "schedstat": "149217356543 272128718 13238",
+      "state": "S (sleeping)",
+      "tid": 289719,
+      "voluntary_ctxt_switches": "11930",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1245",
+      "schedstat": "152230784777 245394191 13125",
+      "state": "S (sleeping)",
+      "tid": 289720,
+      "voluntary_ctxt_switches": "11880",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1175",
+      "schedstat": "150127443857 310069404 13080",
+      "state": "S (sleeping)",
+      "tid": 289721,
+      "voluntary_ctxt_switches": "11905",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1274",
+      "schedstat": "149517292898 286250389 13245",
+      "state": "S (sleeping)",
+      "tid": 289722,
+      "voluntary_ctxt_switches": "11971",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1525",
+      "schedstat": "151028505495 222477333 13413",
+      "state": "S (sleeping)",
+      "tid": 289723,
+      "voluntary_ctxt_switches": "11888",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1306",
+      "schedstat": "151168504805 245410629 13170",
+      "state": "S (sleeping)",
+      "tid": 289724,
+      "voluntary_ctxt_switches": "11864",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1476",
+      "schedstat": "151601027484 299574040 13371",
+      "state": "S (sleeping)",
+      "tid": 289725,
+      "voluntary_ctxt_switches": "11895",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1252",
+      "schedstat": "148126789131 273902538 13187",
+      "state": "S (sleeping)",
+      "tid": 289726,
+      "voluntary_ctxt_switches": "11935",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1353",
+      "schedstat": "150608697695 247648174 13287",
+      "state": "S (sleeping)",
+      "tid": 289727,
+      "voluntary_ctxt_switches": "11934",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1230",
+      "schedstat": "152393774598 226843151 13099",
+      "state": "S (sleeping)",
+      "tid": 289728,
+      "voluntary_ctxt_switches": "11869",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1336",
+      "schedstat": "151468016041 237489970 13241",
+      "state": "S (sleeping)",
+      "tid": 289729,
+      "voluntary_ctxt_switches": "11905",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1334",
+      "schedstat": "149204760013 350198620 13303",
+      "state": "S (sleeping)",
+      "tid": 289730,
+      "voluntary_ctxt_switches": "11969",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "1456",
+      "schedstat": "150689051029 389775152 13351",
+      "state": "S (sleeping)",
+      "tid": 289731,
+      "voluntary_ctxt_switches": "11895",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "334828 0 3",
+      "state": "S (sleeping)",
+      "tid": 289891,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "293538 0 3",
+      "state": "S (sleeping)",
+      "tid": 289892,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "289571 0 2",
+      "state": "S (sleeping)",
+      "tid": 289893,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "301934 0 3",
+      "state": "S (sleeping)",
+      "tid": 289894,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "258018 0 2",
+      "state": "S (sleeping)",
+      "tid": 289895,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "301784 0 3",
+      "state": "S (sleeping)",
+      "tid": 289896,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "325393 0 7",
+      "state": "S (sleeping)",
+      "tid": 289897,
+      "voluntary_ctxt_switches": "7",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "308063 0 3",
+      "state": "S (sleeping)",
+      "tid": 289898,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "255811 0 10",
+      "state": "S (sleeping)",
+      "tid": 289899,
+      "voluntary_ctxt_switches": "10",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "267008 0 7",
+      "state": "S (sleeping)",
+      "tid": 289900,
+      "voluntary_ctxt_switches": "7",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "230941 0 4",
+      "state": "S (sleeping)",
+      "tid": 289901,
+      "voluntary_ctxt_switches": "4",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "232250 0 5",
+      "state": "S (sleeping)",
+      "tid": 289902,
+      "voluntary_ctxt_switches": "5",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "201785 0 2",
+      "state": "S (sleeping)",
+      "tid": 289903,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "215949 0 1",
+      "state": "S (sleeping)",
+      "tid": 289904,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "196863 0 1",
+      "state": "S (sleeping)",
+      "tid": 289905,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "193864 0 3",
+      "state": "S (sleeping)",
+      "tid": 289906,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "180209 0 1",
+      "state": "S (sleeping)",
+      "tid": 289907,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "211810 0 3",
+      "state": "S (sleeping)",
+      "tid": 289908,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "203622 0 4",
+      "state": "S (sleeping)",
+      "tid": 289909,
+      "voluntary_ctxt_switches": "4",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "189150 0 4",
+      "state": "S (sleeping)",
+      "tid": 289910,
+      "voluntary_ctxt_switches": "4",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "194443 0 2",
+      "state": "S (sleeping)",
+      "tid": 289911,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "212646 0 4",
+      "state": "S (sleeping)",
+      "tid": 289912,
+      "voluntary_ctxt_switches": "4",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "200556 0 2",
+      "state": "S (sleeping)",
+      "tid": 289913,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "207134 0 3",
+      "state": "S (sleeping)",
+      "tid": 289914,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "193834 0 3",
+      "state": "S (sleeping)",
+      "tid": 289915,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "219796 0 2",
+      "state": "S (sleeping)",
+      "tid": 289916,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "208923 0 3",
+      "state": "S (sleeping)",
+      "tid": 289917,
+      "voluntary_ctxt_switches": "3",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "218479 0 4",
+      "state": "S (sleeping)",
+      "tid": 289918,
+      "voluntary_ctxt_switches": "4",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "254187 0 6",
+      "state": "S (sleeping)",
+      "tid": 289919,
+      "voluntary_ctxt_switches": "6",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "229728 0 5",
+      "state": "S (sleeping)",
+      "tid": 289920,
+      "voluntary_ctxt_switches": "5",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "234191 0 2",
+      "state": "S (sleeping)",
+      "tid": 289921,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "244444 0 2",
+      "state": "S (sleeping)",
+      "tid": 289922,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "205330 0 1",
+      "state": "S (sleeping)",
+      "tid": 289923,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "229526 0 2",
+      "state": "S (sleeping)",
+      "tid": 289924,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "232784 0 4",
+      "state": "S (sleeping)",
+      "tid": 289925,
+      "voluntary_ctxt_switches": "4",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "223941 11899 2",
+      "state": "S (sleeping)",
+      "tid": 289926,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "189136 0 2",
+      "state": "S (sleeping)",
+      "tid": 289927,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "208926 0 4",
+      "state": "S (sleeping)",
+      "tid": 289928,
+      "voluntary_ctxt_switches": "4",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "209008 0 4",
+      "state": "S (sleeping)",
+      "tid": 289929,
+      "voluntary_ctxt_switches": "4",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "204312 0 1",
+      "state": "S (sleeping)",
+      "tid": 289930,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "197231 0 1",
+      "state": "S (sleeping)",
+      "tid": 289931,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "217212 0 2",
+      "state": "S (sleeping)",
+      "tid": 289932,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "203424 0 2",
+      "state": "S (sleeping)",
+      "tid": 289933,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "225465 0 2",
+      "state": "S (sleeping)",
+      "tid": 289934,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "209316 0 1",
+      "state": "S (sleeping)",
+      "tid": 289935,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "201009 0 2",
+      "state": "S (sleeping)",
+      "tid": 289936,
+      "voluntary_ctxt_switches": "2",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "193334 0 1",
+      "state": "S (sleeping)",
+      "tid": 289937,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "190638 0 1",
+      "state": "S (sleeping)",
+      "tid": 289938,
+      "voluntary_ctxt_switches": "1",
+      "wchan": "futex_wait_queue_me"
+    },
+    {
+      "nonvoluntary_ctxt_switches": "0",
+      "schedstat": "21476932 1286845 989",
+      "state": "S (sleeping)",
+      "tid": 298001,
+      "voluntary_ctxt_switches": "989",
+      "wchan": "futex_wait_queue_me"
+    }
+  ]
+}

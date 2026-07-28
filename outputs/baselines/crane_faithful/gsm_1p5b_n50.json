@@ -1,0 +1,320 @@
+{
+  "accuracy": 0.44,
+  "syntax_rate": 0.7,
+  "metrics": {
+    "num_examples": 50,
+    "total_generation_seconds": 243.4369,
+    "mean_generation_seconds_per_example": 4.868738,
+    "examples_with_generation_timing": 50,
+    "total_output_tokens": 7884,
+    "mean_output_tokens_per_example": 157.68,
+    "examples_with_token_counts": 50,
+    "evaluator_total_time_seconds": 2814.2563,
+    "evaluator_max_sample_time_seconds": 14.7554
+  },
+  "num_correct": 22,
+  "num_examples": 50,
+  "contains_delimiters": true,
+  "answers": [
+    {
+      "question": "{n} saw a {x}-foot {big_fish} with {k} {y}-inch remoras attached to it. What percentage of the {big_fish}'s body length is the combined length of the remoras?",
+      "generated_answer": "(n + n * (k/12)) / n * 100",
+      "num_tokens": 192,
+      "generation_seconds": 7.251669
+    },
+    {
+      "question": "A fog bank rolls in from the ocean to cover a city. It takes {t} minutes to cover every {d} miles of the city. If the city is {y} miles across from the oceanfront to the opposite inland edge, how many",
+      "generated_answer": "t * (y / d)",
+      "num_tokens": 55,
+      "generation_seconds": 1.635204
+    },
+    {
+      "question": "{name} is rolling a {sides} die. How much more likely is it (expressed as a percentage) that he rolls a number greater than {target} than that he rolls two even numbers in a row?",
+      "generated_answer": "2 * 2 / {sides} * {sides}",
+      "num_tokens": 205,
+      "generation_seconds": 6.435761
+    },
+    {
+      "question": "A {g} of {n} students has various hobbies. {n_1} like to {h_1}, {n_2} like to play {h_2}, and the rest like to either {h_3} or {h_4}. How many like to {h_3} if the number that like to {h_4} is twice t",
+      "generated_answer": "y = (n_2 - x) / 3",
+      "num_tokens": 445,
+      "generation_seconds": 14.460538
+    },
+    {
+      "question": "{name} is popping popcorn for a snack. As the {p} of kernels heats up, the kernels start popping faster. {n} pop in the first {s} seconds of cooking, then {k_2} times that amount in the next {s} secon",
+      "generated_answer": "n * (1 + k_2 + k_3 + k_3 / 8)",
+      "num_tokens": 310,
+      "generation_seconds": 9.483057
+    },
+    {
+      "question": "{name} makes {drink} using teaspoons of sugar and cups of water in the ratio of {m}:{n}. If she used a total of {x} teaspoons of sugar and cups of water, calculate the number of teaspoonfuls of sugar ",
+      "generated_answer": "x / (m + n * sugar_to_water_ratio)",
+      "num_tokens": 114,
+      "generation_seconds": 3.412032
+    },
+    {
+      "question": "{name} has {x} {area} of {fruit} field. There are {k} {fruit} per {area}. {name} can harvest his {fruit} every {n} months. How many {fruit} can {name} harvest within a year?",
+      "generated_answer": "12 * k * x",
+      "num_tokens": 96,
+      "generation_seconds": 2.972305
+    },
+    {
+      "question": "A farmer is buying feed for his {animals}. He buys a variety of {o1}, {o2}, {o3} and {o4}. Since {o4} are a rare treat, he only buys {n4} {w4}-{unit} boxes of them for the whole stable. He only wants ",
+      "generated_answer": "total / (n1 * w1 + n2 * w2 + n4 * w4)",
+      "num_tokens": 190,
+      "generation_seconds": 5.996828
+    },
+    {
+      "question": "A juggler can juggle {n} balls. {frac_1} of the balls are {ball_type} balls, and {frac_2} of the {ball_type} balls are {color}. How many {color} {ball_type} balls are there?",
+      "generated_answer": "frac_2 * n * frac_1",
+      "num_tokens": 110,
+      "generation_seconds": 3.431004
+    },
+    {
+      "question": "When {name} watches her {family}, she gets out a variety of toys for him. The bag of building blocks has {x} blocks in it. The bin of stuffed animals has {y} stuffed animals inside. The tower of stack",
+      "generated_answer": "total - (x + y + z)",
+      "num_tokens": 143,
+      "generation_seconds": 4.83247
+    },
+    {
+      "question": "To make a call from a {dev}, you must pay {currency} {frac1} for each minute of your call. After {t} minutes, that price drops to {currency} {frac2} per minute. How much would a {total}-minute call co",
+      "generated_answer": "t * frac1 + (total - t) * frac2",
+      "num_tokens": 124,
+      "generation_seconds": 3.893187
+    },
+    {
+      "question": "{name} wants to make different sized ice cubes with {n} {unit}s of water. He can make giant cubes that use {w1} {unit}s per cube, medium cubes that use {w2} {unit}s, and small cubes that use {w3} of {",
+      "generated_answer": "n - w1 * n1 - w3 * n2 - w2 * n3",
+      "num_tokens": 212,
+      "generation_seconds": 5.768823
+    },
+    {
+      "question": "{name} places {obj} on some {surface}s. Each {surface} can hold {x} {obj}s. If he has {n} {obj}s and {k} {surface}s, how many {obj}s won't he be able to place on the {surface}?",
+      "generated_answer": "n - k * x",
+      "num_tokens": 81,
+      "generation_seconds": 2.466856
+    },
+    {
+      "question": "{name} is an avid gardener. {time}, she received {x} new potted plants from her favorite plant nursery. She already has {r} potted plants on each of the {w} window ledges of her large country home. Fe",
+      "generated_answer": "r * w + x - n * w",
+      "num_tokens": 127,
+      "generation_seconds": 3.837627
+    },
+    {
+      "question": "{n1} and {n2} have {t} minutes to walk to the {loc1} together. It takes them {t1} minutes to get to the corner where the {loc2} is. It takes them another {t2} minutes to get to the {loc3}. How much lo",
+      "generated_answer": "240 - (t1 + t2)",
+      "num_tokens": 88,
+      "generation_seconds": 2.275205
+    },
+    {
+      "question": "{name1}'s dog has {n1} puppies, {k1} of which have spots. {name2}'s dog has {n2} puppies, {k2} of which have spots. What percentage of all the puppies have spots?",
+      "generated_answer": "(k1 + k2) / (n1 + n2) * 100",
+      "num_tokens": 135,
+      "generation_seconds": 3.281128
+    },
+    {
+      "question": "{name} is selling {food} and {fruit} pie for a fundraiser. On {d1}, he sold {n1} boxes of {food} and {m1} fewer boxes of {fruit} pie, than on {d2}. On {d2}, he sold {n2} more boxes of {food}s than on ",
+      "generated_answer": "cur * (n1 + n2 + n2) + cur * (n1 + n2 + m2) + cur * n1 + cur * n2 + cur * m1",
+      "num_tokens": 254,
+      "generation_seconds": 6.190983
+    },
+    {
+      "question": "{name} walks {n} {unit} every day on her favorite walking trail, which includes {m} {unit} of walking on the beach and {k} {unit} of walking on the sidewalk. On the sidewalk, {name} walks at {mult} th",
+      "generated_answer": "t + t * mult",
+      "num_tokens": 61,
+      "generation_seconds": 2.186597
+    },
+    {
+      "question": "{name} went to buy some school supplies. He bought {n1} {obj1} which cost {cur} {c1} each, {n2} {obj2} which cost {cur} {c2} each, and a rim of bond paper which cost {cur} {c3}. How much did {name} sp",
+      "generated_answer": "n1 * cur * c1 + n2 * cur * c2 + cur * c3",
+      "num_tokens": 165,
+      "generation_seconds": 4.52857
+    },
+    {
+      "question": "In a {n}-item quiz, {p1}% of the questions are {s1}, and the rest are equally divided as {s2} and {s3} questions. If {name} is sure to get {r1}% of the {s1} questions, and {frac} of the {s2} and {s3} ",
+      "generated_answer": "f1 * r1 + f2 * p2 * r1",
+      "num_tokens": 189,
+      "generation_seconds": 5.867591
+    },
+    {
+      "question": "{name} picks {n1} {fruit} on {d1}. Then he picks {n2} {fruit} on {d2}. On {d3}, he picks {mult} the number of {fruit} he did on {d1}. How many {fruit} does {name} have?",
+      "generated_answer": "mult * n1 + n2",
+      "num_tokens": 124,
+      "generation_seconds": 3.802463
+    },
+    {
+      "question": "{name} watches TV after he finishes his homework every night. On {d1} and {d2}, he watched a {h1}-hour episode of his favorite show each night. On {d3}, he watched a few episodes of a {m1}-minute show",
+      "generated_answer": "h1 * x + m1 * y + h2 + m2 + n2 * h3 * 2 - total",
+      "num_tokens": 192,
+      "generation_seconds": 5.939641
+    },
+    {
+      "question": "{name} was preparing for a {event} at her house, where she intended to serve {food}. She noticed that she was out of plastic {obj}, so she bought a new package of {obj}. Later, her husband also bought",
+      "generated_answer": "total - n2 + 1 - 1",
+      "num_tokens": 142,
+      "generation_seconds": 4.367597
+    },
+    {
+      "question": "{name} is knitting winter wear for her {count} grandchildren. They're {children}, so they're all the same size. She wants to make a {c1}, {c2}, {c3}, {c4}, and {c5} for each of them. It takes {n1} ske",
+      "generated_answer": "(n1 + n2 + n3 + n4 + n5) * (count + count + count + count + count)",
+      "num_tokens": 209,
+      "generation_seconds": 6.389989
+    },
+    {
+      "question": "According to its nutritional info, a bag of {food} has {cal} calories per serving. If a {size} {unit} bag has {n} servings, how many {unit} can you eat if your daily calorie target is {total} and you ",
+      "generated_answer": "total - spent * cal / n",
+      "num_tokens": 136,
+      "generation_seconds": 3.3966
+    },
+    {
+      "question": "In {teacher}'s class of {total} students, {p1}% of the class are {group1}. Out of the remaining class, {p2}% of the students are {group2} or part of {group3}. These 3 groups of students will need to l",
+      "generated_answer": "total * (p1 + p2) / 100",
+      "num_tokens": 178,
+      "generation_seconds": 5.335715
+    },
+    {
+      "question": "{name1} eats {n1} {food} per {time_unit}, {name2} eats {n2} {food} per {time_unit}, and their {relation} eats {n3} {food} per {time_unit}. How many {food} does this family eat in one week?",
+      "generated_answer": "n1 * 7 + n2 * 7 + n3 * 7",
+      "num_tokens": 147,
+      "generation_seconds": 4.415255
+    },
+    {
+      "question": "{name} gets {n} emails a day. {p}% of those emails don't require any response. He responds to the rest of them. How many emails does he respond to in a {d} day work week?",
+      "generated_answer": "n * (100 - p) / 100",
+      "num_tokens": 65,
+      "generation_seconds": 2.004202
+    },
+    {
+      "question": "A {facility} has a capacity of {total} {item}s with {frac} occupied. Due to the {event}, {daily} patients are admitted into the {facility} each day. Calculate the total number of unoccupied {item}s in",
+      "generated_answer": "total * frac - period_days * daily",
+      "num_tokens": 114,
+      "generation_seconds": 3.50953
+    },
+    {
+      "question": "{name1} is {age1} years old. In {years} years his {relation_type} {name2} will be {mult} times as old as {name1} is now. How old is {name2} right now?",
+      "generated_answer": "age1 * mult - age1",
+      "num_tokens": 123,
+      "generation_seconds": 3.705862
+    },
+    {
+      "question": "{name} has {cur}{initial_amount} and wants to buy {quantity} {item}s from a bin at the {store_type} store. Each {item} costs {cur}{unit_price}. How much money does {name} have left after paying for th",
+      "generated_answer": "initial_amount - quantity * unit_price",
+      "num_tokens": 84,
+      "generation_seconds": 3.106541
+    },
+    {
+      "question": "{name1} and {name2} are currently {age_diff} years apart in age. If {name1}, who is younger than {name2}, is {age1} years old, what's the average of their ages?",
+      "generated_answer": "int((age1 + age2) / 2)",
+      "num_tokens": 81,
+      "generation_seconds": 2.548691
+    },
+    {
+      "question": "{name} is looking for a {property_type} that will not go beyond her ${budget} budget. She saw a property that has a selling price of ${price}. On top of that, the buyer has to pay a brokerage fee whic",
+      "generated_answer": "price + int((brokerage_fee/100) * price * 1) + int((transfer_fee/100) * price * 1) - budget",
+      "num_tokens": 225,
+      "generation_seconds": 7.654051
+    },
+    {
+      "question": "{name1} and {name2} are sisters from {city} who love collecting signatures from {celebrity_type}. During their {vacation_type} from school, the sisters spend every afternoon collecting signatures. Aft",
+      "generated_answer": "goal - (s1 + s2)",
+      "num_tokens": 89,
+      "generation_seconds": 2.842918
+    },
+    {
+      "question": "{title} {name} sold his {property} for ${price}. He paid the {fee1_name} fees that amount to {fee1_percent}% of the selling price and also paid a {fee2_name} fee that is {fee2_percent}% of the selling",
+      "generated_answer": "$119 - $119 * ((17.5 / 100) + (25 / 100)) - $100",
+      "num_tokens": 377,
+      "generation_seconds": 11.736652
+    },
+    {
+      "question": "{name} is raising money for a {event}. He has applied for help from the {organization}, which has decided to cover {fraction} of the cost of the {event}. How much money is {name} missing if he has {cu",
+      "generated_answer": "{cur}{total} - {cur}{total} * {fraction}",
+      "num_tokens": 95,
+      "generation_seconds": 3.963576
+    },
+    {
+      "question": "{name} went to the {shop} and bought various types of {item}. She bought {n1} dozen {item1} which cost ${p1} per dozen, {n2} dozen {item2} which cost ${p2} per dozen, and {n3} dozen {item3} for ${p3} ",
+      "generated_answer": "n1 * p1 + n2 * p2 + n3 * p3",
+      "num_tokens": 127,
+      "generation_seconds": 3.890168
+    },
+    {
+      "question": "A {item} has {n} {unit}. If {name1} can eat {x} {unit} a day while {name2} can eat {mult} as much, how many days will the {item} last?",
+      "generated_answer": "n / (x + mult * x)",
+      "num_tokens": 124,
+      "generation_seconds": 3.813748
+    },
+    {
+      "question": "A loaf of {item1} at the {shop} costs {currency}{price1}. {item2} cost {currency}{price2} each. How much more do {n1} loaves of {item1} cost than {n2} {item2}?",
+      "generated_answer": "n1 * price1 - n2 * price2",
+      "num_tokens": 87,
+      "generation_seconds": 2.782908
+    },
+    {
+      "question": "A {job} has to clean a {building} with {n} {room}s. They have {d} days to get it done. It takes them {t} minutes per {room}. If they work {h} hours each day, what percentage of their day, on average, ",
+      "generated_answer": "((n * t) / (h * 60)) / n * 100",
+      "num_tokens": 182,
+      "generation_seconds": 5.319859
+    },
+    {
+      "question": "{name} went to the {location} for vacation. Her parents gave her {cur}{total} to buy whatever she wanted. At the {shop}, {item1} was on sale for \"Buy {n1} {unit}s at {cur}{p1} per {unit}, get {n2} {un",
+      "generated_answer": "cur{total} - (n12 * (n1 * cur{p1} - n2 * cur{p1}) + n43 * cur{p2} + n3 * cur{p3})",
+      "num_tokens": 462,
+      "generation_seconds": 14.755427
+    },
+    {
+      "question": "A {structure} is made out of {n1} {color1} {obj}s, {mult} as many {color2} {obj}s, and an unknown number of {color3} {obj}s. If there are {total} {obj}s in the {structure} in total, how many {color3} ",
+      "generated_answer": "total - n1 - mult * n1",
+      "num_tokens": 49,
+      "generation_seconds": 1.542312
+    },
+    {
+      "question": "{name} goes to the store to buy some {item}. The normal brand of {item} he buys cost {cur}{price} per {unit}. He had to buy a more expensive brand that cost {percent}% more since his favorite brand wa",
+      "generated_answer": "7 * price * (1 + percent/100) + extra_price",
+      "num_tokens": 158,
+      "generation_seconds": 4.858327
+    },
+    {
+      "question": "{name} went to their {place} to pick some {fruit} and found {frac} as many {insect1} as {insect2} in the {location}. If there were {n} {insect2}, calculate the total number of insects in the {location",
+      "generated_answer": "n + frac * n",
+      "num_tokens": 68,
+      "generation_seconds": 2.119936
+    },
+    {
+      "question": "There are {n} girls in the {place}. If there are {mult} the number of boys in the {place}, how many kids are in the {place}?",
+      "generated_answer": "n + n * mult",
+      "num_tokens": 50,
+      "generation_seconds": 1.46794
+    },
+    {
+      "question": "{name} has a flower bed that is {length} {unit_length} long. {name} wants to fill her flower bed with plants. {name}'s flowers grow {plant_width} {unit_length} wide so she needs to leave {space} {unit",
+      "generated_answer": "owned / space * cost + owned * cost",
+      "num_tokens": 128,
+      "generation_seconds": 3.436201
+    },
+    {
+      "question": "{school} is holding graduation in their {venue} this year which has space for {total} people. After accounting for {graduates} seats for graduates and {faculty} seats for faculty attending, how many t",
+      "generated_answer": "graduates",
+      "num_tokens": 96,
+      "generation_seconds": 3.027504
+    },
+    {
+      "question": "{name1} hid {n} dozen eggs in the yard for the Easter egg hunt. {name2} finds {x} eggs. {name3} finds {mult1} as many as {name2}. {name4} finds {y} less than {name3}, and {name5} finds {frac} as many ",
+      "generated_answer": "n * 12 - x - mult1 * x - (mult1 * x - y) - (frac * (mult1 * x - y))",
+      "num_tokens": 270,
+      "generation_seconds": 8.357841
+    },
+    {
+      "question": "{name} can peel {n1} {food}s a minute and saute {n2} {food}s in {t} minutes. How long will it take her to peel and saute {total} {food}s?",
+      "generated_answer": "n1 * t * n2 + n1 * t",
+      "num_tokens": 160,
+      "generation_seconds": 4.935618
+    },
+    {
+      "question": "{name} collects garbage from {n} different apartment complexes. The first {n_first} have {a} apartments each and the last one is {p}% bigger than the other {n_first} combined. {name} collects garbage ",
+      "generated_answer": "4 * (100 + p) * n_first * a * r / 100",
+      "num_tokens": 246,
+      "generation_seconds": 8.202392
+    }
+  ]
+}

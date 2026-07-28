@@ -1,0 +1,177 @@
+{
+  "accuracy": 0.15,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 20,
+    "total_generation_seconds": 7.3105,
+    "mean_generation_seconds_per_example": 0.365527,
+    "examples_with_generation_timing": 20,
+    "total_output_tokens": 208,
+    "mean_output_tokens_per_example": 10.4,
+    "examples_with_token_counts": 20,
+    "evaluator_total_time_seconds": 45.7159,
+    "evaluator_max_sample_time_seconds": 1.6154
+  },
+  "answers": [
+    {
+      "question": "Find the first name and age of students who have a pet.",
+      "generated_answer": "SELECT T1.fname ,  T1.age FROM student>>",
+      "num_tokens": 12,
+      "generation_seconds": 1.615403,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the id of the pet owned by the student whose last name is 'Smith'?",
+      "generated_answer": "SELECT pets.petid FROM pets>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.155813,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "For students who have pets , how many pets does each student have ? list their ids instead of names .",
+      "generated_answer": "SELECT student.stuid, COUNT(pets.petid) AS num_pets, pets.petid AS pet_id FROM student>>",
+      "num_tokens": 25,
+      "generation_seconds": 0.718434,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the last name of the student who has a cat that is 3 years old?",
+      "generated_answer": "SELECT T2.lname FROM student>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.176333,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Find the average age of students who do not have any pet .",
+      "generated_answer": "SELECT AVG(age) FROM student>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.56276,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many countries does each continent have? List the continent id, continent name and the number of countries.",
+      "generated_answer": "SELECT continents.contid, continents.continent, COUNT(car_makers.countryid) AS num_countries FROM continents>>",
+      "num_tokens": 22,
+      "generation_seconds": 0.786597,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many countries are listed?",
+      "generated_answer": "SELECT COUNT(DISTINCT continent) FROM continents>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.273711,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many countries exist?",
+      "generated_answer": "SELECT count(*) FROM countries>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.151789,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which model of the car has the minimum horsepower?",
+      "generated_answer": "SELECT model FROM model>>",
+      "num_tokens": 5,
+      "generation_seconds": 0.152316,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the model for the car with a weight smaller than the average?",
+      "generated_answer": "SELECT model FROM cars>>",
+      "num_tokens": 5,
+      "generation_seconds": 0.103917,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which distinct car models are the produced after 1980?",
+      "generated_answer": "SELECT DISTINCT model FROM car>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.141314,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many car makers are there in each continents? List the continent name and the count.",
+      "generated_answer": "SELECT continents.continent ,  COUNT(car_makers.id) FROM continents>>",
+      "num_tokens": 15,
+      "generation_seconds": 0.380127,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which of the countries has the most car makers? List the country name.",
+      "generated_answer": "SELECT T2.continent FROM countries>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.185134,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are all the makers and models?",
+      "generated_answer": "SELECT maker ,  model FROM car>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.19725,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names and ids of all countries with at least one car maker?",
+      "generated_answer": "SELECT T1.countryname ,  T1.countryid FROM countries>>",
+      "num_tokens": 14,
+      "generation_seconds": 0.353193,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the number of the cars with horsepower more than 150?",
+      "generated_answer": "SELECT COUNT(*) FROM cars>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.126222,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the average weight and year for each year?",
+      "generated_answer": "SELECT AVG(weight) AS avg_weight, year AS year FROM cars>>",
+      "num_tokens": 14,
+      "generation_seconds": 0.339677,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which countries in europe have at least 3 car manufacturers?",
+      "generated_answer": "SELECT DISTINCT T1.continent FROM continents>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.269297,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the maximum horsepower and the make of the car models with 3 cylinders?",
+      "generated_answer": "SELECT MAX(horsepower) ,  make FROM cars>>",
+      "num_tokens": 12,
+      "generation_seconds": 0.367004,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the average horsepower of the cars before 1980?",
+      "generated_answer": "SELECT AVG(horsepower) FROM cars>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.254247,
+      "is_correct": false,
+      "is_syntax_valid": true
+    }
+  ]
+}

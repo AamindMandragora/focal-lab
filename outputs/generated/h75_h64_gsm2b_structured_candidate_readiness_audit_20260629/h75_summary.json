@@ -1,0 +1,77 @@
+{
+  "artifact_root": "outputs/generated/h64_gsm2b_named_route_structured_candidates_materialization_20260629",
+  "billed_api_calls": 0,
+  "blocking_checks": [],
+  "checks": {
+    "artifact_root_exists": true,
+    "bash_n_passed": true,
+    "checks_exists": true,
+    "dry_run_json_exists": true,
+    "dry_run_no_billed_api_calls": true,
+    "dry_run_no_gpu_calls": true,
+    "dry_run_no_model_calls": true,
+    "fresh_h64_output_path": true,
+    "launcher_exists": true,
+    "local_no_billing": true,
+    "manifest_exists": true,
+    "max_steps_900": true,
+    "no_old_replay_terms": true,
+    "no_other_user_gate": true,
+    "paid_credential_key_names_absent": true,
+    "runner_strips_paid_env": true,
+    "safe_gpu_gate": true,
+    "sample_size_49": true,
+    "scorer_preserving_metadata": true,
+    "secret_values_stored_false": true,
+    "structured_candidate_artifact_on_success": true,
+    "timeout_600": true
+  },
+  "corrected_utc": "2026-06-29T21:10:54Z",
+  "correction_note": "The exact H64 key is initial_materialization_launched_no_model_gpu_or_api_call; GPU non-use is therefore confirmed by h64_checks.json.",
+  "created_utc": "2026-06-29T21:10:02Z",
+  "dry_run_key_fields": {
+    "dry_run": true,
+    "failure_path": "/home/aadivyar/csd-generation/outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/direct_eval_failure.json",
+    "max_seconds_per_example": 600.0,
+    "max_steps": 900,
+    "no_billed_credentials": true,
+    "no_model_calls": true,
+    "output_name": "h64_gsm2b_named_route_structured_candidates_20260629_t0",
+    "sample_size": 49,
+    "success_path": "/home/aadivyar/csd-generation/outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/direct_eval_success.json"
+  },
+  "experiment": "H75",
+  "files": {
+    "outputs/generated/h64_gsm2b_named_route_structured_candidates_materialization_20260629/direct_eval_dry_run.json": {
+      "exists": true,
+      "sha256": "99e40936d6612af6ecd5d936275db228ac3b7b12b444eb0fd30124e0b00396e3"
+    },
+    "outputs/generated/h64_gsm2b_named_route_structured_candidates_materialization_20260629/h64_checks.json": {
+      "exists": true,
+      "sha256": "08a37a2f887ed6fe7f5ad7fd66e519f68a240019a10267291f28f22247335c40"
+    },
+    "outputs/generated/h64_gsm2b_named_route_structured_candidates_materialization_20260629/h64_dry_run_stderr.txt": {
+      "exists": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "outputs/generated/h64_gsm2b_named_route_structured_candidates_materialization_20260629/h64_dry_run_stdout.txt": {
+      "exists": true,
+      "sha256": "2178fb681624ad06aa9b4d9ba927ce0d1cf3d41ace49086b2d2621a32b17f4f2"
+    },
+    "outputs/generated/h64_gsm2b_named_route_structured_candidates_materialization_20260629/h64_manifest.json": {
+      "exists": true,
+      "sha256": "1998c570ca662bfc8057e79732a984db2447c3920c12a49790f75c833252d515"
+    },
+    "outputs/generated/h64_gsm2b_named_route_structured_candidates_materialization_20260629/launch_h64_gsm2b_named_route_t0.sh": {
+      "exists": true,
+      "sha256": "2bd928db4ab337a74a5ce8f09752fe2cd70b31efdba582ea2fd8fb8bf299e527"
+    }
+  },
+  "gpu_calls": 0,
+  "model_calls": 0,
+  "next_action": "After H52 priority is cleared and a safe local GPU with no non-aadivyar process opens, launch H64 as the no-billing GSM-2B structured-candidate smoke.",
+  "old_replay_hits": [],
+  "paid_credential_key_name_hits": [],
+  "purpose": "CPU-only readiness audit of H64 GSM-2B structured-candidate launcher before any future GPU launch.",
+  "verdict": "launch_ready_when_gpu_gate_opens_after_h52_priority"
+}

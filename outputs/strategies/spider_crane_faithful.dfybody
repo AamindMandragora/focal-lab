@@ -1,0 +1,15 @@
+// CSD_RATIONALE_BEGIN
+// Faithful CRANE baseline for Spider (CoT prompt + visible << >> spans).
+// Delegates to the verified library CraneGeneration method: free text outside
+// constrained spans, grammar-constrained inside << >> spans, confidence-gated
+// adaptive switching with substring-based span detection (Contains). This is the
+// canonical CRANE baseline named in CLAUDE.md ("generated := helpers.CraneGeneration(
+// lm, parser, prompt, maxSteps, 10, eosToken); cost := helpers.cost;"), paired with
+// the chain-of-thought prompt (SPIDER_CRANE_COT=1) since CRANE is reasoning-based.
+// Runs under the legacy visible-<<>> path (SPIDER_TOKEN0_CONSTRAINED=0).
+// CSD_RATIONALE_END
+
+generated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);
+insideConstrainedOut := false;
+currentConstrainedOut := [];
+cost := helpers.cost;

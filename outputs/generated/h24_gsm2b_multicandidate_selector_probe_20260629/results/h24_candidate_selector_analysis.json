@@ -1,0 +1,4315 @@
+{
+  "accuracy": 0.10204081632653061,
+  "candidate_line_groups": 43,
+  "candidate_lines_total": 124,
+  "candidate_parseable_total": 120,
+  "candidate_union_equiv_count": 10,
+  "elapsed_seconds": 981.0321996212006,
+  "final_correct_count": 5,
+  "final_sympy_equiv_count": 8,
+  "final_syntax_count": 43,
+  "h21_top_equiv_count": 8,
+  "hit_max_steps_count": 4,
+  "median_time_seconds": 14.251275539398193,
+  "median_token_count": 395,
+  "num_examples": 49,
+  "rows": [
+    {
+      "actual": "3\n-4",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": true,
+      "candidates": [
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "((3*sides-4*target)/(4*sides))*100",
+            "diff": "0",
+            "expected_norm": "((sides-target)/sides*100)-25"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((3*sides-4*target)/(4*sides))*100",
+            "parse": 1.0,
+            "rep": 0.7142857142857143,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "((3*sides-4*target)/(4*sides))*100",
+          "parse_ok": true,
+          "raw": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}} \\times 100\\%$",
+          "score": 0.9600000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((3*sides-4*target)/(4*sides))",
+            "diff": "-297/4 + 99*target/sides",
+            "expected_norm": "((sides-target)/sides*100)-25"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((3*sides-4*target)/(4*sides))",
+            "parse": 1.0,
+            "rep": 0.6923076923076923,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "((3*sides-4*target)/(4*sides))",
+          "parse_ok": true,
+          "raw": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}}$",
+          "score": 0.956923076923077
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "((3*sides-4*target)/(4*sides))*100",
+            "diff": "0",
+            "expected_norm": "((sides-target)/sides*100)-25"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((3*sides-4*target)/(4*sides))*100",
+            "parse": 1.0,
+            "rep": 0.7142857142857143,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "((3*sides-4*target)/(4*sides))*100",
+          "parse_ok": true,
+          "raw": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}} \\times 100$",
+          "score": 0.9600000000000002
+        }
+      ],
+      "expected": "int((sides-target)/sides * 100) - 25",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": true,
+      "h21_top_label": "A",
+      "h21_top_raw": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}} \\times 100\\%$",
+      "h21_top_score": 0.9600000000000002,
+      "hit_max_steps": false,
+      "index": 1,
+      "selected_line_detail": {},
+      "selected_line_equiv": false,
+      "selected_line_raw": null,
+      "time_seconds": 26.559422731399536,
+      "token_count": 842
+    },
+    {
+      "actual": "Let's think step by step.\n1.  **Identify the total number of students**: The problem states there ar",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(g)-(n_*1)-3*(n_*2)",
+            "diff": "g - n",
+            "expected_norm": "(n-(n_*1+n_*2)-(2*n_*2))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(g)-(n_*1)-3*(n_*2)",
+            "parse": 1.0,
+            "rep": 0.8461538461538461,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(g)-(n_*1)-3*(n_*2)",
+          "parse_ok": true,
+          "raw": "{g} - {n_1} - 3{n_2}",
+          "score": 0.8784615384615386
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(g)-(n_*1)-(n_*2)-(n_*2)",
+            "diff": "g - n + 2*n_",
+            "expected_norm": "(n-(n_*1+n_*2)-(2*n_*2))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(g)-(n_*1)-(n_*2)-(n_*2)",
+            "parse": 1.0,
+            "rep": 0.5333333333333333,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(g)-(n_*1)-(n_*2)-(n_*2)",
+          "parse_ok": true,
+          "raw": "{g} - {n_1} - {n_2} - {n_2}",
+          "score": 0.8346666666666667
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(g)-(n_*1)-(n_*2)-2*(n_*2)",
+            "diff": "g - n",
+            "expected_norm": "(n-(n_*1+n_*2)-(2*n_*2))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(g)-(n_*1)-(n_*2)-2*(n_*2)",
+            "parse": 1.0,
+            "rep": 0.5882352941176471,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(g)-(n_*1)-(n_*2)-2*(n_*2)",
+          "parse_ok": true,
+          "raw": "{g} - {n_1} - {n_2} - 2{n_2}",
+          "score": 0.8423529411764707
+        }
+      ],
+      "expected": "int(n - (n_1 + n_2) - (2 * n_2))",
+      "final_is_correct": false,
+      "final_is_syntax_valid": false,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{g} - {n_1} - 3{n_2}",
+      "h21_top_score": 0.8784615384615386,
+      "hit_max_steps": false,
+      "index": 2,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(g)-(n_*1)-3*(n_*2)<<",
+        "expected_err": null,
+        "expected_norm": "(n-(n_*1+n_*2)-(2*n_*2))"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{g} - {n_1} - 3{n_2}<<",
+      "time_seconds": 18.420649766921997,
+      "token_count": 574
+    },
+    {
+      "actual": "n * (1 + k_2 + k_3 * (9/8))",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n)*(1+(k_*2)+(k_*3)*(9/8))",
+            "diff": "3*k_*n/8 - floor(3*k_*n/8) - floor(3*k_*n/2)",
+            "expected_norm": "n+(k_*2*n+k_*3*n)+(k_*3*n//2)+(k_*3*n//8)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n)*(1+(k_*2)+(k_*3)*(9/8))",
+            "parse": 1.0,
+            "rep": 0.8235294117647058,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(n)*(1+(k_*2)+(k_*3)*(9/8))",
+          "parse_ok": true,
+          "raw": "{n} * (1 + {k_2} + {k_3} * (9/8))",
+          "score": 0.875294117647059
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n)+(k_*2)*(n)+(k_*3)*(n)+0.125*(k_*3)*(n)",
+            "diff": "0.375*k_*n - floor(3*k_*n/8) - floor(3*k_*n/2)",
+            "expected_norm": "n+(k_*2*n+k_*3*n)+(k_*3*n//2)+(k_*3*n//8)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n)+(k_*2)*(n)+(k_*3)*(n)+0.125*(k_*3)*(n)",
+            "parse": 1.0,
+            "rep": 0.5416666666666667,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(n)+(k_*2)*(n)+(k_*3)*(n)+0.125*(k_*3)*(n)",
+          "parse_ok": true,
+          "raw": "{n} + {k_2} * {n} + {k_3} * {n} + 0.125 * {k_3} * {n}",
+          "score": 0.8358333333333334
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n)*(1+(k_*2)+(k_*3)+0.125*(k_*3))",
+            "diff": "0.375*k_*n - 1.0*floor(3*k_*n/8) - 1.0*floor(3*k_*n/2)",
+            "expected_norm": "n+(k_*2*n+k_*3*n)+(k_*3*n//2)+(k_*3*n//8)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n)*(1+(k_*2)+(k_*3)+0.125*(k_*3))",
+            "parse": 1.0,
+            "rep": 0.75,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(n)*(1+(k_*2)+(k_*3)+0.125*(k_*3))",
+          "parse_ok": true,
+          "raw": "{n} * (1 + {k_2} + {k_3} + 0.125 * {k_3})",
+          "score": 0.865
+        }
+      ],
+      "expected": "n + (k_2 * n + k_3 * n) + (k_3 * n // 2) + (k_3 * n // 8)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{n} * (1 + {k_2} + {k_3} * (9/8))",
+      "h21_top_score": 0.875294117647059,
+      "hit_max_steps": false,
+      "index": 3,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(n)*(1+(k_*2)+(k_*3)*(9/8))<<n*(1+k_*2+k_*3*(9/8))>>",
+        "expected_err": null,
+        "expected_norm": "n+(k_*2*n+k_*3*n)+(k_*3*n//2)+(k_*3*n//8)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{n} * (1 + {k_2} + {k_3} * (9/8))<<n * (1 + k_2 + k_3 * (9/8))>>",
+      "time_seconds": 26.128817796707153,
+      "token_count": 782
+    },
+    {
+      "actual": "int(n) / n\n    *    (int(n) / n)\n    *    (12 / n)\n    *    (12 // n)\n    *    (12 / n)\n    *    (12 / n)",
+      "candidate_count": 0,
+      "candidate_parseable_count": 0,
+      "candidate_union_equiv": false,
+      "candidates": [],
+      "expected": "x * k * (12//n)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": null,
+      "h21_top_raw": null,
+      "h21_top_score": null,
+      "hit_max_steps": false,
+      "index": 4,
+      "selected_line_detail": {},
+      "selected_line_equiv": false,
+      "selected_line_raw": null,
+      "time_seconds": 30.578997373580933,
+      "token_count": 897
+    },
+    {
+      "actual": "1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((1)/(n**2))",
+            "diff": "-2*frac_**2*n + n**(-2)",
+            "expected_norm": "(n*frac_*1*frac_*2)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((1)/(n**2))",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "((1)/(n**2))",
+          "parse_ok": true,
+          "raw": "$\\frac{1}{n^2}$",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((1)/(n))",
+            "diff": "-2*frac_**2*n + 1/n",
+            "expected_norm": "(n*frac_*1*frac_*2)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((1)/(n))",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "((1)/(n))",
+          "parse_ok": true,
+          "raw": "$\\frac{1}{n}$",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "1",
+            "diff": "-2*frac_**2*n + 1",
+            "expected_norm": "(n*frac_*1*frac_*2)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.8,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "1",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "1",
+          "parse_ok": true,
+          "raw": "$1$",
+          "score": 0.9600000000000002
+        }
+      ],
+      "expected": "int(n * frac_1 * frac_2)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "$\\frac{1}{n^2}$",
+      "h21_top_score": 1.0000000000000002,
+      "hit_max_steps": false,
+      "index": 5,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "((1)/(n**2))<<1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2/1/n*2>>",
+        "expected_err": null,
+        "expected_norm": "(n*frac_*1*frac_*2)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$\\frac{1}{n^2}$<<1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2/1/n2>>",
+      "time_seconds": 11.302655935287476,
+      "token_count": 243
+    },
+    {
+      "actual": "frac123 - 2*1212121212121212121212121212121212121212121212121212121",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((t)/(currency))+((2*(t-currency))/(currency))",
+            "diff": "frac*t - 2*frac*total - 2 + 3*t/currency",
+            "expected_norm": "((frac*1*t)+frac*2*(total-t))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((t)/(currency))+((2*(t-currency))/(currency))",
+            "parse": 1.0,
+            "rep": 0.7692307692307692,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "((t)/(currency))+((2*(t-currency))/(currency))",
+          "parse_ok": true,
+          "raw": "$\\frac{t}{\\text{currency}} + \\frac{2(t - \\text{currency})}{\\text{currency}}$",
+          "score": 0.9676923076923079
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((3*t-2*currency)/(currency))",
+            "diff": "frac*t - 2*frac*total - 2 + 3*t/currency",
+            "expected_norm": "((frac*1*t)+frac*2*(total-t))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((3*t-2*currency)/(currency))",
+            "parse": 1.0,
+            "rep": 0.8181818181818181,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "((3*t-2*currency)/(currency))",
+          "parse_ok": true,
+          "raw": "$\\frac{3t - 2\\text{currency}}{\\text{currency}}$",
+          "score": 0.9745454545454546
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "t+2*(t-currency)",
+            "diff": "-2*currency + frac*t - 2*frac*total + 3*t",
+            "expected_norm": "((frac*1*t)+frac*2*(total-t))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "t+2*(t-currency)",
+            "parse": 1.0,
+            "rep": 0.875,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "t+2*(t-currency)",
+          "parse_ok": true,
+          "raw": "$t + 2(t - \\text{currency})$",
+          "score": 0.9825000000000002
+        }
+      ],
+      "expected": "int((frac1 * t) + frac2*(total-t))",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "C",
+      "h21_top_raw": "$t + 2(t - \\text{currency})$",
+      "h21_top_score": 0.9825000000000002,
+      "hit_max_steps": false,
+      "index": 6,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "((3*t-2*currency)/(currency))<<frac*123-2*1212121212121212121212121212121212121212121212121212121>>",
+        "expected_err": null,
+        "expected_norm": "((frac*1*t)+frac*2*(total-t))"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$\\frac{3t - 2\\text{currency}}{\\text{currency}}$<<frac123 - 2*1212121212121212121212121212121212121212121212121212121>>",
+      "time_seconds": 15.979102373123169,
+      "token_count": 406
+    },
+    {
+      "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+      "candidate_count": 0,
+      "candidate_parseable_count": 0,
+      "candidate_union_equiv": false,
+      "candidates": [],
+      "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": true,
+      "h21_top_equiv": false,
+      "h21_top_label": null,
+      "h21_top_raw": null,
+      "h21_top_score": null,
+      "hit_max_steps": false,
+      "index": 7,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "n-(n*1*w*1+n*2*w*2+n*3*w*3)<<n-(n*1*w*1+n*2*w*2+n*3*w*3)>>",
+        "expected_err": null,
+        "expected_norm": "n-(n*1*w*1)-(n*2*w*2)-(n*3*w*3)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$n - (n1 \\times w1 + n2 \\times w2 + n3 \\times w3)$<<n - (n1 * w1 + n2 * w2 + n3 * w3)>>",
+      "time_seconds": 12.398149490356445,
+      "token_count": 377
+    },
+    {
+      "actual": "Let's think step by step.\nFirst, we need to find the total number of puppies.\nThe first dog has {n1}",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": true,
+      "candidates": [
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(((k*1)+(k*2))/((n*1)+(n*2)))*100",
+            "diff": "0",
+            "expected_norm": "(100*(k*1+k*2)/(n*1+n*2))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(((k*1)+(k*2))/((n*1)+(n*2)))*100",
+            "parse": 1.0,
+            "rep": 0.5555555555555556,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(((k*1)+(k*2))/((n*1)+(n*2)))*100",
+          "parse_ok": true,
+          "raw": "(({k1} + {k2}) / ({n1} + {n2})) * 100",
+          "score": 0.7377777777777779
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((k*1)+(k*2))/((n*1)+(n*2))",
+            "diff": "-99*k/n",
+            "expected_norm": "(100*(k*1+k*2)/(n*1+n*2))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((k*1)+(k*2))/((n*1)+(n*2))",
+            "parse": 1.0,
+            "rep": 0.5294117647058824,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "((k*1)+(k*2))/((n*1)+(n*2))",
+          "parse_ok": true,
+          "raw": "({k1} + {k2}) / ({n1} + {n2})",
+          "score": 0.7341176470588235
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "((k*1)+(k*2))/((n*1)+(n*2))*100",
+            "diff": "0",
+            "expected_norm": "(100*(k*1+k*2)/(n*1+n*2))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((k*1)+(k*2))/((n*1)+(n*2))*100",
+            "parse": 1.0,
+            "rep": 0.5555555555555556,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "((k*1)+(k*2))/((n*1)+(n*2))*100",
+          "parse_ok": true,
+          "raw": "({k1} + {k2}) / ({n1} + {n2}) * 100",
+          "score": 0.7377777777777779
+        }
+      ],
+      "expected": "int(100 * (k1+k2) / (n1+n2))",
+      "final_is_correct": false,
+      "final_is_syntax_valid": false,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": true,
+      "h21_top_label": "A",
+      "h21_top_raw": "(({k1} + {k2}) / ({n1} + {n2})) * 100",
+      "h21_top_score": 0.7377777777777779,
+      "hit_max_steps": false,
+      "index": 8,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(((k*1)+(k*2))/((n*1)+(n*2)))*100<<",
+        "expected_err": null,
+        "expected_norm": "(100*(k*1+k*2)/(n*1+n*2))"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "(({k1} + {k2}) / ({n1} + {n2})) * 100<<",
+      "time_seconds": 11.477438688278198,
+      "token_count": 378
+    },
+    {
+      "actual": "n1 * c1 + n2 * c2 + c3 * c1 + c2 * c3 + c3 * c2 + c3 * c1 + c2 * c3 + c3 * c1 + c2 * c3 + c3 * c2 + c3",
+      "candidate_count": 0,
+      "candidate_parseable_count": 0,
+      "candidate_union_equiv": false,
+      "candidates": [],
+      "expected": "int(n1*c1 + n2*c2 + c3)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": null,
+      "h21_top_raw": null,
+      "h21_top_score": null,
+      "hit_max_steps": true,
+      "index": 9,
+      "selected_line_detail": {},
+      "selected_line_equiv": false,
+      "selected_line_raw": null,
+      "time_seconds": 29.666857481002808,
+      "token_count": 900
+    },
+    {
+      "actual": "total - n1 + n2",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": true,
+      "candidates": [
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "total-n*1+n*2",
+            "diff": "0",
+            "expected_norm": "total+n*2-n*1"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "total-n*1+n*2",
+            "parse": 1.0,
+            "rep": 0.7777777777777778,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "total-n*1+n*2",
+          "parse_ok": true,
+          "raw": "$\\text{total} - n1 + n2$",
+          "score": 0.868888888888889
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "total+n*2-n*1",
+            "diff": "0",
+            "expected_norm": "total+n*2-n*1"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "total+n*2-n*1",
+            "parse": 1.0,
+            "rep": 0.7777777777777778,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "total+n*2-n*1",
+          "parse_ok": true,
+          "raw": "$\\text{total} + n2 - n1$",
+          "score": 0.868888888888889
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "total-n*1+n*2(SameasA)",
+            "diff": "2*n*(SameasA - 1)",
+            "expected_norm": "total+n*2-n*1"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.3333333333333333,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "total-n*1+n*2(SameasA)",
+            "parse": 1.0,
+            "rep": 0.8333333333333334,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "total-n*1+n*2(SameasA)",
+          "parse_ok": true,
+          "raw": "$\\text{total} - n1 + n2$ (Same as A)",
+          "score": 0.8433333333333335
+        }
+      ],
+      "expected": "total + n2 - n1",
+      "final_is_correct": true,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": true,
+      "h21_top_equiv": true,
+      "h21_top_label": "A",
+      "h21_top_raw": "$\\text{total} - n1 + n2$",
+      "h21_top_score": 0.868888888888889,
+      "hit_max_steps": false,
+      "index": 10,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "total-n*1+n*2<<total-n*1+n*2>>",
+        "expected_err": null,
+        "expected_norm": "total+n*2-n*1"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "total - n1 + n2<<total - n1 + n2>>",
+      "time_seconds": 15.838092565536499,
+      "token_count": 518
+    },
+    {
+      "actual": "n1 + n2 + n3 + n4 + n5 - count * 2 / 2 + count * 2 / 2 + count * 2 / 2 + count * 2 / 2 + count * 2 / 2 + count * 2 / 2",
+      "candidate_count": 0,
+      "candidate_parseable_count": 0,
+      "candidate_union_equiv": false,
+      "candidates": [],
+      "expected": "count*(n1+n2+n3+n4+n5)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": null,
+      "h21_top_raw": null,
+      "h21_top_score": null,
+      "hit_max_steps": false,
+      "index": 11,
+      "selected_line_detail": {},
+      "selected_line_equiv": false,
+      "selected_line_raw": null,
+      "time_seconds": 14.473517417907715,
+      "token_count": 383
+    },
+    {
+      "actual": "n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n-spent",
+            "diff": "n - spent - floor(-(spent - total)*floor(size/n)/cal)",
+            "expected_norm": "size//n*(total-spent)//(cal)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n-spent",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "n-spent",
+          "parse_ok": true,
+          "raw": "$n - spent$",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n-spent",
+            "diff": "n - spent - floor(-(spent - total)*floor(size/n)/cal)",
+            "expected_norm": "size//n*(total-spent)//(cal)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n-spent",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "n-spent",
+          "parse_ok": true,
+          "raw": "$n - spent$",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n-spent",
+            "diff": "n - spent - floor(-(spent - total)*floor(size/n)/cal)",
+            "expected_norm": "size//n*(total-spent)//(cal)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n-spent",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "n-spent",
+          "parse_ok": true,
+          "raw": "$n - spent$",
+          "score": 1.0000000000000002
+        }
+      ],
+      "expected": "size//n * (total-spent) // (cal)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "$n - spent$",
+      "h21_top_score": 1.0000000000000002,
+      "hit_max_steps": false,
+      "index": 12,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "n-spent<<n-spent-n-spent-n-spent-n-spent-n-spent-n-spent-n-spent-n-spent-n-spent-n-spent-n-spent-n-spent-n-spent-n-spent-n-spent-n-spent>>",
+        "expected_err": null,
+        "expected_norm": "size//n*(total-spent)//(cal)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$n - spent$<<n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent - n - spent>>",
+      "time_seconds": 11.22651481628418,
+      "token_count": 274
+    },
+    {
+      "actual": "total - frac - daily * period * 7",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "total-frac-daily*period*7",
+            "diff": "frac*(total - 1)",
+            "expected_norm": "total-(total*frac+daily*period*7)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "total-frac-daily*period*7",
+            "parse": 1.0,
+            "rep": 0.7777777777777778,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "total-frac-daily*period*7",
+          "parse_ok": true,
+          "raw": "`total - frac - daily * period * 7`",
+          "score": 0.9688888888888891
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "total-(frac+daily*period*7)",
+            "diff": "frac*(total - 1)",
+            "expected_norm": "total-(total*frac+daily*period*7)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "total-(frac+daily*period*7)",
+            "parse": 1.0,
+            "rep": 0.9,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "total-(frac+daily*period*7)",
+          "parse_ok": true,
+          "raw": "`total - (frac + daily * period * 7)`",
+          "score": 0.9860000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "total-frac-daily*period*7",
+            "diff": "frac*(total - 1)",
+            "expected_norm": "total-(total*frac+daily*period*7)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "total-frac-daily*period*7",
+            "parse": 1.0,
+            "rep": 0.7777777777777778,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "total-frac-daily*period*7",
+          "parse_ok": true,
+          "raw": "`total - frac - daily * period * 7`",
+          "score": 0.9688888888888891
+        }
+      ],
+      "expected": "total - (total * frac + daily * period * 7)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "B",
+      "h21_top_raw": "`total - (frac + daily * period * 7)`",
+      "h21_top_score": 0.9860000000000002,
+      "hit_max_steps": false,
+      "index": 13,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "total-frac-daily*period*7<<total-frac-daily*period*7>>",
+        "expected_err": null,
+        "expected_norm": "total-(total*frac+daily*period*7)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "`total - frac - daily * period * 7`<<total - frac - daily * period * 7>>",
+      "time_seconds": 12.082866668701172,
+      "token_count": 370
+    },
+    {
+      "actual": "Let's think step by step.\n1.  **Initial Amount**: {name} starts with {cur}{initial_amount}.\n2.  **Co",
+      "candidate_count": 1,
+      "candidate_parseable_count": 1,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(cur)(initial_amount)-(cur)(unit_price)*(quantity)",
+            "diff": "cur*initial_amount - cur*quantity*unit_price - initial_amount + quantity*unit_price",
+            "expected_norm": "(initial_amount-quantity*unit_price)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(cur)(initial_amount)-(cur)(unit_price)*(quantity)",
+            "parse": 1.0,
+            "rep": 0.8181818181818181,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(cur)(initial_amount)-(cur)(unit_price)*(quantity)",
+          "parse_ok": true,
+          "raw": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+          "score": 0.9245454545454546
+        }
+      ],
+      "expected": "int(initial_amount - quantity * unit_price)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": false,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+      "h21_top_score": 0.9245454545454546,
+      "hit_max_steps": false,
+      "index": 14,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(cur)(initial_amount)-(cur)(unit_price)*(quantity)<<",
+        "expected_err": null,
+        "expected_norm": "(initial_amount-quantity*unit_price)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}<<",
+      "time_seconds": 8.411811828613281,
+      "token_count": 268
+    },
+    {
+      "actual": "Let's think step by step.\n1. The total cost of the event is given as `{cur}{total}`.\n2. The organiza",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(cur)(total)-(fraction)*(cur)(total)-(cur)(current)",
+            "diff": "-cur*current - cur*fraction*total + cur*total + current + fraction*total - total",
+            "expected_norm": "total-(total*fraction+current)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(cur)(total)-(fraction)*(cur)(total)-(cur)(current)",
+            "parse": 1.0,
+            "rep": 0.6,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(cur)(total)-(fraction)*(cur)(total)-(cur)(current)",
+          "parse_ok": true,
+          "raw": "`{cur}{total} - {fraction} * {cur}{total} - {cur}{current}`",
+          "score": 0.8940000000000001
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(cur)(total)*(1-(fraction))-(cur)(current)",
+            "diff": "-cur*current - cur*total*(fraction - 1) + current + fraction*total - total",
+            "expected_norm": "total-(total*fraction+current)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(cur)(total)*(1-(fraction))-(cur)(current)",
+            "parse": 1.0,
+            "rep": 0.8461538461538461,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(cur)(total)*(1-(fraction))-(cur)(current)",
+          "parse_ok": true,
+          "raw": "`{cur}{total} * (1 - {fraction}) - {cur}{current}`",
+          "score": 0.9284615384615387
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(cur)(total)-(fraction)*(cur)(total)-(cur)(current)",
+            "diff": "-cur*current - cur*fraction*total + cur*total + current + fraction*total - total",
+            "expected_norm": "total-(total*fraction+current)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(cur)(total)-(fraction)*(cur)(total)-(cur)(current)",
+            "parse": 1.0,
+            "rep": 0.6,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(cur)(total)-(fraction)*(cur)(total)-(cur)(current)",
+          "parse_ok": true,
+          "raw": "`{cur}{total} - {fraction} * {cur}{total} - {cur}{current}`",
+          "score": 0.8940000000000001
+        }
+      ],
+      "expected": "total - (total * fraction + current)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": false,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "B",
+      "h21_top_raw": "`{cur}{total} * (1 - {fraction}) - {cur}{current}`",
+      "h21_top_score": 0.9284615384615387,
+      "hit_max_steps": false,
+      "index": 15,
+      "selected_line_detail": {
+        "actual_err": "TypeError: unsupported operand type(s) for <<: 'Add' and 'Symbol'",
+        "actual_norm": "(cur)(total)-(fraction)*(cur)(total)-(cur)(current)<<cur",
+        "expected_err": null,
+        "expected_norm": "total-(total*fraction+current)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{cur}{total} - {fraction} * {cur}{total} - {cur}{current}<<cur",
+      "time_seconds": 9.406862020492554,
+      "token_count": 304
+    },
+    {
+      "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": true,
+      "candidates": [
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "n*1*p*1+n*2*p*2+n*3*p*3",
+            "diff": "0",
+            "expected_norm": "n*1*p*1+n*2*p*2+n*3*p*3"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n*1*p*1+n*2*p*2+n*3*p*3",
+            "parse": 1.0,
+            "rep": 0.30434782608695654,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "n*1*p*1+n*2*p*2+n*3*p*3",
+          "parse_ok": true,
+          "raw": "$n1 * p1 + n2 * p2 + n3 * p3$",
+          "score": 0.702608695652174
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "n*1*p*1+n*2*p*2+n*3*p*3",
+            "diff": "0",
+            "expected_norm": "n*1*p*1+n*2*p*2+n*3*p*3"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n*1*p*1+n*2*p*2+n*3*p*3",
+            "parse": 1.0,
+            "rep": 0.30434782608695654,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "n*1*p*1+n*2*p*2+n*3*p*3",
+          "parse_ok": true,
+          "raw": "$n1 * p1 + n2 * p2 + n3 * p3$",
+          "score": 0.702608695652174
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "n*1*p*1+n*2*p*2+n*3*p*3",
+            "diff": "0",
+            "expected_norm": "n*1*p*1+n*2*p*2+n*3*p*3"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n*1*p*1+n*2*p*2+n*3*p*3",
+            "parse": 1.0,
+            "rep": 0.30434782608695654,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "n*1*p*1+n*2*p*2+n*3*p*3",
+          "parse_ok": true,
+          "raw": "$n1 * p1 + n2 * p2 + n3 * p3$",
+          "score": 0.702608695652174
+        }
+      ],
+      "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+      "final_is_correct": true,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": true,
+      "h21_top_equiv": true,
+      "h21_top_label": "A",
+      "h21_top_raw": "$n1 * p1 + n2 * p2 + n3 * p3$",
+      "h21_top_score": 0.702608695652174,
+      "hit_max_steps": false,
+      "index": 16,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "n*1*p*1+n*2*p*2+n*3*p*3<<n*1*p*1+n*2*p*2+n*3*p*3>>",
+        "expected_err": null,
+        "expected_norm": "n*1*p*1+n*2*p*2+n*3*p*3"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$n1 * p1 + n2 * p2 + n3 * p3$<<n1 * p1 + n2 * p2 + n3 * p3>>",
+      "time_seconds": 7.948788166046143,
+      "token_count": 224
+    },
+    {
+      "actual": "n / (x * (1 + mult))",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n/(x*(1+mult))",
+            "diff": "(n - x*(mult + 1)*floor(n/(x*(mult + 1))))/(x*(mult + 1))",
+            "expected_norm": "n//(x+x*mult)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n/(x*(1+mult))",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "n/(x*(1+mult))",
+          "parse_ok": true,
+          "raw": "$n / (x(1 + mult))$",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n/(x+mult*x)",
+            "diff": "(n - x*(mult + 1)*floor(n/(x*(mult + 1))))/(x*(mult + 1))",
+            "expected_norm": "n//(x+x*mult)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n/(x+mult*x)",
+            "parse": 1.0,
+            "rep": 0.875,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "n/(x+mult*x)",
+          "parse_ok": true,
+          "raw": "$n / (x + mult \\cdot x)$",
+          "score": 0.9825000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n/(x+mult*x)",
+            "diff": "(n - x*(mult + 1)*floor(n/(x*(mult + 1))))/(x*(mult + 1))",
+            "expected_norm": "n//(x+x*mult)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n/(x+mult*x)",
+            "parse": 1.0,
+            "rep": 0.875,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "n/(x+mult*x)",
+          "parse_ok": true,
+          "raw": "$n / (x + mult \\cdot x)$",
+          "score": 0.9825000000000002
+        }
+      ],
+      "expected": "n // (x + x*mult)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "$n / (x(1 + mult))$",
+      "h21_top_score": 1.0000000000000002,
+      "hit_max_steps": false,
+      "index": 17,
+      "selected_line_detail": {
+        "actual_err": "TypeError: unsupported operand type(s) for <<: 'Mul' and 'Mul'",
+        "actual_norm": "n/(x*(1+mult))<<n/(x*(1+mult))",
+        "expected_err": null,
+        "expected_norm": "n//(x+x*mult)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$n / (x(1 + mult))$<<n / (x * (1 + mult))",
+      "time_seconds": 11.613792896270752,
+      "token_count": 277
+    },
+    {
+      "actual": "n * t / h * 60 * 100",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*t)/(h*60))*100",
+            "diff": "5*n*t*(d - 1)/(3*d*h)",
+            "expected_norm": "(100*(n/d)*t/(h*60))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((n*t)/(h*60))*100",
+            "parse": 1.0,
+            "rep": 0.9,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "((n*t)/(h*60))*100",
+          "parse_ok": true,
+          "raw": "$\\frac{n \\times t}{h \\times 60} \\times 100$",
+          "score": 0.9860000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*t)/(h*60))",
+            "diff": "n*t*(d - 100)/(60*d*h)",
+            "expected_norm": "(100*(n/d)*t/(h*60))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((n*t)/(h*60))",
+            "parse": 1.0,
+            "rep": 0.8888888888888888,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "((n*t)/(h*60))",
+          "parse_ok": true,
+          "raw": "$\\frac{n \\times t}{h \\times 60}$",
+          "score": 0.9844444444444447
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*t)/(h*60))*100",
+            "diff": "5*n*t*(d - 1)/(3*d*h)",
+            "expected_norm": "(100*(n/d)*t/(h*60))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((n*t)/(h*60))*100",
+            "parse": 1.0,
+            "rep": 0.9,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "((n*t)/(h*60))*100",
+          "parse_ok": true,
+          "raw": "$\\frac{n \\times t}{h \\times 60} \\times 100$",
+          "score": 0.9860000000000002
+        }
+      ],
+      "expected": "int(100 * (n/d) * t / (h * 60))",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "$\\frac{n \\times t}{h \\times 60} \\times 100$",
+      "h21_top_score": 0.9860000000000002,
+      "hit_max_steps": false,
+      "index": 18,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "((n*t)/(h*60))*100<<n*t/h*60*100>>",
+        "expected_err": null,
+        "expected_norm": "(100*(n/d)*t/(h*60))"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$\\frac{n \\times t}{h \\times 60} \\times 100$<<n * t / h * 60 * 100>>",
+      "time_seconds": 11.49909234046936,
+      "token_count": 349
+    },
+    {
+      "actual": "total - n1 - mult 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(total)-(n*1)-(mult)",
+            "diff": "mult*(n - 1)",
+            "expected_norm": "total-n*1-mult*n*1"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(total)-(n*1)-(mult)",
+            "parse": 1.0,
+            "rep": 0.8888888888888888,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(total)-(n*1)-(mult)",
+          "parse_ok": true,
+          "raw": "{total} - {n1} - {mult}",
+          "score": 0.917777777777778
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(total)-(n*1)-(mult)",
+            "diff": "mult*(n - 1)",
+            "expected_norm": "total-n*1-mult*n*1"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(total)-(n*1)-(mult)",
+            "parse": 1.0,
+            "rep": 0.8888888888888888,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(total)-(n*1)-(mult)",
+          "parse_ok": true,
+          "raw": "{total} - {n1} - {mult}",
+          "score": 0.917777777777778
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(total)-(n*1)-(mult)",
+            "diff": "mult*(n - 1)",
+            "expected_norm": "total-n*1-mult*n*1"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(total)-(n*1)-(mult)",
+            "parse": 1.0,
+            "rep": 0.8888888888888888,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(total)-(n*1)-(mult)",
+          "parse_ok": true,
+          "raw": "{total} - {n1} - {mult}",
+          "score": 0.917777777777778
+        }
+      ],
+      "expected": "total - n1 - mult * n1",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{total} - {n1} - {mult}",
+      "h21_top_score": 0.917777777777778,
+      "hit_max_steps": false,
+      "index": 19,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(total)-(n*1)-(mult)<<total-n*1-mult1001001001001001001001001001001001>>",
+        "expected_err": null,
+        "expected_norm": "total-n*1-mult*n*1"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{total} - {n1} - {mult}<<total - n1 - mult 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1>>",
+      "time_seconds": 11.159893035888672,
+      "token_count": 272
+    },
+    {
+      "actual": "0*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(cur)(price)*(usage)*7*(2+(percent)/100)",
+            "diff": "7*cur*price*usage*(percent + 200)/100 - extra_price - 7*price*usage*(percent + 100)/100",
+            "expected_norm": "(price+price*percent/100)*7*usage+extra_price"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(cur)(price)*(usage)*7*(2+(percent)/100)",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(cur)(price)*(usage)*7*(2+(percent)/100)",
+          "parse_ok": true,
+          "raw": "`{cur}{price} * {usage} * 7 * (2 + {percent}/100)`",
+          "score": 0.9500000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(cur)(price)*(usage)*7+(cur)(price)*(usage)*7*(1+(percent)/100)",
+            "diff": "7*cur*price*usage*(percent + 100)/100 + 7*cur*price*usage - extra_price - 7*price*usage*(percent + 100)/100",
+            "expected_norm": "(price+price*percent/100)*7*usage+extra_price"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(cur)(price)*(usage)*7+(cur)(price)*(usage)*7*(1+(percent)/100)",
+            "parse": 1.0,
+            "rep": 0.6521739130434783,
+            "simplicity": 0.9833333333333333
+          },
+          "label": "B",
+          "norm": "(cur)(price)*(usage)*7+(cur)(price)*(usage)*7*(1+(percent)/100)",
+          "parse_ok": true,
+          "raw": "`{cur}{price} * {usage} * 7 + {cur}{price} * {usage} * 7 * (1 + {percent}/100)`",
+          "score": 0.8979710144927537
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(cur)(price)*(usage)*7*(1+(percent)/100)+(cur)(price)*(usage)*7",
+            "diff": "7*cur*price*usage*(percent + 100)/100 + 7*cur*price*usage - extra_price - 7*price*usage*(percent + 100)/100",
+            "expected_norm": "(price+price*percent/100)*7*usage+extra_price"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(cur)(price)*(usage)*7*(1+(percent)/100)+(cur)(price)*(usage)*7",
+            "parse": 1.0,
+            "rep": 0.6818181818181819,
+            "simplicity": 0.9833333333333333
+          },
+          "label": "C",
+          "norm": "(cur)(price)*(usage)*7*(1+(percent)/100)+(cur)(price)*(usage)*7",
+          "parse_ok": true,
+          "raw": "`{cur}{price} * {usage} * 7 * (1 + {percent}/100) + {cur}{price} * {usage} * 7`",
+          "score": 0.9021212121212121
+        }
+      ],
+      "expected": "(price + price * percent / 100) * 7 * usage + extra_price",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "`{cur}{price} * {usage} * 7 * (2 + {percent}/100)`",
+      "h21_top_score": 0.9500000000000002,
+      "hit_max_steps": false,
+      "index": 20,
+      "selected_line_detail": {},
+      "selected_line_equiv": false,
+      "selected_line_raw": null,
+      "time_seconds": 19.30282235145569,
+      "token_count": 468
+    },
+    {
+      "actual": "n + mult * n - n + mult * n - n + mult * n - n + mult * n - n + mult * n - n + mult * n - n + mult * n - n + mult * n - n + mult * n - n + mult * n - n + mult",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": true,
+      "candidates": [
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(n)+(mult)*(n)",
+            "diff": "0",
+            "expected_norm": "n*(mult+1)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n)+(mult)*(n)",
+            "parse": 1.0,
+            "rep": 0.8571428571428572,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(n)+(mult)*(n)",
+          "parse_ok": true,
+          "raw": "{n} + {mult} * {n}",
+          "score": 0.9800000000000002
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(n)*(1+(mult))",
+            "diff": "0",
+            "expected_norm": "n*(mult+1)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n)*(1+(mult))",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(n)*(1+(mult))",
+          "parse_ok": true,
+          "raw": "{n} * (1 + {mult})",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(n)*(mult)+(n)",
+            "diff": "0",
+            "expected_norm": "n*(mult+1)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n)*(mult)+(n)",
+            "parse": 1.0,
+            "rep": 0.8571428571428572,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(n)*(mult)+(n)",
+          "parse_ok": true,
+          "raw": "{n} * {mult} + {n}",
+          "score": 0.9800000000000002
+        }
+      ],
+      "expected": "n * (mult + 1)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": true,
+      "h21_top_label": "B",
+      "h21_top_raw": "{n} * (1 + {mult})",
+      "h21_top_score": 1.0000000000000002,
+      "hit_max_steps": false,
+      "index": 21,
+      "selected_line_detail": {
+        "actual_norm": "(n)+(mult)*(n)",
+        "diff": "0",
+        "expected_norm": "n*(mult+1)"
+      },
+      "selected_line_equiv": true,
+      "selected_line_raw": "{n} + {mult} * {n}",
+      "time_seconds": 19.281567573547363,
+      "token_count": 526
+    },
+    {
+      "actual": "owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(owned)*(cur)*(cost)",
+            "diff": "cost*(cur*owned*space - length + owned*space)/space",
+            "expected_norm": "((length/space-owned)*cost)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(owned)*(cur)*(cost)",
+            "parse": 1.0,
+            "rep": 0.8571428571428572,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(owned)*(cur)*(cost)",
+          "parse_ok": true,
+          "raw": "{owned} * {cur} * {cost}",
+          "score": 0.9300000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(owned)*(plant_width)+(owned)*(space)",
+            "diff": "(-cost*(length - owned*space) + owned*space*(plant_width + space))/space",
+            "expected_norm": "((length/space-owned)*cost)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(owned)*(plant_width)+(owned)*(space)",
+            "parse": 1.0,
+            "rep": 0.7777777777777778,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(owned)*(plant_width)+(owned)*(space)",
+          "parse_ok": true,
+          "raw": "{owned} * {plant_width} + {owned} * {space}",
+          "score": 0.9688888888888891
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(length)*(unit_length)",
+            "diff": "-cost*length/space + cost*owned + length*unit_length",
+            "expected_norm": "((length/space-owned)*cost)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(length)*(unit_length)",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(length)*(unit_length)",
+          "parse_ok": true,
+          "raw": "{length} * {unit_length}",
+          "score": 1.0000000000000002
+        }
+      ],
+      "expected": "int((length / space - owned) * cost)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "C",
+      "h21_top_raw": "{length} * {unit_length}",
+      "h21_top_score": 1.0000000000000002,
+      "hit_max_steps": false,
+      "index": 22,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(owned)*(cur)*(cost)<<owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost*owned*cost>>",
+        "expected_err": null,
+        "expected_norm": "((length/space-owned)*cost)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{owned} * {cur} * {cost}<<owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost * owned * cost>>",
+      "time_seconds": 14.251275539398193,
+      "token_count": 363
+    },
+    {
+      "actual": "n1 + n2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1",
+      "candidate_count": 2,
+      "candidate_parseable_count": 1,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((total)/(n*1))+((total)/(n*2))",
+            "diff": "(-n*(2*t + 1)*floor(total/n) + 3*total/2)/n",
+            "expected_norm": "total//n*1+(total//n*2)*t"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((total)/(n*1))+((total)/(n*2))",
+            "parse": 1.0,
+            "rep": 0.6923076923076923,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "((total)/(n*1))+((total)/(n*2))",
+          "parse_ok": true,
+          "raw": "({total} / {n1}) + ({total} / {n2})",
+          "score": 0.8569230769230769
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_err": "TypeError: can't multiply sequence by non-int of type 'Mul'",
+            "actual_norm": "((total)/(n*1))+((total)/(n*2))(ThisisthesameasA,soweneedavariation)",
+            "expected_err": null,
+            "expected_norm": "total//n*1+(total//n*2)*t"
+          },
+          "features": {
+            "err": "TypeError: can't multiply sequence by non-int of type 'Mul'",
+            "grounding": 0.25,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "((total)/(n*1))+((total)/(n*2))(ThisisthesameasA,soweneedavariation)",
+            "parse": 0.0,
+            "rep": 0.75,
+            "simplicity": 0.9555555555555556
+          },
+          "label": "B",
+          "norm": "((total)/(n*1))+((total)/(n*2))(ThisisthesameasA,soweneedavariation)",
+          "parse_ok": false,
+          "raw": "({total} / {n1}) + ({total} / {n2}) (This is the same as A, so we need a variation).",
+          "score": 0.576111111111111
+        }
+      ],
+      "expected": "total // n1 + (total // n2) * t",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "({total} / {n1}) + ({total} / {n2})",
+      "h21_top_score": 0.8569230769230769,
+      "hit_max_steps": true,
+      "index": 23,
+      "selected_line_detail": {},
+      "selected_line_equiv": false,
+      "selected_line_raw": null,
+      "time_seconds": 30.968454122543335,
+      "token_count": 900
+    },
+    {
+      "actual": "n_first * a * (2 + p/100) * f * r",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n_*(first)*a*(2+p/100)*f*r",
+            "diff": "a*f*r*(p + 200)*(first*n_ - n + 1)/100",
+            "expected_norm": "(((n-1)*a+(n-1)*a+(n-1)*a*p/100)*f*r)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n_*(first)*a*(2+p/100)*f*r",
+            "parse": 1.0,
+            "rep": 0.8666666666666667,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "n_*(first)*a*(2+p/100)*f*r",
+          "parse_ok": true,
+          "raw": "$n_{first} \\times a \\times (2 + p/100) \\times f \\times r$",
+          "score": 0.8646666666666669
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n_*(first)*a*(1+p/100)*f*r",
+            "diff": "a*f*r*(first*n_*(p + 100) - (n - 1)*(p + 200))/100",
+            "expected_norm": "(((n-1)*a+(n-1)*a+(n-1)*a*p/100)*f*r)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n_*(first)*a*(1+p/100)*f*r",
+            "parse": 1.0,
+            "rep": 0.8666666666666667,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "n_*(first)*a*(1+p/100)*f*r",
+          "parse_ok": true,
+          "raw": "$n_{first} \\times a \\times (1 + p/100) \\times f \\times r$",
+          "score": 0.8646666666666669
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n_*(first)*a*(2+p/100)*f*r",
+            "diff": "a*f*r*(p + 200)*(first*n_ - n + 1)/100",
+            "expected_norm": "(((n-1)*a+(n-1)*a+(n-1)*a*p/100)*f*r)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n_*(first)*a*(2+p/100)*f*r",
+            "parse": 1.0,
+            "rep": 0.8666666666666667,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "n_*(first)*a*(2+p/100)*f*r",
+          "parse_ok": true,
+          "raw": "$n_{first} \\times a \\times (2 + p/100) \\times f \\times r$",
+          "score": 0.8646666666666669
+        }
+      ],
+      "expected": "int(((n-1)*a + (n-1)*a + (n-1)*a*p/100) * f * r)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "$n_{first} \\times a \\times (2 + p/100) \\times f \\times r$",
+      "h21_top_score": 0.8646666666666669,
+      "hit_max_steps": false,
+      "index": 24,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "n_*(first)*a*(2+p/100)*f*r<<n_first*a*(2+p/100)*f*r>>",
+        "expected_err": null,
+        "expected_norm": "(((n-1)*a+(n-1)*a+(n-1)*a*p/100)*f*r)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$n_{first} \\times a \\times (2 + p/100) \\times f \\times r$<<n_first * a * (2 + p/100) * f * r>>",
+      "time_seconds": 18.672608613967896,
+      "token_count": 588
+    },
+    {
+      "actual": "n - (m * p1) - (k * p2)",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n)-((m)*(cur)(p*1))-((k)*(cur)(p*2))",
+            "diff": "-bill*n - 2*cur*k*p - cur*m*p + 2*k*p + m*p + n",
+            "expected_norm": "n*(bill)-(m*p*1+k*p*2)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.8,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(n)-((m)*(cur)(p*1))-((k)*(cur)(p*2))",
+            "parse": 1.0,
+            "rep": 0.736842105263158,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(n)-((m)*(cur)(p*1))-((k)*(cur)(p*2))",
+          "parse_ok": true,
+          "raw": "{n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+          "score": 0.8731578947368421
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n)-(m)*(cur)(p*1)-(k)*(cur)(p*2)",
+            "diff": "-bill*n - 2*cur*k*p - cur*m*p + 2*k*p + m*p + n",
+            "expected_norm": "n*(bill)-(m*p*1+k*p*2)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.8,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(n)-(m)*(cur)(p*1)-(k)*(cur)(p*2)",
+            "parse": 1.0,
+            "rep": 0.6842105263157895,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(n)-(m)*(cur)(p*1)-(k)*(cur)(p*2)",
+          "parse_ok": true,
+          "raw": "{n} - {m} * {cur}{p1} - {k} * {cur}{p2}",
+          "score": 0.8657894736842107
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n)-(m)*(cur)(p*1)-(k)*(cur)(p*2)",
+            "diff": "-bill*n - 2*cur*k*p - cur*m*p + 2*k*p + m*p + n",
+            "expected_norm": "n*(bill)-(m*p*1+k*p*2)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.8,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(n)-(m)*(cur)(p*1)-(k)*(cur)(p*2)",
+            "parse": 1.0,
+            "rep": 0.6842105263157895,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(n)-(m)*(cur)(p*1)-(k)*(cur)(p*2)",
+          "parse_ok": true,
+          "raw": "{n} - {m} * {cur}{p1} - {k} * {cur}{p2}",
+          "score": 0.8657894736842107
+        }
+      ],
+      "expected": "n * int(bill) - (m * p1 + k * p2)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})",
+      "h21_top_score": 0.8731578947368421,
+      "hit_max_steps": false,
+      "index": 25,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(n)-((m)*(cur)(p*1))-((k)*(cur)(p*2))<<n-(m*p*1)-(k*p*2)>>",
+        "expected_err": null,
+        "expected_norm": "n*(bill)-(m*p*1+k*p*2)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{n} - ({m} * {cur}{p1}) - ({k} * {cur}{p2})<<n - (m * p1) - (k * p2)>>",
+      "time_seconds": 13.20728874206543,
+      "token_count": 393
+    },
+    {
+      "actual": "frac1 * n1 + mult1 * n2",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": true,
+      "candidates": [
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(frac*1)*(n*1)+(mult*1)*(n*2)",
+            "diff": "0",
+            "expected_norm": "(n*1*frac*1+n*2*mult*1)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(frac*1)*(n*1)+(mult*1)*(n*2)",
+            "parse": 1.0,
+            "rep": 0.5882352941176471,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(frac*1)*(n*1)+(mult*1)*(n*2)",
+          "parse_ok": true,
+          "raw": "{frac1} * {n1} + {mult1} * {n2}",
+          "score": 0.7423529411764707
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n*1)+(n*2)",
+            "diff": "n*(-frac - 2*mult + 3)",
+            "expected_norm": "(n*1*frac*1+n*2*mult*1)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*1)+(n*2)",
+            "parse": 1.0,
+            "rep": 0.7777777777777778,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(n*1)+(n*2)",
+          "parse_ok": true,
+          "raw": "{n1} + {n2}",
+          "score": 0.768888888888889
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(frac*1)*(n*1)+(mult*1)*(n*2)",
+            "diff": "0",
+            "expected_norm": "(n*1*frac*1+n*2*mult*1)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(frac*1)*(n*1)+(mult*1)*(n*2)",
+            "parse": 1.0,
+            "rep": 0.5882352941176471,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(frac*1)*(n*1)+(mult*1)*(n*2)",
+          "parse_ok": true,
+          "raw": "{frac1} * {n1} + {mult1} * {n2}",
+          "score": 0.7423529411764707
+        }
+      ],
+      "expected": "int(n1 * frac1 + n2 * mult1)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": true,
+      "h21_top_equiv": false,
+      "h21_top_label": "B",
+      "h21_top_raw": "{n1} + {n2}",
+      "h21_top_score": 0.768888888888889,
+      "hit_max_steps": false,
+      "index": 26,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(frac*1)*(n*1)+(mult*1)*(n*2)<<frac*1*n*1+mult*1*n*2>>",
+        "expected_err": null,
+        "expected_norm": "(n*1*frac*1+n*2*mult*1)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{frac1} * {n1} + {mult1} * {n2}<<frac1 * n1 + mult1 * n2>>",
+      "time_seconds": 10.98530626296997,
+      "token_count": 341
+    },
+    {
+      "actual": "n * (mult1 + mult2) * days",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(mult*1+mult*2)*n*days",
+            "diff": "days*mult*n*(-base*(mult + 50) + 150)/50",
+            "expected_norm": "(base*mult*1*(1+mult*2/100)*n*days)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(mult*1+mult*2)*n*days",
+            "parse": 1.0,
+            "rep": 0.75,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(mult*1+mult*2)*n*days",
+          "parse_ok": true,
+          "raw": "$(mult1 + mult2) * n * days$",
+          "score": 0.8483333333333334
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n*(mult*1+mult*2)*days",
+            "diff": "days*mult*n*(-base*(mult + 50) + 150)/50",
+            "expected_norm": "(base*mult*1*(1+mult*2/100)*n*days)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n*(mult*1+mult*2)*days",
+            "parse": 1.0,
+            "rep": 0.8181818181818181,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "n*(mult*1+mult*2)*days",
+          "parse_ok": true,
+          "raw": "$n * (mult1 + mult2) * days$",
+          "score": 0.8578787878787879
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n*days*(mult*1+mult*2)",
+            "diff": "days*mult*n*(-base*(mult + 50) + 150)/50",
+            "expected_norm": "(base*mult*1*(1+mult*2/100)*n*days)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n*days*(mult*1+mult*2)",
+            "parse": 1.0,
+            "rep": 0.75,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "n*days*(mult*1+mult*2)",
+          "parse_ok": true,
+          "raw": "$n * days * (mult1 + mult2)$",
+          "score": 0.8483333333333334
+        }
+      ],
+      "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "B",
+      "h21_top_raw": "$n * (mult1 + mult2) * days$",
+      "h21_top_score": 0.8578787878787879,
+      "hit_max_steps": false,
+      "index": 27,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "n*(mult*1+mult*2)*days<<n*(mult*1+mult*2)*days>>",
+        "expected_err": null,
+        "expected_norm": "(base*mult*1*(1+mult*2/100)*n*days)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$n * (mult1 + mult2) * days$<<n * (mult1 + mult2) * days>>",
+      "time_seconds": 9.423598766326904,
+      "token_count": 287
+    },
+    {
+      "actual": "012345678901234567890123456789012345678901234567890123456789012",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*1)+(n*2)-2*(spill))/2",
+            "diff": "-5*frac*n + frac*spill + 3*n/2 - spill",
+            "expected_norm": "(n*2*frac*2+(n*1-spill)*frac*1)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((n*1)+(n*2)-2*(spill))/2",
+            "parse": 1.0,
+            "rep": 0.7142857142857143,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "((n*1)+(n*2)-2*(spill))/2",
+          "parse_ok": true,
+          "raw": "({n1} + {n2} - 2*{spill})/2",
+          "score": 0.8600000000000001
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*1)+(n*2))/2-(spill)",
+            "diff": "-5*frac*n + frac*spill + 3*n/2 - spill",
+            "expected_norm": "(n*2*frac*2+(n*1-spill)*frac*1)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((n*1)+(n*2))/2-(spill)",
+            "parse": 1.0,
+            "rep": 0.7692307692307692,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "((n*1)+(n*2))/2-(spill)",
+          "parse_ok": true,
+          "raw": "({n1} + {n2})/2 - {spill}",
+          "score": 0.8676923076923078
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n*1)/2+(n*2)/2-(spill)",
+            "diff": "-5*frac*n + frac*spill + 3*n/2 - spill",
+            "expected_norm": "(n*2*frac*2+(n*1-spill)*frac*1)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*1)/2+(n*2)/2-(spill)",
+            "parse": 1.0,
+            "rep": 0.6666666666666667,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(n*1)/2+(n*2)/2-(spill)",
+          "parse_ok": true,
+          "raw": "{n1}/2 + {n2}/2 - {spill}",
+          "score": 0.8533333333333335
+        }
+      ],
+      "expected": "int(n2 * frac2 + (n1 - spill) * frac1)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "B",
+      "h21_top_raw": "({n1} + {n2})/2 - {spill}",
+      "h21_top_score": 0.8676923076923078,
+      "hit_max_steps": false,
+      "index": 28,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: leading zeros in decimal integer literals are not permitted; use an 0o prefix for octal integers (<string>, line 1)",
+        "actual_norm": "((n*1)+(n*2)-2*(spill))/2<<012345678901234567890123456789012345678901234567890123456789012>>",
+        "expected_err": null,
+        "expected_norm": "(n*2*frac*2+(n*1-spill)*frac*1)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "({n1} + {n2} - 2*{spill})/2<<012345678901234567890123456789012345678901234567890123456789012>>",
+      "time_seconds": 14.399710655212402,
+      "token_count": 388
+    },
+    {
+      "actual": "1 + 2",
+      "candidate_count": 3,
+      "candidate_parseable_count": 2,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n*1*c*1)+(p*n*1*c*1)/100",
+            "diff": "n*(c*p + 100*c - 2*p - 200)/100",
+            "expected_norm": "2*(n*1+(p/100*n*1))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.3333333333333333,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(n*1*c*1)+(p*n*1*c*1)/100",
+            "parse": 1.0,
+            "rep": 0.44999999999999996,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(n*1*c*1)+(p*n*1*c*1)/100",
+          "parse_ok": true,
+          "raw": "{n1 * c1} + {p * n1 * c1} / 100",
+          "score": 0.7396666666666667
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_err": "TokenError: ('unterminated string literal (detected at line 1)', (1, 63))",
+            "actual_norm": "(n*1*c*1)+(c*3)(Thisintroduces(c*3)whichisdefinedasthesum,soit'scircularorredundant)",
+            "expected_err": null,
+            "expected_norm": "2*(n*1+(p/100*n*1))"
+          },
+          "features": {
+            "err": "TokenError: ('unterminated string literal (detected at line 1)', (1, 63))",
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(n*1*c*1)+(c*3)(Thisintroduces(c*3)whichisdefinedasthesum,soit'scircularorredundant)",
+            "parse": 0.0,
+            "rep": 0.5652173913043479,
+            "simplicity": 0.8666666666666667
+          },
+          "label": "B",
+          "norm": "(n*1*c*1)+(c*3)(Thisintroduces(c*3)whichisdefinedasthesum,soit'scircularorredundant)",
+          "parse_ok": false,
+          "raw": "{n1 * c1} + {c3} (This introduces {c3} which is defined as the sum, so it's circular or redundant).",
+          "score": 0.4824637681159421
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n*1*c*1)+(c*2)(ThisisthesameasA)",
+            "diff": "2*ThisisthesameasA*c + c*n - n*p/50 - 2*n",
+            "expected_norm": "2*(n*1+(p/100*n*1))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*1*c*1)+(c*2)(ThisisthesameasA)",
+            "parse": 1.0,
+            "rep": 0.6666666666666667,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(n*1*c*1)+(c*2)(ThisisthesameasA)",
+          "parse_ok": true,
+          "raw": "{n1 * c1} + {c2} (This is the same as A).",
+          "score": 0.7533333333333334
+        }
+      ],
+      "expected": "2 * (n1 + (p/100 * n1))",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "C",
+      "h21_top_raw": "{n1 * c1} + {c2} (This is the same as A).",
+      "h21_top_score": 0.7533333333333334,
+      "hit_max_steps": true,
+      "index": 29,
+      "selected_line_detail": {},
+      "selected_line_equiv": false,
+      "selected_line_raw": null,
+      "time_seconds": 29.449946880340576,
+      "token_count": 900
+    },
+    {
+      "actual": "n * m // k",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": true,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*m)/(k))",
+            "diff": "-floor(m*n/k) + m*n/k",
+            "expected_norm": "(n*m)//k"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((n*m)/(k))",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "((n*m)/(k))",
+          "parse_ok": true,
+          "raw": "$\\frac{n \\times m}{k}$",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n*m/k",
+            "diff": "-floor(m*n/k) + m*n/k",
+            "expected_norm": "(n*m)//k"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n*m/k",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "n*m/k",
+          "parse_ok": true,
+          "raw": "$n \\times m / k$",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "n*m//k",
+            "diff": "0",
+            "expected_norm": "(n*m)//k"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n*m//k",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "n*m//k",
+          "parse_ok": true,
+          "raw": "$n \\times m // k$",
+          "score": 0.9500000000000002
+        }
+      ],
+      "expected": "(n*m)//k",
+      "final_is_correct": true,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": true,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "$\\frac{n \\times m}{k}$",
+      "h21_top_score": 1.0000000000000002,
+      "hit_max_steps": false,
+      "index": 30,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "n*m//k<<n*m//k>>",
+        "expected_err": null,
+        "expected_norm": "(n*m)//k"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$n \\times m // k$<<n * m // k>>",
+      "time_seconds": 12.551514863967896,
+      "token_count": 395
+    },
+    {
+      "actual": "Let's think step by step.\n1.  **Calculate the number of letters sent:**\n    *   There are {n1} peopl",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*1)-(n*2))*(l)*(p)*(t)/60",
+            "diff": "-l*n*p*t/60 - floor(-l*n*p*t/60)",
+            "expected_norm": "((n*1-n*2)*l*p*t)//60"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.75,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "((n*1)-(n*2))*(l)*(p)*(t)/60",
+            "parse": 1.0,
+            "rep": 0.8125,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "((n*1)-(n*2))*(l)*(p)*(t)/60",
+          "parse_ok": true,
+          "raw": "({n1} - {n2}) * {l} * {p} * {t} / 60",
+          "score": 0.87375
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*1)-(n*2))*(l)*(p)*(t)/60",
+            "diff": "-l*n*p*t/60 - floor(-l*n*p*t/60)",
+            "expected_norm": "((n*1-n*2)*l*p*t)//60"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.75,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "((n*1)-(n*2))*(l)*(p)*(t)/60",
+            "parse": 1.0,
+            "rep": 0.8125,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "((n*1)-(n*2))*(l)*(p)*(t)/60",
+          "parse_ok": true,
+          "raw": "({n1} - {n2}) * {l} * {p} * {t} / 60",
+          "score": 0.87375
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*1)-(n*2))*(l)*(p)*(t)/60",
+            "diff": "-l*n*p*t/60 - floor(-l*n*p*t/60)",
+            "expected_norm": "((n*1-n*2)*l*p*t)//60"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.75,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "((n*1)-(n*2))*(l)*(p)*(t)/60",
+            "parse": 1.0,
+            "rep": 0.8125,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "((n*1)-(n*2))*(l)*(p)*(t)/60",
+          "parse_ok": true,
+          "raw": "({n1} - {n2}) * {l} * {p} * {t} / 60",
+          "score": 0.87375
+        }
+      ],
+      "expected": "((n1 - n2) * l * p * t) // 60",
+      "final_is_correct": false,
+      "final_is_syntax_valid": false,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "({n1} - {n2}) * {l} * {p} * {t} / 60",
+      "h21_top_score": 0.87375,
+      "hit_max_steps": false,
+      "index": 31,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "((n*1)-(n*2))*(l)*(p)*(t)/60<<",
+        "expected_err": null,
+        "expected_norm": "((n*1-n*2)*l*p*t)//60"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "({n1} - {n2}) * {l} * {p} * {t} / 60<<",
+      "time_seconds": 15.87353777885437,
+      "token_count": 474
+    },
+    {
+      "actual": "relative_age*100000000000000000000000000000000000000000000000000000000000",
+      "candidate_count": 3,
+      "candidate_parseable_count": 2,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(relative_age)",
+            "diff": "-multiple*relative_age + orbit_period + relative_age",
+            "expected_norm": "multiple*relative_age-orbit_period"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(relative_age)",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(relative_age)",
+          "parse_ok": true,
+          "raw": "{relative_age}",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(multiple)*(relative_age)(Thisistheageatthesecondsighting)",
+            "diff": "Thisistheageatthesecondsighting*multiple*relative_age - multiple*relative_age + orbit_period",
+            "expected_norm": "multiple*relative_age-orbit_period"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(multiple)*(relative_age)(Thisistheageatthesecondsighting)",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(multiple)*(relative_age)(Thisistheageatthesecondsighting)",
+          "parse_ok": true,
+          "raw": "{multiple} * {relative_age} (This is the age at the second sighting)",
+          "score": 0.8833333333333335
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_err": "TypeError: can't multiply sequence by non-int of type 'Symbol'",
+            "actual_norm": "(orbit_period)(Thisistheperiod,nottheage)",
+            "expected_err": null,
+            "expected_norm": "multiple*relative_age-orbit_period"
+          },
+          "features": {
+            "err": "TypeError: can't multiply sequence by non-int of type 'Symbol'",
+            "grounding": 0.3333333333333333,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(orbit_period)(Thisistheperiod,nottheage)",
+            "parse": 0.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(orbit_period)(Thisistheperiod,nottheage)",
+          "parse_ok": false,
+          "raw": "{orbit_period} (This is the period, not the age)",
+          "score": 0.6366666666666667
+        }
+      ],
+      "expected": "multiple * relative_age - orbit_period",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{relative_age}",
+      "h21_top_score": 1.0000000000000002,
+      "hit_max_steps": false,
+      "index": 32,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(relative_age)<<relative_age*100000000000000000000000000000000000000000000000000000000000>>",
+        "expected_err": null,
+        "expected_norm": "multiple*relative_age-orbit_period"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{relative_age}<<relative_age*100000000000000000000000000000000000000000000000000000000000>>",
+      "time_seconds": 21.34590435028076,
+      "token_count": 599
+    },
+    {
+      "actual": "n1 + n2 + n3 - (n1 * p1 + n2 * p2 + n3 * p3) * (n1 + n2 + n3) - n1 * p1 - n2 * p2 - n3 * p3 - n1 * p1",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n*1+n*2+n*3-cur*(n*1*p*1+n*2*p*2+n*3*p*3)",
+            "diff": "2*n*(-7*cur*p - 7*p + 3)",
+            "expected_norm": "n*1*p*1+n*2*p*2+n*3*p*3"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.3333333333333333,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n*1+n*2+n*3-cur*(n*1*p*1+n*2*p*2+n*3*p*3)",
+            "parse": 1.0,
+            "rep": 0.2894736842105263,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "n*1+n*2+n*3-cur*(n*1*p*1+n*2*p*2+n*3*p*3)",
+          "parse_ok": true,
+          "raw": "$n1 + n2 + n3 - cur * (n1 * p1 + n2 * p2 + n3 * p3)$",
+          "score": 0.7171929824561405
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n*1+n*2+n*3-cur*(n*1*p*1+n*2*p*2+n*3*p*3)",
+            "diff": "2*n*(-7*cur*p - 7*p + 3)",
+            "expected_norm": "n*1*p*1+n*2*p*2+n*3*p*3"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.3333333333333333,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n*1+n*2+n*3-cur*(n*1*p*1+n*2*p*2+n*3*p*3)",
+            "parse": 1.0,
+            "rep": 0.2894736842105263,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "n*1+n*2+n*3-cur*(n*1*p*1+n*2*p*2+n*3*p*3)",
+          "parse_ok": true,
+          "raw": "$n1 + n2 + n3 - cur * (n1 * p1 + n2 * p2 + n3 * p3)$",
+          "score": 0.7171929824561405
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n*1+n*2+n*3-cur*(n*1*p*1+n*2*p*2+n*3*p*3)",
+            "diff": "2*n*(-7*cur*p - 7*p + 3)",
+            "expected_norm": "n*1*p*1+n*2*p*2+n*3*p*3"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.3333333333333333,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n*1+n*2+n*3-cur*(n*1*p*1+n*2*p*2+n*3*p*3)",
+            "parse": 1.0,
+            "rep": 0.2894736842105263,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "n*1+n*2+n*3-cur*(n*1*p*1+n*2*p*2+n*3*p*3)",
+          "parse_ok": true,
+          "raw": "$n1 + n2 + n3 - cur * (n1 * p1 + n2 * p2 + n3 * p3)$",
+          "score": 0.7171929824561405
+        }
+      ],
+      "expected": "n1*p1 + n2*p2 + n3*p3",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "$n1 + n2 + n3 - cur * (n1 * p1 + n2 * p2 + n3 * p3)$",
+      "h21_top_score": 0.7171929824561405,
+      "hit_max_steps": false,
+      "index": 33,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "n*1+n*2+n*3-cur*(n*1*p*1+n*2*p*2+n*3*p*3)<<n*1+n*2+n*3-(n*1*p*1+n*2*p*2+n*3*p*3)*(n*1+n*2+n*3)-n*1*p*1-n*2*p*2-n*3*p*3-n*1*p*1>>",
+        "expected_err": null,
+        "expected_norm": "n*1*p*1+n*2*p*2+n*3*p*3"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$n1 + n2 + n3 - cur * (n1 * p1 + n2 * p2 + n3 * p3)$<<n1 + n2 + n3 - (n1 * p1 + n2 * p2 + n3 * p3) * (n1 + n2 + n3) - n1 * p1 - n2 * p2 - n3 * p3 - n1 * p1>>",
+      "time_seconds": 15.930054187774658,
+      "token_count": 428
+    },
+    {
+      "actual": "(w1 + w2 + w3) * (1 - (price * (w1 + w2 + w3))) * (1 - (price * (w1 + w2 + w3))) * (1 - (price * (w1 + w2 + w3)))",
+      "candidate_count": 0,
+      "candidate_parseable_count": 0,
+      "candidate_union_equiv": false,
+      "candidates": [],
+      "expected": "int((w1 + w2 + (n-2)*w3) * price)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": null,
+      "h21_top_raw": null,
+      "h21_top_score": null,
+      "hit_max_steps": false,
+      "index": 34,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(w_*1+w_*2+w_*3)*(1-cur*price)<<(w*1+w*2+w*3)*(1-(price*(w*1+w*2+w*3)))*(1-(price*(w*1+w*2+w*3)))*(1-(price*(w*1+w*2+w*3)))>>",
+        "expected_err": null,
+        "expected_norm": "((w*1+w*2+(n-2)*w*3)*price)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$(w_1 + w_2 + w_3) \\times (1 - cur \\times price)$<< (w1 + w2 + w3) * (1 - (price * (w1 + w2 + w3))) * (1 - (price * (w1 + w2 + w3))) * (1 - (price * (w1 + w2 + w3)))>>",
+      "time_seconds": 16.354168176651,
+      "token_count": 444
+    },
+    {
+      "actual": "n * (frac - frac) / 100000000000000000000000000000000000000000000000000000",
+      "candidate_count": 0,
+      "candidate_parseable_count": 0,
+      "candidate_union_equiv": false,
+      "candidates": [],
+      "expected": "n - int(n * frac)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": null,
+      "h21_top_raw": null,
+      "h21_top_score": null,
+      "hit_max_steps": false,
+      "index": 35,
+      "selected_line_detail": {},
+      "selected_line_equiv": false,
+      "selected_line_raw": null,
+      "time_seconds": 8.60369086265564,
+      "token_count": 151
+    },
+    {
+      "actual": "60\n*\n0\n*\n1\n*\n2\n*\n3\n*\n4\n*\n5\n*\n6\n*\n7\n*\n8\n*\n9\n*\n10\n*\n11\n*\n12\n*\n13",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+            "diff": "d*n*t/20 - floor(d*n*t*(2*frac + 1)/20)",
+            "expected_norm": "((n*1+n*2)*t*d+2*(n*1+n*2)*t*d*frac)//60"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+            "parse": 1.0,
+            "rep": 0.6111111111111112,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+          "parse_ok": true,
+          "raw": "({d} * {n2} * {t} + {n1} * {t} * {d}) / 60",
+          "score": 0.828888888888889
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+            "diff": "d*n*t/20 - floor(d*n*t*(2*frac + 1)/20)",
+            "expected_norm": "((n*1+n*2)*t*d+2*(n*1+n*2)*t*d*frac)//60"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+            "parse": 1.0,
+            "rep": 0.6111111111111112,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+          "parse_ok": true,
+          "raw": "({d} * {n2} * {t} + {n1} * {t} * {d}) / 60",
+          "score": 0.828888888888889
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+            "diff": "d*n*t/20 - floor(d*n*t*(2*frac + 1)/20)",
+            "expected_norm": "((n*1+n*2)*t*d+2*(n*1+n*2)*t*d*frac)//60"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+            "parse": 1.0,
+            "rep": 0.6111111111111112,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+          "parse_ok": true,
+          "raw": "({d} * {n2} * {t} + {n1} * {t} * {d}) / 60",
+          "score": 0.828888888888889
+        }
+      ],
+      "expected": "((n1 + n2) * t * d + 2 * (n1 + n2) * t * d * frac) // 60",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "({d} * {n2} * {t} + {n1} * {t} * {d}) / 60",
+      "h21_top_score": 0.828888888888889,
+      "hit_max_steps": true,
+      "index": 36,
+      "selected_line_detail": {},
+      "selected_line_equiv": false,
+      "selected_line_raw": null,
+      "time_seconds": 32.27575469017029,
+      "token_count": 900
+    },
+    {
+      "actual": "1/n1 + 1/n2",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "1/n*1",
+            "diff": "(-n**2*(frac + 2) + 1)/n",
+            "expected_norm": "(n*1*frac)+n*2"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "1/n*1",
+            "parse": 1.0,
+            "rep": 0.8,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "1/n*1",
+          "parse_ok": true,
+          "raw": "1/n1",
+          "score": 0.772
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "1/n*2",
+            "diff": "(-n**2*(frac + 2) + 2)/n",
+            "expected_norm": "(n*1*frac)+n*2"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "1/n*2",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "1/n*2",
+          "parse_ok": true,
+          "raw": "1/n2",
+          "score": 0.8
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "1/n*1+1/n*2",
+            "diff": "(-n**2*(frac + 2) + 3)/n",
+            "expected_norm": "(n*1*frac)+n*2"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "1/n*1+1/n*2",
+            "parse": 1.0,
+            "rep": 0.5454545454545454,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "1/n*1+1/n*2",
+          "parse_ok": true,
+          "raw": "1/n1 + 1/n2",
+          "score": 0.7363636363636366
+        }
+      ],
+      "expected": "int(n1 * frac) + n2",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "B",
+      "h21_top_raw": "1/n2",
+      "h21_top_score": 0.8,
+      "hit_max_steps": false,
+      "index": 37,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "1/n*1+1/n*2<<1/n*1+1/n*2>>",
+        "expected_err": null,
+        "expected_norm": "(n*1*frac)+n*2"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "1/n1 + 1/n2<<1/n1 + 1/n2>>",
+      "time_seconds": 10.511068344116211,
+      "token_count": 331
+    },
+    {
+      "actual": "total - 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(total)-2*(n)",
+            "diff": "m",
+            "expected_norm": "total-2*n-m"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(total)-2*(n)",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(total)-2*(n)",
+          "parse_ok": true,
+          "raw": "{total} - 2 * {n}",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(total)-(n)-(n)",
+            "diff": "m",
+            "expected_norm": "total-2*n-m"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(total)-(n)-(n)",
+            "parse": 1.0,
+            "rep": 0.7142857142857143,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(total)-(n)-(n)",
+          "parse_ok": true,
+          "raw": "{total} - {n} - {n}",
+          "score": 0.9600000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(total)-(n)-(n)-(n)",
+            "diff": "m - n",
+            "expected_norm": "total-2*n-m"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(total)-(n)-(n)-(n)",
+            "parse": 1.0,
+            "rep": 0.5555555555555556,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(total)-(n)-(n)-(n)",
+          "parse_ok": true,
+          "raw": "{total} - {n} - {n} - {n}",
+          "score": 0.937777777777778
+        }
+      ],
+      "expected": "total - 2*n - m",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{total} - 2 * {n}",
+      "h21_top_score": 1.0000000000000002,
+      "hit_max_steps": false,
+      "index": 38,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(total)-2*(n)<<total-2*n2*n2*n2*n2*n2*n2*n2*n2*n2*n2*n2*n2*n2*n2*n>>",
+        "expected_err": null,
+        "expected_norm": "total-2*n-m"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{total} - 2 * {n}<<total - 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n 2 * n >>",
+      "time_seconds": 10.636632204055786,
+      "token_count": 251
+    },
+    {
+      "actual": "total - n1 - n2+1-1",
+      "candidate_count": 1,
+      "candidate_parseable_count": 0,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+            "actual_norm": "<total-n*1-n*2+1-1>",
+            "expected_err": null,
+            "expected_norm": "total-(n*1+n*2)"
+          },
+          "features": {
+            "err": "SyntaxError: invalid syntax (<string>, line 1)",
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "<total-n*1-n*2+1-1>",
+            "parse": 0.0,
+            "rep": 0.5384615384615384,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "<total-n*1-n*2+1-1>",
+          "parse_ok": false,
+          "raw": "<<total - n1 - n2+1-1>>",
+          "score": 0.6053846153846154
+        }
+      ],
+      "expected": "total - (n1 + n2)",
+      "final_is_correct": true,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": true,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "<<total - n1 - n2+1-1>>",
+      "h21_top_score": 0.6053846153846154,
+      "hit_max_steps": false,
+      "index": 39,
+      "selected_line_detail": {},
+      "selected_line_equiv": false,
+      "selected_line_raw": null,
+      "time_seconds": 4.714089870452881,
+      "token_count": 99
+    },
+    {
+      "actual": "n * (1 + r1/100) * (1 - r2/100)",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+            "diff": "n*p*(1 - cur)*(r - 50)*(r + 100)/5000",
+            "expected_norm": "(n*p*(1+r*1/100)*(1-r*2/100))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.75,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+            "parse": 1.0,
+            "rep": 0.6521739130434783,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+          "parse_ok": true,
+          "raw": "{n} * {cur}{p} * (1 + {r1}/100) * (1 - {r2}/100)",
+          "score": 0.8513043478260871
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+            "diff": "n*p*(1 - cur)*(r - 50)*(r + 100)/5000",
+            "expected_norm": "(n*p*(1+r*1/100)*(1-r*2/100))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.75,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+            "parse": 1.0,
+            "rep": 0.6521739130434783,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+          "parse_ok": true,
+          "raw": "{n} * {cur}{p} * (1 + {r1}/100) * (1 - {r2}/100)",
+          "score": 0.8513043478260871
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+            "diff": "n*p*(1 - cur)*(r - 50)*(r + 100)/5000",
+            "expected_norm": "(n*p*(1+r*1/100)*(1-r*2/100))"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.75,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+            "parse": 1.0,
+            "rep": 0.6521739130434783,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+          "parse_ok": true,
+          "raw": "{n} * {cur}{p} * (1 + {r1}/100) * (1 - {r2}/100)",
+          "score": 0.8513043478260871
+        }
+      ],
+      "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{n} * {cur}{p} * (1 + {r1}/100) * (1 - {r2}/100)",
+      "h21_top_score": 0.8513043478260871,
+      "hit_max_steps": false,
+      "index": 40,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)<<n*(1+r*1/100)*(1-r*2/100)>>",
+        "expected_err": null,
+        "expected_norm": "(n*p*(1+r*1/100)*(1-r*2/100))"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{n} * {cur}{p} * (1 + {r1}/100) * (1 - {r2}/100)<<n * (1 + r1/100) * (1 - r2/100)>>",
+      "time_seconds": 13.465766906738281,
+      "token_count": 418
+    },
+    {
+      "actual": "p1 + p2 + p1 + p3/frac + p4 - d 11111111111111111111111111111111111111111111",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "p_*1+(p_*2+p_*1)+((p_*3)/(frac))+(p_*4-d)",
+            "diff": "-3*frac*p - 8*p + 8*p_ + 3*p_/frac",
+            "expected_norm": "p*1+(p*1+p*2)+(p*3*frac)+(p*4-d)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "p_*1+(p_*2+p_*1)+((p_*3)/(frac))+(p_*4-d)",
+            "parse": 1.0,
+            "rep": 0.625,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "p_*1+(p_*2+p_*1)+((p_*3)/(frac))+(p_*4-d)",
+          "parse_ok": true,
+          "raw": "$p_1 + (p_2 + p_1) + \\frac{p_3}{\\text{frac}} + (p_4 - d)$",
+          "score": 0.8808333333333336
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "p_*1+p_*2+p_*1+((p_*3)/(frac))+p_*4-d",
+            "diff": "-3*frac*p - 8*p + 8*p_ + 3*p_/frac",
+            "expected_norm": "p*1+(p*1+p*2)+(p*3*frac)+(p*4-d)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "p_*1+p_*2+p_*1+((p_*3)/(frac))+p_*4-d",
+            "parse": 1.0,
+            "rep": 0.5652173913043479,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "p_*1+p_*2+p_*1+((p_*3)/(frac))+p_*4-d",
+          "parse_ok": true,
+          "raw": "$p_1 + p_2 + p_1 + \\frac{p_3}{\\text{frac}} + p_4 - d$",
+          "score": 0.8724637681159422
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "p_*1+p_*2+p_*1+((p_*3)/(frac))+p_*4-d",
+            "diff": "-3*frac*p - 8*p + 8*p_ + 3*p_/frac",
+            "expected_norm": "p*1+(p*1+p*2)+(p*3*frac)+(p*4-d)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "p_*1+p_*2+p_*1+((p_*3)/(frac))+p_*4-d",
+            "parse": 1.0,
+            "rep": 0.5652173913043479,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "p_*1+p_*2+p_*1+((p_*3)/(frac))+p_*4-d",
+          "parse_ok": true,
+          "raw": "$p_1 + p_2 + p_1 + \\frac{p_3}{\\text{frac}} + p_4 - d$",
+          "score": 0.8724637681159422
+        }
+      ],
+      "expected": "p1 + (p1 + p2) + (p3 * frac) + (p4 - d)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "$p_1 + (p_2 + p_1) + \\frac{p_3}{\\text{frac}} + (p_4 - d)$",
+      "h21_top_score": 0.8808333333333336,
+      "hit_max_steps": false,
+      "index": 41,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "p_*1+p_*2+p_*1+((p_*3)/(frac))+p_*4-d<<p*1+p*2+p*1+p*3/frac+p*4-d11111111111111111111111111111111111111111111>>",
+        "expected_err": null,
+        "expected_norm": "p*1+(p*1+p*2)+(p*3*frac)+(p*4-d)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$p_1 + p_2 + p_1 + \\frac{p_3}{\\text{frac}} + p_4 - d$<<p1 + p2 + p1 + p3/frac + p4 - d 11111111111111111111111111111111111111111111>>",
+      "time_seconds": 15.921780347824097,
+      "token_count": 445
+    },
+    {
+      "actual": "1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 + 15 + 16 + 17 + 18",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)**2+(multiplier)**3+(multiplier)**4)",
+            "diff": "first_hour_cost*(cur*(multiplier**4 + multiplier**3 + multiplier**2 + multiplier + 1) + multiplier*(-end_time + free_hours + start_time + 1) - 1)",
+            "expected_norm": "first_hour_cost+(end_time-start_time-free_hours-1)*first_hour_cost*multiplier"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)**2+(multiplier)**3+(multiplier)**4)",
+            "parse": 1.0,
+            "rep": 0.6190476190476191,
+            "simplicity": 0.8444444444444444
+          },
+          "label": "A",
+          "norm": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)**2+(multiplier)**3+(multiplier)**4)",
+          "parse_ok": true,
+          "raw": "{cur} * {first_hour_cost} * (1 + {multiplier} + {multiplier}^2 + {multiplier}^3 + {multiplier}^4)",
+          "score": 0.8655555555555556
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(cur)*(first_hour_cost)+(cur)*(first_hour_cost)*(multiplier)+(cur)*(first_hour_cost)*(multiplier)**2+(cur)*(first_hour_cost)*(multiplier)**3+(cur)*(first_hour_cost)*(multiplier)**4",
+            "diff": "first_hour_cost*(cur*multiplier**4 + cur*multiplier**3 + cur*multiplier**2 + cur*multiplier + cur + multiplier*(-end_time + free_hours + start_time + 1) - 1)",
+            "expected_norm": "first_hour_cost+(end_time-start_time-free_hours-1)*first_hour_cost*multiplier"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(cur)*(first_hour_cost)+(cur)*(first_hour_cost)*(multiplier)+(cur)*(first_hour_cost)*(multiplier)**2+(cur)*(first_hour_cost)*(multiplier)**3+(cur)*(first_hour_cost)*(multiplier)**4",
+            "parse": 1.0,
+            "rep": 0.32352941176470584,
+            "simplicity": 0.33333333333333337
+          },
+          "label": "B",
+          "norm": "(cur)*(first_hour_cost)+(cur)*(first_hour_cost)*(multiplier)+(cur)*(first_hour_cost)*(multiplier)**2+(cur)*(first_hour_cost)*(multiplier)**3+(cur)*(first_hour_cost)*(multiplier)**4",
+          "parse_ok": true,
+          "raw": "{cur} * {first_hour_cost} + {cur} * {first_hour_cost} * {multiplier} + {cur} * {first_hour_cost} * {multiplier}^2 + {cur} * {first_hour_cost} * {multiplier}^3 + {cur} * {first_hour_cost} * {multiplier}^4",
+          "score": 0.7219607843137255
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)**2+(multiplier)**3+(multiplier)**4)",
+            "diff": "first_hour_cost*(cur*(multiplier**4 + multiplier**3 + multiplier**2 + multiplier + 1) + multiplier*(-end_time + free_hours + start_time + 1) - 1)",
+            "expected_norm": "first_hour_cost+(end_time-start_time-free_hours-1)*first_hour_cost*multiplier"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)**2+(multiplier)**3+(multiplier)**4)",
+            "parse": 1.0,
+            "rep": 0.6190476190476191,
+            "simplicity": 0.8444444444444444
+          },
+          "label": "C",
+          "norm": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)**2+(multiplier)**3+(multiplier)**4)",
+          "parse_ok": true,
+          "raw": "{cur} * {first_hour_cost} * (1 + {multiplier} + {multiplier}^2 + {multiplier}^3 + {multiplier}^4)",
+          "score": 0.8655555555555556
+        }
+      ],
+      "expected": "first_hour_cost + (end_time - start_time - free_hours - 1) * first_hour_cost * multiplier",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{cur} * {first_hour_cost} * (1 + {multiplier} + {multiplier}^2 + {multiplier}^3 + {multiplier}^4)",
+      "h21_top_score": 0.8655555555555556,
+      "hit_max_steps": false,
+      "index": 42,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)**2+(multiplier)**3+(multiplier)**4)<<1+2+3+4+5+6+7+8+9+10+11+12+13+14+15+16+17+18>>",
+        "expected_err": null,
+        "expected_norm": "first_hour_cost+(end_time-start_time-free_hours-1)*first_hour_cost*multiplier"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{cur} * {first_hour_cost} * (1 + {multiplier} + {multiplier}^2 + {multiplier}^3 + {multiplier}^4)<<1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 + 15 + 16 + 17 + 18>>",
+      "time_seconds": 23.779361963272095,
+      "token_count": 672
+    },
+    {
+      "actual": "frac2 * mult1 * frac1 * n1/100000000000000000000000000000000000000000000000000",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": true,
+      "candidates": [
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(frac*2)*(mult*1)*(frac*1)*(n*1)",
+            "diff": "0",
+            "expected_norm": "(n*1*frac*1*mult*1*frac*2)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(frac*2)*(mult*1)*(frac*1)*(n*1)",
+            "parse": 1.0,
+            "rep": 0.5294117647058824,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(frac*2)*(mult*1)*(frac*1)*(n*1)",
+          "parse_ok": true,
+          "raw": "{frac2} * {mult1} * {frac1} * {n1}",
+          "score": 0.6841176470588235
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(n*1)*(frac*1)*(mult*1)*(frac*2)",
+            "diff": "0",
+            "expected_norm": "(n*1*frac*1*mult*1*frac*2)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(n*1)*(frac*1)*(mult*1)*(frac*2)",
+            "parse": 1.0,
+            "rep": 0.5294117647058824,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(n*1)*(frac*1)*(mult*1)*(frac*2)",
+          "parse_ok": true,
+          "raw": "{n1} * {frac1} * {mult1} * {frac2}",
+          "score": 0.6841176470588235
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(frac*2)*(mult*1)*(frac*1)*(n*1)",
+            "diff": "0",
+            "expected_norm": "(n*1*frac*1*mult*1*frac*2)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "(frac*2)*(mult*1)*(frac*1)*(n*1)",
+            "parse": 1.0,
+            "rep": 0.5294117647058824,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(frac*2)*(mult*1)*(frac*1)*(n*1)",
+          "parse_ok": true,
+          "raw": "{frac2} * {mult1} * {frac1} * {n1}",
+          "score": 0.6841176470588235
+        }
+      ],
+      "expected": "int(n1 * frac1 * mult1 * frac2)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": true,
+      "h21_top_label": "A",
+      "h21_top_raw": "{frac2} * {mult1} * {frac1} * {n1}",
+      "h21_top_score": 0.6841176470588235,
+      "hit_max_steps": false,
+      "index": 43,
+      "selected_line_detail": {
+        "actual_norm": "(frac*2)*(mult*1)*(frac*1)*(n*1)",
+        "diff": "0",
+        "expected_norm": "(n*1*frac*1*mult*1*frac*2)"
+      },
+      "selected_line_equiv": true,
+      "selected_line_raw": "{frac2} * {mult1} * {frac1} * {n1}",
+      "time_seconds": 23.54316020011902,
+      "token_count": 653
+    },
+    {
+      "actual": "mult + n - t1",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(mult)+(n)-(t*1)",
+            "diff": "d*t - d*(mult*t + n) + mult + n - t",
+            "expected_norm": "d*(n+mult*t*1)-d*t*1"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(mult)+(n)-(t*1)",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(mult)+(n)-(t*1)",
+          "parse_ok": true,
+          "raw": "{mult} + {n} - {t1}",
+          "score": 0.9333333333333336
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n)-(t*1)+(mult)",
+            "diff": "d*t - d*(mult*t + n) + mult + n - t",
+            "expected_norm": "d*(n+mult*t*1)-d*t*1"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n)-(t*1)+(mult)",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(n)-(t*1)+(mult)",
+          "parse_ok": true,
+          "raw": "{n} - {t1} + {mult}",
+          "score": 0.9333333333333336
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(mult)-(t*1)+(n)",
+            "diff": "d*t - d*(mult*t + n) + mult + n - t",
+            "expected_norm": "d*(n+mult*t*1)-d*t*1"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(mult)-(t*1)+(n)",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(mult)-(t*1)+(n)",
+          "parse_ok": true,
+          "raw": "{mult} - {t1} + {n}",
+          "score": 0.9333333333333336
+        }
+      ],
+      "expected": "d * (n + mult * t1) - d * t1",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{mult} + {n} - {t1}",
+      "h21_top_score": 0.9333333333333336,
+      "hit_max_steps": false,
+      "index": 44,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(mult)+(n)-(t*1)<<mult+n-t*1>>",
+        "expected_err": null,
+        "expected_norm": "d*(n+mult*t*1)-d*t*1"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{mult} + {n} - {t1}<<mult + n - t1>>",
+      "time_seconds": 12.953227758407593,
+      "token_count": 411
+    },
+    {
+      "actual": "frac*n*p1*p2/1000000*1000000*1000000*1000000*1000000*1000000*1000000",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n*((p*1)/(100))*((p*2)/(100))*((frac)/(100))",
+            "diff": "-99*frac*n*p**2/500000",
+            "expected_norm": "(n*(p*1/100)*(p*2/100)*frac)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n*((p*1)/(100))*((p*2)/(100))*((frac)/(100))",
+            "parse": 1.0,
+            "rep": 0.6111111111111112,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "n*((p*1)/(100))*((p*2)/(100))*((frac)/(100))",
+          "parse_ok": true,
+          "raw": "$n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{frac}{100}$",
+          "score": 0.828888888888889
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*p*1*p*2*frac)/(1000000))",
+            "diff": "-99*frac*n*p**2/500000",
+            "expected_norm": "(n*(p*1/100)*(p*2/100)*frac)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 0.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "((n*p*1*p*2*frac)/(1000000))",
+            "parse": 1.0,
+            "rep": 0.6666666666666667,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "((n*p*1*p*2*frac)/(1000000))",
+          "parse_ok": true,
+          "raw": "$\\frac{n \\cdot p1 \\cdot p2 \\cdot frac}{1000000}$",
+          "score": 0.6766666666666667
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "n*((p*1)/(100))*((p*2)/(100))*((frac)/(100))",
+            "diff": "-99*frac*n*p**2/500000",
+            "expected_norm": "(n*(p*1/100)*(p*2/100)*frac)"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 0.0,
+            "newline": 1.0,
+            "norm": "n*((p*1)/(100))*((p*2)/(100))*((frac)/(100))",
+            "parse": 1.0,
+            "rep": 0.6111111111111112,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "n*((p*1)/(100))*((p*2)/(100))*((frac)/(100))",
+          "parse_ok": true,
+          "raw": "$n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{frac}{100}$",
+          "score": 0.828888888888889
+        }
+      ],
+      "expected": "int(n * (p1/100) * (p2/100) * frac)",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "$n \\times \\frac{p1}{100} \\times \\frac{p2}{100} \\times \\frac{frac}{100}$",
+      "h21_top_score": 0.828888888888889,
+      "hit_max_steps": false,
+      "index": 45,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "((n*p*1*p*2*frac)/(1000000))<<frac*n*p*1*p*2/1000000*1000000*1000000*1000000*1000000*1000000*1000000>>",
+        "expected_err": null,
+        "expected_norm": "(n*(p*1/100)*(p*2/100)*frac)"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "$\\frac{n \\cdot p1 \\cdot p2 \\cdot frac}{1000000}$<<frac*n*p1*p2/1000000*1000000*1000000*1000000*1000000*1000000*1000000>>",
+      "time_seconds": 17.00636601448059,
+      "token_count": 428
+    },
+    {
+      "actual": "n1 + mult + n2 + n3 1111111111111111111111111111111111111111111111111111",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n*1)+(mult)+(n*2)+(n*3)",
+            "diff": "mult*(1 - n)",
+            "expected_norm": "n*1+n*1*mult+n*2+n*3"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*1)+(mult)+(n*2)+(n*3)",
+            "parse": 1.0,
+            "rep": 0.6,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(n*1)+(mult)+(n*2)+(n*3)",
+          "parse_ok": true,
+          "raw": "{n1} + {mult} + {n2} + {n3}",
+          "score": 0.8440000000000001
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n*1)+(mult)+(n*2)+(n*3)",
+            "diff": "mult*(1 - n)",
+            "expected_norm": "n*1+n*1*mult+n*2+n*3"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*1)+(mult)+(n*2)+(n*3)",
+            "parse": 1.0,
+            "rep": 0.6,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(n*1)+(mult)+(n*2)+(n*3)",
+          "parse_ok": true,
+          "raw": "{n1} + {mult} + {n2} + {n3}",
+          "score": 0.8440000000000001
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n*1)+(mult)+(n*2)+(n*3)",
+            "diff": "mult*(1 - n)",
+            "expected_norm": "n*1+n*1*mult+n*2+n*3"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.5,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*1)+(mult)+(n*2)+(n*3)",
+            "parse": 1.0,
+            "rep": 0.6,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(n*1)+(mult)+(n*2)+(n*3)",
+          "parse_ok": true,
+          "raw": "{n1} + {mult} + {n2} + {n3}",
+          "score": 0.8440000000000001
+        }
+      ],
+      "expected": "n1 + n1 * mult + n2 + n3",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "{n1} + {mult} + {n2} + {n3}",
+      "h21_top_score": 0.8440000000000001,
+      "hit_max_steps": false,
+      "index": 46,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "(n*1)+(mult)+(n*2)+(n*3)<<n*1+mult+n*2+n*31111111111111111111111111111111111111111111111111111>>",
+        "expected_err": null,
+        "expected_norm": "n*1+n*1*mult+n*2+n*3"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "{n1} + {mult} + {n2} + {n3}<<n1 + mult + n2 + n3 1111111111111111111111111111111111111111111111111111>>",
+      "time_seconds": 12.50304889678955,
+      "token_count": 317
+    },
+    {
+      "actual": "7 * n * (1 + mult)",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": true,
+      "candidates": [
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "7*n*(1+mult)",
+            "diff": "0",
+            "expected_norm": "(n+n*mult)*7"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "7*n*(1+mult)",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "7*n*(1+mult)",
+          "parse_ok": true,
+          "raw": "7 * n * (1 + mult)",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "n*(1+mult)*7",
+            "diff": "0",
+            "expected_norm": "(n+n*mult)*7"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n*(1+mult)*7",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "n*(1+mult)*7",
+          "parse_ok": true,
+          "raw": "n * (1 + mult) * 7",
+          "score": 1.0000000000000002
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "n*(1+mult)*7",
+            "diff": "0",
+            "expected_norm": "(n+n*mult)*7"
+          },
+          "features": {
+            "err": null,
+            "grounding": 1.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "n*(1+mult)*7",
+            "parse": 1.0,
+            "rep": 1.0,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "n*(1+mult)*7",
+          "parse_ok": true,
+          "raw": "n * (1 + mult) * 7",
+          "score": 1.0000000000000002
+        }
+      ],
+      "expected": "(n + n * mult) * 7",
+      "final_is_correct": true,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": true,
+      "h21_top_equiv": true,
+      "h21_top_label": "A",
+      "h21_top_raw": "7 * n * (1 + mult)",
+      "h21_top_score": 1.0000000000000002,
+      "hit_max_steps": false,
+      "index": 47,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "7*n*(1+mult)<<7*n*(1+mult)>>",
+        "expected_err": null,
+        "expected_norm": "(n+n*mult)*7"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "7 * n * (1 + mult)<<7 * n * (1 + mult)>>",
+      "time_seconds": 9.108997583389282,
+      "token_count": 278
+    },
+    {
+      "actual": "n0 * (1 + r * d)",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": true,
+      "candidates": [
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(n*0)+(n*0)*(r)*(d)",
+            "diff": "0",
+            "expected_norm": "n*0*(r+1)**d"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*0)+(n*0)*(r)*(d)",
+            "parse": 1.0,
+            "rep": 0.6923076923076923,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "(n*0)+(n*0)*(r)*(d)",
+          "parse_ok": true,
+          "raw": "{n0} + {n0} * {r} * {d}",
+          "score": 0.8902564102564103
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(n*0)*(1+(r)*(d))",
+            "diff": "0",
+            "expected_norm": "n*0*(r+1)**d"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*0)*(1+(r)*(d))",
+            "parse": 1.0,
+            "rep": 0.9090909090909091,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(n*0)*(1+(r)*(d))",
+          "parse_ok": true,
+          "raw": "{n0} * (1 + {r} * {d})",
+          "score": 0.9206060606060609
+        },
+        {
+          "equiv": true,
+          "equiv_detail": {
+            "actual_norm": "(n*0)*(1+(r)*(d))",
+            "diff": "0",
+            "expected_norm": "n*0*(r+1)**d"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.6666666666666666,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*0)*(1+(r)*(d))",
+            "parse": 1.0,
+            "rep": 0.9090909090909091,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(n*0)*(1+(r)*(d))",
+          "parse_ok": true,
+          "raw": "{n0} * (1 + {r} * {d})",
+          "score": 0.9206060606060609
+        }
+      ],
+      "expected": "n0 * (r + 1)**d",
+      "final_is_correct": false,
+      "final_is_syntax_valid": true,
+      "final_sympy_equiv": true,
+      "h21_top_equiv": true,
+      "h21_top_label": "B",
+      "h21_top_raw": "{n0} * (1 + {r} * {d})",
+      "h21_top_score": 0.9206060606060609,
+      "hit_max_steps": false,
+      "index": 48,
+      "selected_line_detail": {
+        "actual_norm": "(n*0)*(1+(r)*(d))",
+        "diff": "0",
+        "expected_norm": "n*0*(r+1)**d"
+      },
+      "selected_line_equiv": true,
+      "selected_line_raw": "{n0} * (1 + {r} * {d})",
+      "time_seconds": 16.559988260269165,
+      "token_count": 527
+    },
+    {
+      "actual": "Let's think step by step.\n1. Calculate the total number of eggs eaten in the first phase: {n1} eggs/",
+      "candidate_count": 3,
+      "candidate_parseable_count": 3,
+      "candidate_union_equiv": false,
+      "candidates": [
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "((n*1*d*1)+(n*2*d*2))/12",
+            "diff": "5*d*n/12 - floor(5*d*n/12)",
+            "expected_norm": "(n*1*d*1+n*2*d*2)//12"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "((n*1*d*1)+(n*2*d*2))/12",
+            "parse": 1.0,
+            "rep": 0.5,
+            "simplicity": 1.0
+          },
+          "label": "A",
+          "norm": "((n*1*d*1)+(n*2*d*2))/12",
+          "parse_ok": true,
+          "raw": "({n1 * d1} + {n2 * d2}) / 12",
+          "score": 0.7300000000000002
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n*1*d*1)+(n*2*d*2)",
+            "diff": "5*d*n - floor(5*d*n/12)",
+            "expected_norm": "(n*1*d*1+n*2*d*2)//12"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*1*d*1)+(n*2*d*2)",
+            "parse": 1.0,
+            "rep": 0.47058823529411764,
+            "simplicity": 1.0
+          },
+          "label": "B",
+          "norm": "(n*1*d*1)+(n*2*d*2)",
+          "parse_ok": true,
+          "raw": "{n1 * d1} + {n2 * d2}",
+          "score": 0.7258823529411766
+        },
+        {
+          "equiv": false,
+          "equiv_detail": {
+            "actual_norm": "(n*1*d*1)+(n*2*d*2)/12",
+            "diff": "4*d*n/3 - floor(5*d*n/12)",
+            "expected_norm": "(n*1*d*1+n*2*d*2)//12"
+          },
+          "features": {
+            "err": null,
+            "grounding": 0.0,
+            "huge": 1.0,
+            "lowdeg": 1.0,
+            "newline": 1.0,
+            "norm": "(n*1*d*1)+(n*2*d*2)/12",
+            "parse": 1.0,
+            "rep": 0.5,
+            "simplicity": 1.0
+          },
+          "label": "C",
+          "norm": "(n*1*d*1)+(n*2*d*2)/12",
+          "parse_ok": true,
+          "raw": "{n1 * d1} + {n2 * d2} / 12",
+          "score": 0.7300000000000002
+        }
+      ],
+      "expected": "(n1*d1 + n2*d2) // 12",
+      "final_is_correct": false,
+      "final_is_syntax_valid": false,
+      "final_sympy_equiv": false,
+      "h21_top_equiv": false,
+      "h21_top_label": "A",
+      "h21_top_raw": "({n1 * d1} + {n2 * d2}) / 12",
+      "h21_top_score": 0.7300000000000002,
+      "hit_max_steps": false,
+      "index": 49,
+      "selected_line_detail": {
+        "actual_err": "SyntaxError: invalid syntax (<string>, line 1)",
+        "actual_norm": "((n*1*d*1)+(n*2*d*2))/12<<",
+        "expected_err": null,
+        "expected_norm": "(n*1*d*1+n*2*d*2)//12"
+      },
+      "selected_line_equiv": false,
+      "selected_line_raw": "({n1 * d1} + {n2 * d2}) / 12<<",
+      "time_seconds": 10.52542519569397,
+      "token_count": 342
+    }
+  ],
+  "selected_line_equiv_count": 3,
+  "selected_line_present_count": 39,
+  "source": "outputs/generated/h24_gsm2b_multicandidate_selector_probe_20260629/results/direct_eval_success.json",
+  "syntax_rate": 0.8775510204081632
+}
