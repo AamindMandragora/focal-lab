@@ -161,6 +161,13 @@ _POOL_LOG = "[sharded-eval]"
 # pool-merged, full (non-early-stopped) batch of results.
 _MAX_TIMEOUTS_PATHOLOGICAL = 10
 
+# Marker prefix for EvaluationResult.early_stop_reason when the per-attempt
+# wall-clock cap (SynthesisPipeline.max_attempt_seconds) fires. feedback_loop.py
+# checks for this exact prefix to tell "this attempt ran out of its overall
+# time budget" apart from every other early-stop reason (which are ordinary
+# threshold misses, not timeouts, and must not be recorded as one).
+ATTEMPT_DEADLINE_EARLY_STOP_REASON = "attempt wall-clock budget exceeded"
+
 
 _MAX_GSM_SCORING_EXPRESSION_CHARS = 512
 _MAX_GSM_SCORING_EXPRESSION_TOKENS = 160
@@ -2734,6 +2741,7 @@ class Evaluator:
         target_min_accuracy: Optional[float],
         early_stop_min_syntax_rate: Optional[float],
         early_stop_runtime_failures: Optional[int],
+        deadline: Optional[float] = None,
     ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
         """Single-process path: evaluate examples one at a time, checking the
         early-stop conditions after each one (unchanged behavior from before
@@ -2741,6 +2749,12 @@ class Evaluator:
         state and `should_stop_collected` early stop are not poolable), and as
         the disaster fallback for GSM/Spider if the worker pool cannot be
         started or every worker dies.
+
+        `deadline`, if given, is an absolute `time.time()` timestamp for the
+        whole attempt (not just this evaluation stage). It is checked between
+        examples so a strategy that loops to its max steps on every example
+        cannot burn unbounded wall-clock time -- the loop stops as soon as the
+        deadline has passed and returns whatever examples finished.
         """
         run_crane_csd = logic.get_generation_runner()
         early_stop_enabled = (
@@ -2780,6 +2794,15 @@ class Evaluator:
             sample_outputs.append(sample)
             if sample.get("timed_out"):
                 n_timeouts += 1
+
+            if deadline is not None and time.time() >= deadline:
+                reason = (
+                    f"{ATTEMPT_DEADLINE_EARLY_STOP_REASON}; "
+                    f"N={len(sample_outputs)} of {len(dataset)} examples completed"
+                )
+                print(f"  [EVAL] Early stopping eval: {reason}", flush=True)
+                return sample_outputs, reason
+
             early_reason = early_stop_reason_if_any()
             if early_reason:
                 print(f"  [EVAL] Early stopping synthesis eval: {early_reason}", flush=True)
@@ -2948,6 +2971,7 @@ class Evaluator:
         early_stop_min_syntax_rate: Optional[float] = None,
         early_stop_runtime_failures: Optional[int] = None,
         min_examples_before_threshold_stop: Optional[int] = None,
+        deadline: Optional[float] = None,
     ) -> EvaluationResult:
         """
         Evaluate the compiled CSD on a sample of the dataset.
@@ -2965,6 +2989,11 @@ class Evaluator:
                 early stop is unaffected (it is a different signal). Lets the
                 synthesis feedback loop see usable data even when the strategy
                 cannot possibly clear the acceptance threshold.
+            deadline: Optional absolute `time.time()` timestamp. Checked between
+                examples (sequential path only); if crossed, evaluation stops
+                early and returns whatever examples finished, with
+                `early_stop_reason` starting with ATTEMPT_DEADLINE_EARLY_STOP_REASON
+                so the caller can tell this apart from a normal early stop.
 
         Returns:
             EvaluationResult with metrics and sample outputs
@@ -3017,6 +3046,7 @@ class Evaluator:
                     target_min_accuracy,
                     early_stop_min_syntax_rate,
                     early_stop_runtime_failures,
+                    deadline,
                 )
 
             return self._build_evaluation_result(

@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from ..verify.compiler import CompilationResult, DafnyCompiler
-from .evaluator import Evaluator, EvaluationResult
+from .evaluator import ATTEMPT_DEADLINE_EARLY_STOP_REASON, Evaluator, EvaluationResult
 from ..generate.generator import StrategyGenerator
 from ..generate import prompts as generation_prompts
 from ..generate.rationale import extract_rationale
@@ -296,6 +296,7 @@ class FailureStage(Enum):
     COMPILATION = "compilation"
     RUNTIME = "runtime"
     EVALUATION = "evaluation"
+    TIMEOUT = "timeout"
 
 
 def parse_strategy_type(strategy_code: str) -> dict:
@@ -660,6 +661,7 @@ class SynthesisPipeline:
         eval_sample_size: int = 10,
         eval_max_seconds_per_example: Optional[float] = 90.0,
         min_examples_before_threshold_stop: Optional[int] = 15,
+        max_attempt_seconds: Optional[float] = 3600.0,
         adaptive_helper_mask: bool = True,
         helper_selection_policy: str = "bandit",
         helper_mask_min_evals: int = 4,
@@ -700,6 +702,14 @@ class SynthesisPipeline:
                 fire. Decouples the synthesis feedback budget from the
                 acceptance threshold so the synthesizer always sees a usable
                 amount of evaluation data. None means no minimum (legacy).
+            max_attempt_seconds: Wall-clock cap, in seconds, on a single
+                attempt's evaluation stage (the part that can spin -- a bad
+                strategy looping to its max steps on every example). Checked
+                between examples; once crossed, evaluation stops early, the
+                attempt is recorded as FailureStage.TIMEOUT (not a crash, not
+                a legitimate score), and the loop moves on to the next
+                attempt with a fresh generation. Defaults to 3600s (1 hour);
+                pass None to disable (no cap -- not recommended).
             adaptive_helper_mask: Enable empirical helper pruning contract
             helper_selection_policy: Helper selection policy (`bandit` only; UCB-style)
             helper_mask_min_evals: Evaluated attempts before pruning can start
@@ -740,6 +750,7 @@ class SynthesisPipeline:
         self.eval_sample_size = eval_sample_size
         self.eval_max_seconds_per_example = eval_max_seconds_per_example
         self.min_examples_before_threshold_stop = min_examples_before_threshold_stop
+        self.max_attempt_seconds = max_attempt_seconds
         self.adaptive_helper_mask = adaptive_helper_mask
         normalized_policy = helper_selection_policy.strip().lower()
         if normalized_policy != "bandit":
@@ -1676,6 +1687,9 @@ class SynthesisPipeline:
             # Create full Dafny code
             full_code = self.generator.inject_strategy(strategy_code)
 
+            # Wall-clock start of this attempt, for the max_attempt_seconds cap.
+            attempt_start_time = time.time()
+
             # Create attempt record
             attempt = SynthesisAttempt(
                 attempt_number=attempt_num,
@@ -1694,6 +1708,7 @@ class SynthesisPipeline:
                 attempt.failed_at = FailureStage.SEARCH_CONTRACT
                 attempt.error_summary = error_msg
                 attempts.append(attempt)
+                self._save_progress_report(attempts, task_description, output_name, run_results_dir)
 
                 print("  Refining based on strategy contract violation...")
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
@@ -1722,6 +1737,7 @@ class SynthesisPipeline:
                 attempt.failed_at = FailureStage.VERIFICATION
                 attempt.error_summary = verification_result.get_error_summary()
                 attempts.append(attempt)
+                self._save_progress_report(attempts, task_description, output_name, run_results_dir)
 
                 # Check if we're stuck on the same error repeatedly
                 error_msg = verification_result.get_error_summary()
@@ -1810,6 +1826,7 @@ class SynthesisPipeline:
                 attempt.failed_at = FailureStage.COMPILATION
                 attempt.error_summary = compilation_result.get_error_summary()
                 attempts.append(attempt)
+                self._save_progress_report(attempts, task_description, output_name, run_results_dir)
 
                 # Refine based on compilation error
                 print("  Refining based on compilation error...")
@@ -1835,6 +1852,7 @@ class SynthesisPipeline:
                 attempt.failed_at = FailureStage.RUNTIME
                 attempt.error_summary = "No main module path in compilation result"
                 attempts.append(attempt)
+                self._save_progress_report(attempts, task_description, output_name, run_results_dir)
 
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
                 if next_helper_status:
@@ -1889,6 +1907,11 @@ class SynthesisPipeline:
             # statistically trustworthy and opus can anchor on best-so-far.
             # Overfitting concern is handled by the final held-out eval.
             print(f"  [synthesis] eval seed for this iteration: {self.evaluator.sample_seed}")
+            attempt_deadline = (
+                attempt_start_time + self.max_attempt_seconds
+                if self.max_attempt_seconds is not None
+                else None
+            )
             eval_result = self.evaluator.evaluate_sample(
                 compiled_module_path=compilation_result.main_module_path,
                 sample_size=self.eval_sample_size,
@@ -1904,6 +1927,7 @@ class SynthesisPipeline:
                     else None
                 ),
                 min_examples_before_threshold_stop=self.min_examples_before_threshold_stop,
+                deadline=attempt_deadline,
             )
             # Change 2: stamp the cross-attempt cluster ledger on the result
             # so EvaluationResult.get_feedback_summary can emit persistent
@@ -1917,6 +1941,30 @@ class SynthesisPipeline:
             eval_result._failure_ledger = self._failure_ledger
             eval_result._attempt_index = attempt.attempt_number
             attempt.eval_result = eval_result
+
+            # Attempt-level wall-clock cap: hit either when evaluate_sample
+            # itself stopped early because `deadline` was crossed (the reason
+            # string carries the marker), or -- as a defense-in-depth backstop
+            # -- when the attempt overran its budget for any other reason
+            # (e.g. a slow verification/compilation stage). Either way this is
+            # a timeout, not a crash and not a legitimate score, so it must be
+            # classified before the normal success/threshold branches below
+            # ever see it.
+            attempt_elapsed = time.time() - attempt_start_time
+            attempt_hit_deadline = bool(
+                eval_result.early_stop_reason
+                and eval_result.early_stop_reason.startswith(ATTEMPT_DEADLINE_EARLY_STOP_REASON)
+            ) or (self.max_attempt_seconds is not None and attempt_elapsed > self.max_attempt_seconds)
+            if attempt_hit_deadline:
+                strategy_code = self._handle_attempt_timeout(
+                    attempt,
+                    attempts,
+                    attempt_elapsed,
+                    task_description,
+                    output_name,
+                    run_results_dir,
+                )
+                continue
 
             smiles_trial = (eval_result.aux_metrics or {}).get("smiles_paper_trial", {})
             if isinstance(smiles_trial, dict) and smiles_trial:
@@ -1944,6 +1992,7 @@ class SynthesisPipeline:
                 attempt.failed_at = FailureStage.EVALUATION
                 attempt.error_summary = eval_result.error or "Evaluation failed"
                 attempts.append(attempt)
+                self._save_progress_report(attempts, task_description, output_name, run_results_dir)
 
                 self._unload_evaluator_runtime_before_refinement()
                 print("  Refining based on evaluation error...")
@@ -2063,6 +2112,7 @@ class SynthesisPipeline:
                 attempt.failed_at = FailureStage.EVALUATION
                 attempt.error_summary = eval_result.get_feedback_summary(self.require_delimiters)
                 attempts.append(attempt)
+                self._save_progress_report(attempts, task_description, output_name, run_results_dir)
 
                 self._unload_evaluator_runtime_before_refinement()
                 print("  Refining based on evaluation results...")
@@ -2169,6 +2219,7 @@ class SynthesisPipeline:
 
             # Success!
             attempts.append(attempt)
+            self._save_progress_report(attempts, task_description, output_name, run_results_dir)
             total_time = (time.time() - start_time) * 1000
 
             print(f"\n{'='*60}")
@@ -2279,6 +2330,81 @@ class SynthesisPipeline:
         print(error.get_failure_summary())
         raise error
 
+    def _build_run_report(
+        self,
+        attempts: list[SynthesisAttempt],
+        task_description: str,
+        output_name: str,
+    ) -> dict:
+        """Build the report dict shared by the incremental progress report and
+        the run-ending failure report -- same shape, just written at different
+        times."""
+        return {
+            "run_configuration": self._run_configuration_metadata(task_description, output_name),
+            "task_description": task_description,
+            "total_attempts": len(attempts),
+            "timestamp": datetime.now().isoformat(),
+            "attempts": [attempt.to_dict() for attempt in attempts],
+            "failure_patterns": self._analyze_failure_patterns(attempts),
+        }
+
+    def _save_progress_report(
+        self,
+        attempts: list[SynthesisAttempt],
+        task_description: str,
+        output_name: str,
+        results_dir: Path,
+    ) -> None:
+        """Write every attempt finished so far to disk immediately.
+
+        Called right after each attempt is appended to `attempts` (whether it
+        succeeded, failed, or timed out) -- not only once at the very end of
+        the run. This is what lets a killed or crashed run keep every
+        attempt's per-example evaluation records instead of losing everything
+        already computed.
+        """
+        if not self.save_reports:
+            return
+        progress_path = results_dir / "progress_report.json"
+        try:
+            with open(progress_path, "w") as f:
+                json.dump(self._build_run_report(attempts, task_description, output_name), f, indent=2)
+        except Exception as e:
+            # Never let a progress-save hiccup take down the synthesis loop --
+            # but never swallow it silently either.
+            print(f"Warning: could not save incremental progress report: {e}")
+
+    def _handle_attempt_timeout(
+        self,
+        attempt: "SynthesisAttempt",
+        attempts: list["SynthesisAttempt"],
+        elapsed_seconds: float,
+        task_description: str,
+        output_name: str,
+        results_dir: Path,
+    ) -> str:
+        """Record `attempt` as timed out (not a crash, not a legitimate
+        score), persist progress immediately, and return a fresh strategy so
+        the loop moves on to the next attempt instead of dying."""
+        print(
+            f"  ✗ Attempt {attempt.attempt_number} exceeded the "
+            f"{self.max_attempt_seconds:.0f}s attempt time cap "
+            f"(ran {elapsed_seconds:.1f}s) — marking as timed out and moving on."
+        )
+        attempt.failed_at = FailureStage.TIMEOUT
+        attempt.error_summary = (
+            f"Attempt timed out: exceeded the {self.max_attempt_seconds:.0f}s wall-clock "
+            f"budget for one attempt (ran {elapsed_seconds:.1f}s before being stopped)."
+        )
+        attempts.append(attempt)
+        self._save_progress_report(attempts, task_description, output_name, results_dir)
+
+        next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
+        if next_helper_status:
+            print(f"  Helper policy: {next_helper_status}")
+        print("  Restarting with fresh generation after timeout...")
+        return self.generator.generate_initial(task_description, allowed_helpers=next_allowed_helpers)
+
     def _save_failure_report(
         self,
         attempts: list[SynthesisAttempt],
@@ -2290,14 +2416,7 @@ class SynthesisPipeline:
         """Save a detailed failure report to disk."""
         report_path = results_dir / "failure_report.json"
 
-        report = {
-            "run_configuration": self._run_configuration_metadata(task_description, output_name),
-            "task_description": task_description,
-            "total_attempts": len(attempts),
-            "timestamp": datetime.now().isoformat(),
-            "attempts": [attempt.to_dict() for attempt in attempts],
-            "failure_patterns": self._analyze_failure_patterns(attempts),
-        }
+        report = self._build_run_report(attempts, task_description, output_name)
 
         with open(report_path, "w") as f:
             json.dump(report, f, indent=2)
