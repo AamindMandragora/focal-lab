@@ -47,7 +47,13 @@ class FakeGenerator:
     def set_synthesis_context(self, *args, **kwargs):
         pass
 
-    def generate_initial(self, task_description, allowed_helpers=None):
+    def generate_initial(
+        self, task_description, allowed_helpers=None, start_inside_constrained=False
+    ):
+        # Mirrors the real StrategyGenerator.generate_initial. Keep the two in
+        # step: the pipeline passes start_inside_constrained by keyword, so a
+        # stand-in that lacks it fails with a TypeError that has nothing to do
+        # with attempt caps.
         self.generate_initial_calls += 1
         return "STRATEGY"
 

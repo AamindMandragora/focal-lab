@@ -782,10 +782,24 @@ class SynthesisPipeline:
         (no visible "<<") instead of OpenConstrainedSpan on benchmarks like
         Spider that never emit visible delimiters. Falls back to False
         (visible-delimiter surface, the historical default) if the benchmark
-        doesn't declare it."""
+        doesn't declare it, or isn't registered at all.
+
+        This value only chooses a sentence of wording in the author's prompt,
+        so it must never be able to end a run. get_logic() raises for a dataset
+        it doesn't know, so that case falls back here instead of escaping."""
         from .benchmarks.registry import get_logic
 
-        logic = get_logic(self.evaluator.dataset_name)
+        dataset_name = self.evaluator.dataset_name
+        try:
+            logic = get_logic(dataset_name)
+        except Exception as exc:
+            print(
+                f"[surface] No benchmark registered for {dataset_name!r} "
+                f"({type(exc).__name__}: {exc}); telling the author it is on "
+                "the visible-delimiter surface."
+            )
+            return False
+
         hook = getattr(logic, "starts_inside_constrained", None)
         return bool(hook()) if hook is not None else False
 

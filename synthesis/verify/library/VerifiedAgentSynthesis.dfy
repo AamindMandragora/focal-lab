@@ -1833,11 +1833,12 @@ module VerifiedDecoderAgent {
         }
         i := i + 1;
       }
+      // The loop above always admits at least one token, so the old
+      // "if empty, fall back to EOS" branch below was unreachable. Falling
+      // back to EOS is exactly the bug this file was changed to stop, so the
+      // branch is gone rather than left sitting there waiting to be reached.
       assert |pool| > 0;
 
-      if |pool| == 0 {
-        pool := [eosToken];
-      }
       var target := if maxCandidates < |pool| then maxCandidates else |pool|;
       var chosen: seq<Token> := [];
 
