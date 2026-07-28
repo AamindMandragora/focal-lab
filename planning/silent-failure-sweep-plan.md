@@ -111,6 +111,7 @@ are not.
 | 7d | `eval_logic.py:192` | A numeric grader CRANE does not have, averaged in | not comparable | **deleted** |
 | 10 | `evaluator.py:2561` | Blanket catch ate every fix above | too low | **fixed** |
 | 10b | `run_reference_strategy.py:143` | Broken harness saved as `accuracy: 0.000` | too low | **fixed** |
+| 11 | `model_utils.py:1903` + runner default | `--device auto` cannot start vLLM, so **the default flags always fail** and the failure is saved as a 0% score | too low | **found by running it** |
 | 8 | `metrics.py:79` | RDKit crash -> "invalid molecule" | too low | open |
 | 9 | `dataset.py:148` | Corrupt file -> example vanishes from a fixed split | changes the set | open |
 
@@ -377,3 +378,68 @@ value. None of it proves Spider scores above zero. That needs a real run on
 `focal` reporting `num_examples > 0`.
 
 The check that matters is not "the tests pass". It is "an example actually ran".
+
+---
+
+## 2026-07-29: caught in the act on focal
+
+A 5-example Spider run on focal's own code, unchanged, produced this:
+
+```
+[sharded-eval] worker 0 FAILED mid-shard: RuntimeError('vLLM runtime currently
+               requires a CUDA device in this project.')
+[sharded-eval] all workers dead; falling back to in-process eval for the remainder
+Wrote outputs/probe/spider_unconstrained_n5.json: accuracy=0.000 syntax_rate=0.000
+```
+
+and wrote this file:
+
+```json
+{ "accuracy": 0.0, "syntax_rate": 0.0, "num_examples": 0, "answers": [] }
+```
+
+Every worker died, the in-process fallback produced nothing, and it still saved
+`accuracy: 0.0` with nothing in the file saying anything had gone wrong. So the
+half of the question that was open is now settled by observation rather than by
+reading: **Spider's 0% is a broken harness being written down as a score.**
+Item 10b stops exactly this, and it is not on focal.
+
+Still open: whether Spider scores above zero once the harness runs. That needs
+this same run to reach `num_examples > 0`.
+
+### Item 11, found by running it rather than reading it
+
+The crash above is its own instance of the pattern, one layer further out.
+`create_vllm_lm` (`model_utils.py:1903`) raises unless the device name starts
+with `cuda`, and the runner's default is `--device auto`. `"auto"` does not
+start with `"cuda"`, so **the default flags cannot succeed** — and the failure
+does not surface as "you passed a bad flag", it surfaces as a benchmark score of
+zero.
+
+That is worth separating from the rest of the list. Items 1-10b are all a
+*failure* being recorded as a measurement. Item 11 is a *configuration mistake*
+being recorded as a measurement, which is worse in one specific way: nobody
+suspects the flags when the number looks like a plausible bad result.
+
+The launch that actually works, for the record:
+
+```
+CUDA_VISIBLE_DEVICES=<a free gpu> python -m synthesis.evaluate.run_reference_strategy \
+  --strategy unconstrained --dataset spider \
+  --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct \
+  --device cuda \                      # NOT the default "auto"
+  --vllm-gpu-memory-utilization 0.35 \ # focal is shared; 0.6 loses to other jobs
+  --vllm-max-model-len 4096 \
+  --eval-sample-size 5 --eval-max-steps 300 \
+  --output-json outputs/probe/spider_unconstrained_n5e.json
+```
+
+Two things about that command are not obvious and cost several attempts each:
+
+- `--device cuda` and `CUDA_VISIBLE_DEVICES` are both needed. The first gets
+  past the string check; the second points the run at a card with free memory,
+  because the worker pool otherwise lands on `cuda:0` and asks for more than is
+  free there.
+- The first run on a new tokenizer spends ~25 minutes building a grammar mask
+  store, then caches it under `cache/mask_stores/`. Later runs skip it. Budget
+  for that once, not every time.
