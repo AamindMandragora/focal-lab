@@ -270,13 +270,34 @@ def create_lark_dafny_parser(
             self._complete_cache = {}
             self._valid_next_mask_cache = {}
             self._valid_next_indices_cache = {}
+            # About five questions per decode step all need the same prefix
+            # turned into text, and the conversion walks every token, so we
+            # remember the text we already built for each prefix object
+            # instead of redoing that walk. We key on id() because prefixes
+            # aren't hashable, but a dead temporary's id can be handed to a
+            # brand-new, unrelated object -- so each entry also holds the
+            # prefix itself, and we only trust a hit when the stored object
+            # is the exact same one being asked about now. Capped so a long
+            # run doesn't just pile up one entry per decode step forever.
+            self._prefix_text_cache = {}
+            self._prefix_text_cache_limit = 1024
 
         def _tokens_to_text(self, tokens) -> str:
             """Convert Dafny token sequence to text."""
+            key = id(tokens)
+            cached = self._prefix_text_cache.get(key)
+            if cached is not None and cached[0] is tokens:
+                return cached[1]
             try:
-                return ''.join(dafny_seq_to_str(tokens[i]) for i in range(len(tokens)))
+                text = ''.join(dafny_seq_to_str(tokens[i]) for i in range(len(tokens)))
             except (TypeError, AttributeError, IndexError):
-                return str(tokens)
+                text = str(tokens)
+            if len(self._prefix_text_cache) >= self._prefix_text_cache_limit:
+                # Dicts remember insertion order, so the first key we see is
+                # the oldest one; drop it to make room for this new entry.
+                self._prefix_text_cache.pop(next(iter(self._prefix_text_cache)))
+            self._prefix_text_cache[key] = (tokens, text)
+            return text
 
         def _structured_text(self, prefix) -> str:
             """Text for mask/validity; CRANE prepends opening << to expr-only prefix."""
