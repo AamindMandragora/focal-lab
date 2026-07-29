@@ -321,10 +321,10 @@ def synthesis_environment(
             "CSD_OUTPUT_NAME": str(job["output_name"]),
             "CSD_OUTPUT_DIR": str(repo / "outputs" / "generated" / str(job["output_name"])),
             "PYTHONUNBUFFERED": "1",
-            # Claude Code Max author (matches incident-monitor account isolation)
+            # Claude Code Max author, pinned to the user-approved current account.
             "CSD_CLAUDE_EXECUTABLE": "/home/aadivyar/.local/bin/claude",
-            "CSD_CLAUDE_CONFIG_DIR": "/home/aadivyar/.claude-csd-synthesis",
-            "CSD_CLAUDE_EXPECTED_ACCOUNT": "aadivya@fermi.ai",
+            "CSD_CLAUDE_CONFIG_DIR": "/home/aadivyar/.claude-csd-ssdear",
+            "CSD_CLAUDE_EXPECTED_ACCOUNT": "ssdear@gmail.com",
             # Per-job vLLM budget; without this run_synthesis falls back to the
             # global 0.81 and pooled eval workers OOM on shared GPUs.
             "CSD_VLLM_GPU_MEMORY_UTILIZATION": str(job["gpu_mem_util"]),

@@ -171,6 +171,16 @@ def test_synthesis_environment_names_the_isolated_cold_output():
     assert env["CSD_OUTPUT_DIR"] == "/repo/outputs/generated/coldq_gsm-qwen35-2b_0719"
 
 
+def test_synthesis_environment_pins_the_approved_current_claude_account():
+    gpus = tuple(range(queue.POOLABLE_GPU_COUNT))
+    env = queue.synthesis_environment(
+        _job(), gpus, {"PATH": "/bin"}, Path("/repo")
+    )
+
+    assert env["CSD_CLAUDE_CONFIG_DIR"] == "/home/aadivyar/.claude-csd-ssdear"
+    assert env["CSD_CLAUDE_EXPECTED_ACCOUNT"] == "ssdear@gmail.com"
+
+
 def test_poolable_synthesis_environment_uses_the_reserved_gpu_bundle():
     """The bundle reaches the worker in the order it was handed out."""
     gpus = tuple(range(3, 3 - queue.POOLABLE_GPU_COUNT, -1))
