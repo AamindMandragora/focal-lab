@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -156,6 +157,53 @@ def test_synthesis_command_only_uses_run_synthesis_cli_flags():
     ]
 
     assert unsupported == []
+
+
+def test_run_synthesis_does_not_read_removed_cli_arguments():
+    source_path = Path("synthesis/run_synthesis.py")
+    tree = ast.parse(source_path.read_text(encoding="utf-8"), filename=str(source_path))
+    parser_destinations = set()
+    namespace_reads = set()
+
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "add_argument"
+        ):
+            explicit_dest = next(
+                (
+                    keyword.value.value
+                    for keyword in node.keywords
+                    if keyword.arg == "dest"
+                    and isinstance(keyword.value, ast.Constant)
+                    and isinstance(keyword.value.value, str)
+                ),
+                None,
+            )
+            option_strings = [
+                argument.value
+                for argument in node.args
+                if isinstance(argument, ast.Constant)
+                and isinstance(argument.value, str)
+            ]
+            long_option = next(
+                (option for option in option_strings if option.startswith("--")),
+                option_strings[0] if option_strings else None,
+            )
+            if explicit_dest:
+                parser_destinations.add(explicit_dest)
+            elif long_option:
+                parser_destinations.add(long_option.lstrip("-").replace("-", "_"))
+        elif (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "args"
+            and isinstance(node.ctx, ast.Load)
+        ):
+            namespace_reads.add(node.attr)
+
+    assert namespace_reads - parser_destinations == set()
 
 
 def test_synthesis_environment_names_the_isolated_cold_output():
