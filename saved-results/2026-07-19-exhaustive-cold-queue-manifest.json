@@ -1,7 +1,7 @@
 {
-  "git_commit": "b4ef03188c3486b2e63de86a67e8fd4de9c35f37",
-  "inventory": "20-cell zero-acc matrix (qwen25-1p5b/7b + qwen35-2b/4b \u00d7 gsm/spider/smiles\u00d73)",
-  "approved_author_call_cap": 802,
+  "git_commit": "6ca1173d9fb86099b3b515efaac4165ab4aa1b67",
+  "inventory": "21-cell zero-acc matrix plus Qwen3.5-9B isocyanates",
+  "approved_author_call_cap": 842,
   "jobs": [
     {
       "cell_id": "gsm-qwen25-1p5b",
@@ -20,11 +20,11 @@
       "eval_max_seconds": 600.0,
       "memory_reservation_mib": 16000,
       "gpu_mem_util": 0.4,
-      "output_name": "coldq_gsm-qwen25-1p5b_20260724",
-      "log_file": "outputs/generated/coldq_gsm-qwen25-1p5b_20260724/run.log",
+      "output_name": "coldq_gsm-qwen25-1p5b_20260729_remaining6",
+      "log_file": "outputs/generated/coldq_gsm-qwen25-1p5b_20260729_remaining6/run.log",
       "heldout_sample_size": 49,
       "heldout_split_name": "test",
-      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/exhaustive_coldq_20260724/gsm-qwen25-1p5b.json",
+      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/remaining_six_20260729/gsm-qwen25-1p5b.json",
       "heldout_split_file": "environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json"
     },
     {
@@ -44,11 +44,11 @@
       "eval_max_seconds": 600.0,
       "memory_reservation_mib": 22000,
       "gpu_mem_util": 0.45,
-      "output_name": "coldq_gsm-qwen25-7b_20260724",
-      "log_file": "outputs/generated/coldq_gsm-qwen25-7b_20260724/run.log",
+      "output_name": "coldq_gsm-qwen25-7b_20260729_remaining6",
+      "log_file": "outputs/generated/coldq_gsm-qwen25-7b_20260729_remaining6/run.log",
       "heldout_sample_size": 49,
       "heldout_split_name": "test",
-      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/exhaustive_coldq_20260724/gsm-qwen25-7b.json",
+      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/remaining_six_20260729/gsm-qwen25-7b.json",
       "heldout_split_file": "environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json"
     },
     {
@@ -68,11 +68,11 @@
       "eval_max_seconds": 600.0,
       "memory_reservation_mib": 16384,
       "gpu_mem_util": 0.4,
-      "output_name": "coldq_gsm-qwen35-2b_20260724",
-      "log_file": "outputs/generated/coldq_gsm-qwen35-2b_20260724/run.log",
+      "output_name": "coldq_gsm-qwen35-2b_20260729_remaining6",
+      "log_file": "outputs/generated/coldq_gsm-qwen35-2b_20260729_remaining6/run.log",
       "heldout_sample_size": 49,
       "heldout_split_name": "test",
-      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/exhaustive_coldq_20260724/gsm-qwen35-2b.json",
+      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/remaining_six_20260729/gsm-qwen35-2b.json",
       "heldout_split_file": "environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json"
     },
     {
@@ -92,11 +92,11 @@
       "eval_max_seconds": 600.0,
       "memory_reservation_mib": 19000,
       "gpu_mem_util": 0.45,
-      "output_name": "coldq_gsm-qwen35-4b_20260724",
-      "log_file": "outputs/generated/coldq_gsm-qwen35-4b_20260724/run.log",
+      "output_name": "coldq_gsm-qwen35-4b_20260729_remaining6",
+      "log_file": "outputs/generated/coldq_gsm-qwen35-4b_20260729_remaining6/run.log",
       "heldout_sample_size": 49,
       "heldout_split_name": "test",
-      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/exhaustive_coldq_20260724/gsm-qwen35-4b.json",
+      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/remaining_six_20260729/gsm-qwen35-4b.json",
       "heldout_split_file": "environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json"
     },
     {
@@ -290,11 +290,11 @@
       "eval_max_seconds": 600.0,
       "memory_reservation_mib": 19000,
       "gpu_mem_util": 0.45,
-      "output_name": "coldq_smiles-acrylates-qwen35-4b_20260724",
-      "log_file": "outputs/generated/coldq_smiles-acrylates-qwen35-4b_20260724/run.log",
+      "output_name": "coldq_smiles-acrylates-qwen35-4b_20260729_remaining6",
+      "log_file": "outputs/generated/coldq_smiles-acrylates-qwen35-4b_20260729_remaining6/run.log",
       "heldout_sample_size": 100,
       "heldout_split_name": "test",
-      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/exhaustive_coldq_20260724/smiles-acrylates-qwen35-4b.json",
+      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/remaining_six_20260729/smiles-acrylates-qwen35-4b.json",
       "smiles_class": "acrylates",
       "heldout_split_file": ""
     },
@@ -505,6 +505,31 @@
       "smiles_class": "isocyanates",
       "heldout_split_file": "",
       "baseline_pending_validity": true
+    },
+    {
+      "cell_id": "smiles-qwen35-9b-isocyanates",
+      "task": "Generate valid SMILES strings that match the requested molecular class while maintaining parser-valid output.",
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-9B",
+      "max_iterations": 40,
+      "interrupted_author_calls": 0,
+      "eval_sample_size": 50,
+      "baseline_num_correct": 18,
+      "baseline_num_examples": 50,
+      "baseline_source": "saved-results/2026-07-19-exhaustive-baseline-evidence.json",
+      "min_accuracy": 0.38,
+      "min_syntax_rate": 0.9,
+      "eval_max_steps": 400,
+      "eval_max_seconds": 600.0,
+      "memory_reservation_mib": 25000,
+      "gpu_mem_util": 0.6,
+      "output_name": "coldq_smiles-qwen35-9b-isocyanates_20260729_remaining6",
+      "log_file": "outputs/generated/coldq_smiles-qwen35-9b-isocyanates_20260729_remaining6/run.log",
+      "heldout_sample_size": 100,
+      "heldout_split_name": "test",
+      "heldout_output_json": "/home/aadivyar/csd-generation/outputs/reeval/remaining_six_20260729/smiles-qwen35-9b-isocyanates.json",
+      "smiles_class": "isocyanates",
+      "heldout_split_file": ""
     }
   ]
 }
