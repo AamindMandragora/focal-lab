@@ -1121,3 +1121,80 @@ def test_parse_gpu_list_rejects_junk_rather_than_running_everywhere():
         except queue.ConfigError:
             continue
         raise AssertionError(f"parse_gpu_list accepted {junk!r}")
+
+
+def test_a_poolable_cell_gets_two_gpus_so_sharded_eval_can_form():
+    """Spider and GSM evaluate statelessly, so they can split a batch across two
+    workers. One GPU means the pool is a pool of one and the sharding is dead
+    code. Three needs three near-empty cards, which never happens on a shared
+    box -- two is what actually forms."""
+    assert queue.required_gpu_count(_job(dataset="spider")) == 2
+    assert queue.required_gpu_count(_job(dataset="gsm_symbolic")) == 2
+
+
+def test_a_stateful_cell_still_gets_exactly_one_gpu():
+    """SMILES carries state between examples, so it must not be split."""
+    assert queue.required_gpu_count(_job(dataset="smiles")) == 1
+
+
+def test_spider_decoding_cap_leaves_room_for_the_longest_gold_query():
+    """Spider strategies treat eval_max_steps as a budget they carve a reserve
+    out of, not as an output length limit -- the generated Dafny does
+    `mainLimit := maxSteps - closeReserve`, and the largest reserve any attempt
+    has chosen so far is 40. The longest gold query in the benchmark is 130
+    tokens. So the cap has to clear 130 + 40, or the hardest examples become
+    unreachable no matter how good the strategy is.
+
+    200 was looser than it needed to be; a runaway draft burns the whole 200 on
+    every one of 300 examples. 176 bounds that damage while still leaving 136
+    usable steps after the worst-case reserve.
+    """
+    longest_gold_tokens = 130
+    largest_observed_reserve = 40
+
+    for cell, spec in queue.EXPECTED_CELLS.items():
+        if spec["dataset"] != "spider":
+            continue
+        cap = spec["eval_max_steps"]
+        assert cap == 176, f"{cell} caps at {cap}, expected 176"
+        assert cap - largest_observed_reserve > longest_gold_tokens, (
+            f"{cell} leaves only {cap - largest_observed_reserve} usable steps, "
+            f"which cannot reach a {longest_gold_tokens}-token gold query"
+        )
+
+
+def test_saved_manifest_agrees_with_the_spider_decoding_cap():
+    """The launcher reads the manifest JSON at runtime, not EXPECTED_CELLS, so
+    a cap changed in only one of the two places would be silently ignored."""
+    manifest = json.loads(
+        Path("saved-results/2026-07-19-exhaustive-cold-queue-manifest.json").read_text()
+    )
+    spider_jobs = [j for j in manifest["jobs"] if j["dataset"] == "spider"]
+    assert spider_jobs, "manifest has no spider jobs"
+    for job in spider_jobs:
+        assert job["eval_max_steps"] == queue.EXPECTED_CELLS[job["cell_id"]]["eval_max_steps"], (
+            f"{job['cell_id']}: manifest says {job['eval_max_steps']}, "
+            f"code says {queue.EXPECTED_CELLS[job['cell_id']]['eval_max_steps']}"
+        )
+
+
+def test_saved_manifest_agrees_with_the_gsm_task_text():
+    """The GSM task text lives in three places -- the code constant, the test
+    constant above, and the saved manifest -- and the launcher refuses to start
+    when any two of them disagree, for every cell, even cells the run excludes.
+
+    They drifted by exactly one trailing newline once already, which is
+    invisible on screen and stopped the whole campaign from launching. Compare
+    the raw strings so the failure names the character instead of printing two
+    walls of identical-looking text.
+    """
+    manifest = json.loads(
+        Path("saved-results/2026-07-19-exhaustive-cold-queue-manifest.json").read_text()
+    )
+    gsm_jobs = [j for j in manifest["jobs"] if j["dataset"] == "gsm_symbolic"]
+    assert gsm_jobs, "manifest has no gsm_symbolic jobs"
+    for job in gsm_jobs:
+        assert job["task"] == queue.GSM_TASK, (
+            f"{job['cell_id']}: manifest task ends {job['task'][-40:]!r}, "
+            f"code task ends {queue.GSM_TASK[-40:]!r}"
+        )

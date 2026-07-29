@@ -113,7 +113,15 @@ GSM_CRANE_COT_TASK = (
     # original CRANE response 771/784 chars on eval-ex0; without it, diverges
     # at char 156). Byte-identical prompts are required for baseline parity.
     "You will always respond in the format described below: \n"
-    "Let's think step by step. <reasoning> The final answer is <<symbolic expression>>\n"
+    # No trailing newline after this last line. It is load-bearing for startup,
+    # not for the model: this same string is copied into the campaign manifest
+    # as each GSM cell's "task", and run_cold_synthesis_queue refuses to launch
+    # the whole 20-cell campaign when the two copies differ by even one
+    # character. Commit 66fbfab8 settled on no trailing newline; the checkpoint
+    # commit 5d055932 put one back by accident and blocked every launch until
+    # this line was restored. The model never sees the difference either way --
+    # the only consumer, reasoning_with_symbolic_expr_messages below, strips it.
+    "Let's think step by step. <reasoning> The final answer is <<symbolic expression>>"
 )
 _GSM_REASONING_HEADER = GSM_CRANE_COT_TASK
 

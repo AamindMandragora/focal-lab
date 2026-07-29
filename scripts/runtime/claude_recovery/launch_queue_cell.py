@@ -22,6 +22,7 @@ from scripts.runtime.claude_recovery.checkpoint_from_log import (
     _evaluated_record,
     _strategy,
 )
+from scripts.runtime.run_cold_synthesis_queue import parse_gpu_list
 
 
 LOGGER = logging.getLogger("claude-recovery-queue")
@@ -29,6 +30,13 @@ LOGGER = logging.getLogger("claude-recovery-queue")
 
 class NoRemainingAttempts(ValueError):
     """Raised when a row has already evaluated its approved attempt cap."""
+
+
+def requires_delimiter_line(dataset: str) -> bool:
+    """Only GSM wraps expressions in << >>, so whitelist the one dataset that
+    has the feature instead of blacklisting each one that does not as we
+    discover it the hard way."""
+    return dataset == "gsm_symbolic"
 
 
 def rebuild_replay_checkpoint(
@@ -54,11 +62,13 @@ def rebuild_replay_checkpoint(
     evaluated: dict[int, dict[str, Any]] = {}
     evaluated_strategies: dict[int, str] = {}
     matches = list(_ATTEMPT_START.finditer(log_text))
+    attempts_in_range = 0
     for index, match in enumerate(matches):
         end = matches[index + 1].start() if index + 1 < len(matches) else len(log_text)
         attempt = int(match.group("number"))
         if attempt < base_replay_attempt or attempt > total_cap:
             continue
+        attempts_in_range += 1
         block = log_text[match.start():end]
         try:
             evaluated[attempt] = _evaluated_record(
@@ -72,6 +82,21 @@ def rebuild_replay_checkpoint(
             continue
 
     if not evaluated:
+        if attempts_in_range:
+            # The log has attempt blocks in the range we care about, but every
+            # single one failed to parse. Silently returning "empty" here
+            # used to look identical to a fresh run with no attempts yet --
+            # the caller would happily start over and throw away whatever
+            # compute produced those attempts. Refuse instead so the bad log
+            # gets looked at rather than quietly discarded.
+            raise ValueError(
+                f"found {attempts_in_range} attempt block(s) between "
+                f"{base_replay_attempt} and {total_cap} in {log_path}, but none "
+                "of them parsed; refusing to silently discard them and restart "
+                "from the base checkpoint"
+            )
+        # No attempt blocks in range at all -- this is genuinely a fresh run,
+        # so falling back to the base seed and history is correct.
         return (
             prior,
             base_seed_path.read_text(encoding="utf-8").rstrip(),
@@ -233,8 +258,19 @@ def build_synthesis_command(
     return command
 
 
-def author_environment(inherited: dict[str, str], gpu: int) -> dict[str, str]:
-    """Remove paid API credentials and select the assigned evaluator GPU."""
+def author_environment(
+    inherited: dict[str, str], gpu: int | tuple[int, ...]
+) -> dict[str, str]:
+    """Remove paid API credentials and select the assigned evaluator GPU(s).
+
+    Accepts either a single GPU id or a tuple of them. CUDA_VISIBLE_DEVICES
+    and CSD_EVAL_GPU_SLOTS are set to the same comma-joined list (matching
+    synthesis_environment in run_cold_synthesis_queue.py), because
+    _queue_gpu_slots() in eval_worker_pool.py rejects any GPU id that is not
+    already in CUDA_VISIBLE_DEVICES -- setting only one of the two crashes
+    the run.
+    """
+    gpu_list = ",".join(str(g) for g in gpu) if isinstance(gpu, tuple) else str(gpu)
     clean = {
         key: value
         for key, value in inherited.items()
@@ -243,7 +279,8 @@ def author_environment(inherited: dict[str, str], gpu: int) -> dict[str, str]:
     }
     clean.update(
         {
-            "CUDA_VISIBLE_DEVICES": str(gpu),
+            "CUDA_VISIBLE_DEVICES": gpu_list,
+            "CSD_EVAL_GPU_SLOTS": gpu_list,
             "HF_HOME": "/home/aadivyar/.cache/huggingface",
             "TRANSFORMERS_CACHE": "/home/aadivyar/.cache/huggingface",
             "PYTHONUNBUFFERED": "1",
@@ -291,7 +328,7 @@ def run_cell(args: argparse.Namespace) -> int:
                 base_replay_attempt=int(job["base_replay_attempt"]),
                 total_cap=int(job["total_cap"]),
                 num_examples=int(job.get("checkpoint_sample_size", job["train_sample_size"])),
-                require_delimiters=str(job["dataset"]) != "smiles",
+                require_delimiters=requires_delimiter_line(str(job["dataset"])),
             )
         except NoRemainingAttempts as exc:
             terminal = Path(str(job["terminal_state_file"]))
@@ -332,7 +369,7 @@ def run_cell(args: argparse.Namespace) -> int:
             expected_account=args.expected_account,
         )
         LOGGER.warning(
-            "[claude-recovery] start cell=%s gpu=%d replay=%d next=%d cap=%d "
+            "[claude-recovery] start cell=%s gpu=%s replay=%d next=%d cap=%d "
             "history=%d provider=claude account=%s",
             args.cell,
             args.gpu,
@@ -370,7 +407,10 @@ def main() -> int:
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--cell", required=True)
-    parser.add_argument("--gpu", type=int, required=True)
+    # A single id ("0") or a comma-separated pair ("0,3") -- a poolable cell
+    # (GSM/Spider) needs two GPUs so its eval workers can shard; parse_gpu_list
+    # is the same parser run_cold_synthesis_queue.py uses for its --gpus flag.
+    parser.add_argument("--gpu", type=parse_gpu_list, required=True)
     parser.add_argument("--python", type=Path, required=True)
     parser.add_argument("--checkpoint-root", type=Path, required=True)
     parser.add_argument("--claude-executable", type=Path, required=True)

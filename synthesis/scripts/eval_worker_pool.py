@@ -28,10 +28,14 @@ worker; the worker's Evaluator and vLLM engine live for the whole synthesis
 run.
 
 Fault handling: if a worker dies or errors mid-request, its shard's examples
-are redistributed across the surviving workers and retried once. If every
-worker is dead, the pool falls back to evaluating the whole batch in-process
-(single-threaded, no subprocess) via Evaluator._evaluate_one_example directly
--- slower, but never crashes the synthesis run.
+are redistributed across the surviving workers and retried once. Before the
+next call runs, evaluate_examples tries to respawn any dead worker on the
+same GPU with the same configuration, so a single dead worker does not
+permanently shrink the pool. Only if every worker is dead AND respawning
+every one of them also fails does the pool fall back to evaluating the whole
+batch in-process (single-threaded, no subprocess) via
+Evaluator._evaluate_one_example directly -- slower, but never crashes the
+synthesis run.
 """
 from __future__ import annotations
 
@@ -242,6 +246,10 @@ class EvalWorkerPool:
     call for the rest of the run's lifetime."""
 
     def __init__(self, config: dict):
+        # Keep the run's config around so a worker that dies mid-run can be
+        # replaced with one configured exactly the same way (same model,
+        # same everything) -- see _respawn_dead_workers.
+        self.config = config
         queue_slots = _queue_gpu_slots()
         gpu_slots = queue_slots or detect_gpu_slots(
             _WORKERS_PER_GPU, _IDLE_UTIL_THRESHOLD, _MIN_FREE_MB
@@ -278,10 +286,41 @@ class EvalWorkerPool:
     def _alive_workers(self) -> list[_Worker]:
         return [w for w in self.workers if w.alive]
 
+    def _respawn_dead_workers(self) -> None:
+        """Replace any dead worker with a fresh one on the same worker id and
+        GPU, configured the same way as the original. This runs once per
+        evaluate_examples call -- if a replacement dies again immediately, we
+        do not retry it again in this same call, only on the next one, so a
+        worker that can never come up cannot spin us in a loop here."""
+        for i, worker in enumerate(self.workers):
+            if worker.alive:
+                continue
+            print(
+                f"{LOG} worker {worker.worker_id} (GPU {worker.gpu}) is dead; "
+                "attempting respawn",
+                flush=True,
+            )
+            try:
+                replacement = _Worker(worker.worker_id, worker.gpu)
+                replacement.configure(self.config)
+            except Exception as exc:
+                print(
+                    f"{LOG} respawn of worker {worker.worker_id} (GPU {worker.gpu}) "
+                    f"failed: {exc!r}",
+                    flush=True,
+                )
+                continue
+            print(
+                f"{LOG} worker {worker.worker_id} (GPU {worker.gpu}) respawned",
+                flush=True,
+            )
+            self.workers[i] = replacement
+
     def evaluate_examples(self, evaluator, compiled_module_path: Path, dataset: list) -> list[dict]:
         """Evaluate every example in `dataset` (no early stop -- see
         evaluator.py's _posthoc_early_stop for why that's safe) split across
         the pool's surviving workers, and return results in original order."""
+        self._respawn_dead_workers()
         alive = self._alive_workers()
         if not alive:
             print(f"{LOG} no surviving workers; falling back to in-process eval", flush=True)

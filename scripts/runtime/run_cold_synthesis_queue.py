@@ -28,8 +28,13 @@ from scripts.runtime.run_warm_task_recovery_queue import (
 
 AUTHOR_MODEL = "claude-sonnet-4-6"
 TERMINAL_SYNTHESIS_FAILURE = 75
+# Two, not three: focal is a shared box, and a 3-GPU bundle needs three
+# near-empty cards at once, which never happens in practice -- that's why
+# this was lowered from 3 to 1 in commit 8cce66b850d5. Two is the number
+# that actually forms and still lets a stateless GSM/Spider eval shard
+# across more than one worker.
 POOLABLE_DATASETS = {"gsm_symbolic", "spider"}
-POOLABLE_GPU_COUNT = 1
+POOLABLE_GPU_COUNT = 2
 
 
 def _human_log_emit(repo: Path, cell_id: str, marker: str, detail: str = "") -> None:
@@ -79,10 +84,10 @@ EXPECTED_CELLS: dict[str, dict[str, Any]] = {
     "gsm-qwen25-7b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 38, "interrupted_author_calls": 3, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
     "gsm-qwen35-2b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 38, "interrupted_author_calls": 2, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
     "gsm-qwen35-4b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "spider-qwen25-1p5b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
-    "spider-qwen25-7b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
-    "spider-qwen35-2b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
-    "spider-qwen35-4b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
+    "spider-qwen25-1p5b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 176, "task": SPIDER_TASK},
+    "spider-qwen25-7b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 176, "task": SPIDER_TASK},
+    "spider-qwen35-2b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 176, "task": SPIDER_TASK},
+    "spider-qwen35-4b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 176, "task": SPIDER_TASK},
     "smiles-acrylates-qwen25-1p5b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
     "smiles-acrylates-qwen25-7b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
     "smiles-acrylates-qwen35-2b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
