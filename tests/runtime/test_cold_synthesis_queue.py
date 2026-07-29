@@ -861,6 +861,28 @@ def test_qwen35_9b_isocyanates_is_an_approved_cold_queue_cell():
     }
 
 
+def test_focal_service_launches_only_the_remaining_six_with_shared_caches():
+    service = Path(
+        "deploy/focal/systemd/csd-cold-synthesis-queue.service"
+    ).read_text(encoding="utf-8")
+
+    assert "Description=Dynamic CSD remaining six-cell cold synthesis queue" in service
+    assert "Environment=CSD_CACHE_ROOT=/home/aadivyar/csd-generation/cache" in service
+    assert "Environment=SYNCODE_CACHE=/home/aadivyar/csd-generation/cache/" in service
+    assert "--gpus 0,2,3" in service
+    assert "--lock-file /home/aadivyar/csd-generation/.context/remaining_six_20260729/controller.lock" in service
+    assert "--state-dir /home/aadivyar/csd-generation/.context/remaining_six_20260729/state" in service
+    assert service.count("--exclude-cell-prefix") == 5
+    for prefix in (
+        "spider-",
+        "smiles-acrylates-qwen25-",
+        "smiles-acrylates-qwen35-2b",
+        "smiles-chain_extenders-",
+        "smiles-isocyanates-",
+    ):
+        assert f"--exclude-cell-prefix {prefix}" in service
+
+
 def test_exhaustive_campaign_requires_all_twenty_one_exact_cells_and_unique_outputs(
     tmp_path, monkeypatch
 ):
