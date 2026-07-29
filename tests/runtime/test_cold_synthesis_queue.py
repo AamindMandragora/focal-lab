@@ -823,22 +823,53 @@ def test_saved_exhaustive_manifest_matches_the_approved_call_budget():
         cwd=repo,
         check=True,
     )
-    assert len(jobs) == 11
-    assert sum(job["max_iterations"] for job in jobs) == 472
-    assert sum(job["interrupted_author_calls"] for job in jobs) == 10
+    assert len(jobs) == 21
+    assert sum(job["max_iterations"] for job in jobs) == 834
+    assert sum(job["interrupted_author_calls"] for job in jobs) == 8
     assert sum(
         job["max_iterations"] + job["interrupted_author_calls"] for job in jobs
-    ) == queue.APPROVED_AUTHOR_CALL_CAP == 482
+    ) == queue.APPROVED_AUTHOR_CALL_CAP == 842
 
 
-def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
+def test_qwen35_9b_isocyanates_is_an_approved_cold_queue_cell():
+    spec = queue.EXPECTED_CELLS["smiles-qwen35-9b-isocyanates"]
+
+    assert spec == {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen3.5-9B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": queue.SMILES_TASK,
+        "smiles_class": "isocyanates",
+    }
+    assert queue.EXPECTED_RUNTIME_BY_MODEL[spec["eval_model"]] == {
+        "memory_reservation_mib": 25000,
+        "gpu_mem_util": 0.6,
+    }
+
+
+def test_exhaustive_campaign_requires_all_twenty_one_exact_cells_and_unique_outputs(
     tmp_path, monkeypatch
 ):
     expected_ids = {
-        "gsm-qwen25-1p5b", "gsm-qwen25-7b", "gsm-qwen25-14b",
-        "gsm-qwen35-2b", "gsm-qwen35-4b", "gsm-qwen35-9b",
-        "spider-qwen25-7b", "spider-qwen35-4b", "spider-qwen35-9b",
-        "smiles-qwen35-4b-acrylates", "smiles-qwen35-9b-isocyanates",
+        "gsm-qwen25-1p5b", "gsm-qwen25-7b",
+        "gsm-qwen35-2b", "gsm-qwen35-4b",
+        "spider-qwen25-1p5b", "spider-qwen25-7b",
+        "spider-qwen35-2b", "spider-qwen35-4b",
+        "smiles-acrylates-qwen25-1p5b", "smiles-acrylates-qwen25-7b",
+        "smiles-acrylates-qwen35-2b", "smiles-acrylates-qwen35-4b",
+        "smiles-chain_extenders-qwen25-1p5b",
+        "smiles-chain_extenders-qwen25-7b",
+        "smiles-chain_extenders-qwen35-2b",
+        "smiles-chain_extenders-qwen35-4b",
+        "smiles-isocyanates-qwen25-1p5b",
+        "smiles-isocyanates-qwen25-7b",
+        "smiles-isocyanates-qwen35-2b",
+        "smiles-isocyanates-qwen35-4b",
+        "smiles-qwen35-9b-isocyanates",
     }
     assert set(queue.EXPECTED_CELLS) == expected_ids
     interrupted = {
@@ -849,16 +880,15 @@ def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
     assert interrupted == {
         "gsm-qwen25-1p5b": 3,
         "gsm-qwen25-7b": 3,
-        "gsm-qwen25-14b": 2,
         "gsm-qwen35-2b": 2,
     }
     assert sum(
         spec["max_iterations"] for spec in queue.EXPECTED_CELLS.values()
-    ) == 472
+    ) == 834
     assert sum(
         spec["max_iterations"] + spec["interrupted_author_calls"]
         for spec in queue.EXPECTED_CELLS.values()
-    ) == queue.APPROVED_AUTHOR_CALL_CAP == 482
+    ) == queue.APPROVED_AUTHOR_CALL_CAP == 842
     jobs = []
     for cell, spec in queue.EXPECTED_CELLS.items():
         job = _job(spec["dataset"])
@@ -883,14 +913,14 @@ def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
 
     queue.validate_exhaustive_campaign(jobs)
 
-    monkeypatch.setattr(queue, "APPROVED_AUTHOR_CALL_CAP", 481)
+    monkeypatch.setattr(queue, "APPROVED_AUTHOR_CALL_CAP", 841)
     try:
         queue.validate_exhaustive_campaign(jobs)
     except queue.ConfigError as error:
-        assert "author-call accounting must total 481, got 482" in str(error)
+        assert "author-call accounting must total 841, got 842" in str(error)
     else:
         raise AssertionError("a campaign above the approved call cap must be rejected")
-    monkeypatch.setattr(queue, "APPROVED_AUTHOR_CALL_CAP", 482)
+    monkeypatch.setattr(queue, "APPROVED_AUTHOR_CALL_CAP", 842)
 
     try:
         queue.validate_exhaustive_campaign(jobs, repo=tmp_path)
@@ -902,7 +932,7 @@ def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
     try:
         queue.validate_exhaustive_campaign(jobs[:-1])
     except queue.ConfigError as error:
-        assert "exactly the 11 approved cells" in str(error)
+        assert "exactly the 21 approved cells" in str(error)
     else:
         raise AssertionError("a missing cell must block the exhaustive launch")
 

@@ -78,7 +78,7 @@ SMILES_TASK = (
     "Generate valid SMILES strings that match the requested molecular class while "
     "maintaining parser-valid output."
 )
-APPROVED_AUTHOR_CALL_CAP = 802
+APPROVED_AUTHOR_CALL_CAP = 842
 EXPECTED_CELLS: dict[str, dict[str, Any]] = {
     "gsm-qwen25-1p5b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 38, "interrupted_author_calls": 3, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
     "gsm-qwen25-7b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 38, "interrupted_author_calls": 3, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
@@ -100,6 +100,7 @@ EXPECTED_CELLS: dict[str, dict[str, Any]] = {
     "smiles-isocyanates-qwen25-7b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
     "smiles-isocyanates-qwen35-2b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
     "smiles-isocyanates-qwen35-4b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
+    "smiles-qwen35-9b-isocyanates": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
 }
 # gpu_mem_util comes from the shared table so a run_synthesis child resolves
 # the same per-model budget even when this controller is stale and fails to
@@ -868,7 +869,9 @@ def validate_exhaustive_campaign(
 ) -> None:
     by_cell = {str(job["cell_id"]): job for job in jobs}
     if set(by_cell) != set(EXPECTED_CELLS) or len(jobs) != len(EXPECTED_CELLS):
-        raise ConfigError("manifest must contain exactly the 20 approved cells")
+        raise ConfigError(
+            f"manifest must contain exactly the {len(EXPECTED_CELLS)} approved cells"
+        )
     output_names = [str(job["output_name"]) for job in jobs]
     heldout_outputs = [str(job["heldout_output_json"]) for job in jobs]
     if len(set(output_names)) != len(output_names):
