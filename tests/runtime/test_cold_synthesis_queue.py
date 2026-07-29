@@ -206,6 +206,15 @@ def test_run_synthesis_does_not_read_removed_cli_arguments():
     assert namespace_reads - parser_destinations == set()
 
 
+def test_run_synthesis_supplies_the_fixed_delimiter_default_to_the_benchmark():
+    source = Path("synthesis/run_synthesis.py").read_text(encoding="utf-8")
+
+    assert (
+        "require_delimiters=resolve_require_delimiters("
+        "args.dataset, cli_value=True)"
+    ) in source
+
+
 def test_synthesis_environment_names_the_isolated_cold_output():
     gpus = tuple(range(queue.POOLABLE_GPU_COUNT))
     env = queue.synthesis_environment(

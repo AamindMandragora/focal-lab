@@ -542,7 +542,7 @@ Examples:
         min_accuracy=args.min_accuracy,
         min_syntax_rate=args.min_syntax_rate,
         bar_split_name="train",
-        require_delimiters=resolve_require_delimiters(args.dataset),
+        require_delimiters=resolve_require_delimiters(args.dataset, cli_value=True),
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
         max_attempt_seconds=args.max_attempt_seconds,
