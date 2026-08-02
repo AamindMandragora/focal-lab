@@ -20,7 +20,10 @@ The generate stage is responsible for producing candidate Dafny strategy bodies 
   - Documents `helpers.AppendTaskGuidance(lm, guidance)` as a neutral API
     contract: call only at the start of a CSD, before generation helpers;
     guidance may carry task-semantic meaning/numeric conventions the grammar
-    does not encode (no benchmark tips).
+    does not encode (no benchmark tips). The guidance is additive and must not
+    contradict, weaken, or replace earlier task instructions, examples, schema,
+    or output-format requirements; earlier task instructions remain authoritative
+    if wording conflicts.
 - `rationale.py`
   - Utilities for extracting or normalizing rationale sections embedded in strategy text.
 

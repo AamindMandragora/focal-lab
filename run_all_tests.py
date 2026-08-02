@@ -666,14 +666,14 @@ class Runner:
             return "anthropic", anthropic_opus47
         if profile == "sonnet4.6":
             warnings.warn(
-                "generation profile 'sonnet4.6' now uses Claude Code Max; "
+                "generation profile 'sonnet4.6' now uses Claude Code Max Opus 5; "
                 "use 'anthropic-sonnet4.6' for the direct Anthropic API",
                 FutureWarning,
                 stacklevel=2,
             )
-            return "claude", "claude-sonnet-4-6"
+            return "claude", "claude-opus-5"
         if profile == "claude-sonnet4.6":
-            return "claude", "claude-sonnet-4-6"
+            return "claude", "claude-opus-5"
         if profile == "anthropic-sonnet4.6":
             return "anthropic", anthropic_sonnet46
         if profile in {"claude-bedrock-sonnet4.6", "bedrock-sonnet4.6"}:

@@ -121,6 +121,13 @@ def test_synthesis_command_is_cold_and_uses_large_bedrock_author():
     assert not any(flag.startswith("--initial-") for flag in command)
 
 
+
+def test_synthesis_command_uses_the_fixed_claude_code_opus5_author():
+    command = queue.synthesis_command(_job(), Path("/env/python"))
+
+    assert command[command.index("--generation-backend") + 1] == "claude"
+    assert command[command.index("--generation-model") + 1] == "claude-opus-5"
+
 def test_bedrock_author_enables_extended_thinking(monkeypatch):
     from synthesis.generate.generator import StrategyGenerator
 

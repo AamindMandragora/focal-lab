@@ -152,7 +152,7 @@ def build_synthesis_command(
         "--task",
         str(job["task"]),
         "--generation-model",
-        "claude-sonnet-4-6",
+        "claude-opus-5",
         "--generation-backend",
         "claude",
         "--claude-executable",

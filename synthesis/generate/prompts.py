@@ -202,6 +202,11 @@ consume token budget by themselves.
   The call is first-call-wins and the string it takes rides every later attempt,
   so treat the first emission as final rather than as a draft to repair.
 
+  Compatibility: this guidance is additive. It must not contradict, weaken, or
+  replace earlier task instructions, examples, schema, or output-format
+  requirements. If wording conflicts, the earlier task contract remains
+  authoritative.
+
   Say what the task's language means wherever the grammar leaves meaning open —
   a named quantity, an operator or relation, or a convention holding across the
   whole problem. To give a sense of the shape: in a math word problem this might

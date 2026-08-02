@@ -122,3 +122,13 @@ def test_all_prompt_universe_helpers_have_docs_and_feedback_classification():
 
     missing_classification = helper_names - _feedback_helper_classifications()
     assert not missing_classification
+
+
+def test_append_task_guidance_preserves_the_earlier_task_contract():
+    prompt_source = (REPO_ROOT / "synthesis/generate/prompts.py").read_text()
+    start = prompt_source.index("### Task prompt guidance")
+    end = prompt_source.index("### Outside-span generation", start)
+    contract = " ".join(prompt_source[start:end].split())
+
+    assert "must not contradict, weaken, or replace earlier task instructions" in contract
+    assert "examples, schema, or output-format requirements" in contract

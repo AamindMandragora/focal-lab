@@ -13,6 +13,9 @@ Cold-queue and babysitter runtime scripts. Repo-wide rules live in `../../AGENTS
   `CSD_VLLM_GPU_MEMORY_UTILIZATION` (consumed by `synthesis.run_synthesis`).
   Do not hard-code the global `VLLM_GPU_MEMORY_UTILIZATION` for cold jobs.
 - Do not put strategy coaching into `--task` strings (Critical Prompting Rule).
+- Claude Code synthesis queue commands use the fixed `claude-opus-5` model ID;
+  direct Anthropic and Bedrock model IDs are separate routes and should not be
+  changed by this contract.
 
 ## Zero-acc babysitter
 
