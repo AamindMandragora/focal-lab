@@ -245,3 +245,37 @@ def test_the_real_decoder_records_every_unconstrained_step():
         "evidence for constrained decoding, when some or all of those tokens "
         "were chosen with no constraint applied at all."
     )
+
+
+def test_the_real_decoder_constructs_its_constraint_audit():
+    """Recording cannot work unless every decoder instance owns a counter."""
+    tree = ast.parse(DECODER.read_text())
+    decoder_class = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "SyncodeLogitsProcessor"
+    )
+    constructor = next(
+        node
+        for node in decoder_class.body
+        if isinstance(node, ast.FunctionDef) and node.name == "__init__"
+    )
+    initializes_audit = any(
+        isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Attribute)
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "self"
+            and target.attr == "constraint_audit"
+            for target in node.targets
+        )
+        and isinstance(node.value, ast.Call)
+        and isinstance(node.value.func, ast.Name)
+        and node.value.func.id == "ConstraintAudit"
+        for node in ast.walk(constructor)
+    )
+
+    assert initializes_audit, (
+        "SyncodeLogitsProcessor records fallback steps through self.constraint_audit "
+        "but never constructs that object, so the first fallback crashes the run."
+    )

@@ -7,6 +7,12 @@
 
 # SynCode: LLM Generation with Grammar Augmentation [![Test Status][test-img]][tests] 
 
+## Local patches
+
+Each `SyncodeLogitsProcessor` owns a `ConstraintAudit` that counts any decoding
+step where parsing failed or no valid token mask existed. The counter persists
+across prompt resets so a run cannot silently regain a fully constrained claim.
+
 <p align="left">
     ℹ️&nbsp;<a href="#-about">About</a>
     | 📚&nbsp;<a href="#-features">Features</a>
@@ -428,4 +434,3 @@ print(f"Syncode augmented LLM output:\n{output}")
 
 ## Contact
 For questions, please contact [Shubham Ugare](mailto:shubhamdugare@gmail.com).
-

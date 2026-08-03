@@ -6,6 +6,7 @@ from syncode.parsers.incremental_parser import IncrementalParser, ParseResult
 from syncode.parsers import create_parser, create_base_parser
 from syncode.dfa_mask_store import DFAMaskStore
 from syncode.parsers.grammars import Grammar
+from synthesis.evaluate.benchmarks.common.constraint_audit import ConstraintAudit
 
 # Set to True for debugging
 DEBUG = True
@@ -40,6 +41,7 @@ class SyncodeLogitsProcessor(LogitsProcessor):
         self.dev_mode = dev_mode
         self.batch_size = num_samples
         self.parse_failed = False
+        self.constraint_audit = ConstraintAudit()
         self.start_symbol = start_symbol
 
         # For backtracking to syntactically valid completions
