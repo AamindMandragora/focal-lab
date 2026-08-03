@@ -51,6 +51,73 @@ def test_manifest_uses_cars_huggingface_and_compatible_vllm_jobs(tmp_path):
     assert all("AWS_BEARER_TOKEN_BEDROCK" not in " ".join(job.args) for job in jobs)
 
 
+def _arg_value(job, flag):
+    index = job.args.index(flag)
+    return job.args[index + 1]
+
+
+def test_full_baseline_campaign_covers_all_100_fresh_cells(tmp_path):
+    pool = load_pool_module()
+
+    jobs = pool.build_full_baseline_campaign(tmp_path)
+    labels = {job.label for job in jobs}
+    strategies = {"unconstrained", "gcd", "crane", "itergen", "cars"}
+    models = {"qwen25-1p5b", "qwen25-7b", "qwen35-2b", "qwen35-4b"}
+    cohorts = {
+        "gsm",
+        "spider",
+        "smiles-acrylates",
+        "smiles-chain_extenders",
+        "smiles-isocyanates",
+    }
+    expected = {
+        f"{cohort}-{model}-{strategy}"
+        for cohort in cohorts
+        for model in models
+        for strategy in strategies
+    }
+
+    assert len(jobs) == len(labels) == 100
+    assert labels == expected
+    assert len({job.output_json for job in jobs}) == 100
+    assert all("outputs/baselines/full_baseline_20260803" in str(job.output_json) for job in jobs)
+    assert all(not job.output_json.exists() for job in jobs)
+    assert all("claude" not in " ".join(job.args).lower() for job in jobs)
+
+
+def test_full_baseline_campaign_uses_matched_splits_counts_and_budgets(tmp_path):
+    pool = load_pool_module()
+    jobs = {job.label: job for job in pool.build_full_baseline_campaign(tmp_path)}
+
+    gsm = jobs["gsm-qwen35-4b-cars"]
+    assert _arg_value(gsm, "--dataset") == "gsm_symbolic"
+    assert _arg_value(gsm, "--eval-sample-size") == "49"
+    assert _arg_value(gsm, "--eval-max-steps") == "900"
+    assert _arg_value(gsm, "--gsm-split-name") == "train"
+    assert _arg_value(gsm, "--gsm-split-file").endswith(
+        "gsm_symbolic_crane_proportional_49x49_seed123.json"
+    )
+
+    spider = jobs["spider-qwen25-7b-unconstrained"]
+    assert _arg_value(spider, "--dataset") == "spider"
+    assert _arg_value(spider, "--eval-sample-size") == "300"
+    assert _arg_value(spider, "--eval-max-steps") == "176"
+    assert _arg_value(spider, "--spider-split-name") == "train"
+    assert _arg_value(spider, "--spider-split-file").endswith(
+        "spider_dev_proportional_300x300_seed334.json"
+    )
+
+    smiles = jobs["smiles-acrylates-qwen25-1p5b-itergen"]
+    assert _arg_value(smiles, "--dataset") == "smiles"
+    assert _arg_value(smiles, "--eval-sample-size") == "50"
+    assert _arg_value(smiles, "--eval-max-steps") == "400"
+    assert _arg_value(smiles, "--smiles-classes") == "acrylates"
+    assert _arg_value(smiles, "--smiles-samples-per-class") == "50"
+
+    assert all(_arg_value(job, "--eval-step-token-budget") == "1" for job in jobs.values())
+    assert all(_arg_value(job, "--eval-backend") == "vllm" for job in jobs.values())
+
+
 def test_ready_gpus_are_greedy_and_exclude_busy_or_used_devices():
     pool = load_pool_module()
 
@@ -61,6 +128,18 @@ def test_ready_gpus_are_greedy_and_exclude_busy_or_used_devices():
     )
 
     assert ready == [0, 3]
+
+
+def test_projected_memory_adds_other_users_to_managed_reservations():
+    pool = load_pool_module()
+
+    projected = pool.projected_gpu_memory(
+        measured_memory_mib={0: 10_746, 2: 1_000, 3: 4},
+        external_reserved_mib={0: 0, 2: 19_000, 3: 0},
+        managed_reserved_mib={0: 16_000, 2: 16_000, 3: 32_000},
+    )
+
+    assert projected == {0: 26_746, 2: 35_000, 3: 32_004}
 
 
 def test_claim_fitting_job_skips_finished_and_bypasses_oversized_head(tmp_path):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Greedily run the remaining Dynamic CSD collection jobs across focal GPUs."""
+"""Greedily run Dynamic CSD collection jobs across focal GPUs."""
 
 from __future__ import annotations
 
@@ -18,6 +18,15 @@ from typing import NamedTuple
 
 LOGGER = logging.getLogger("focal-collection-pool")
 SPIDER_SPLIT = "environment/benchmark_splits/spider_dev_proportional_300x300_seed334.json"
+GSM_SPLIT = "environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json"
+FULL_BASELINE_CAMPAIGN = "full-baseline-20260803"
+FULL_BASELINE_STRATEGIES = ("unconstrained", "gcd", "crane", "itergen", "cars")
+FULL_BASELINE_MODELS = (
+    ("qwen25-1p5b", "Qwen/Qwen2.5-1.5B-Instruct", 16_000, 0.30),
+    ("qwen25-7b", "Qwen/Qwen2.5-7B-Instruct", 22_000, 0.45),
+    ("qwen35-2b", "Qwen/Qwen3.5-2B", 16_384, 0.35),
+    ("qwen35-4b", "Qwen/Qwen3.5-4B", 19_000, 0.40),
+)
 
 
 class Job(NamedTuple):
@@ -59,6 +68,7 @@ def fixed_strategy_args(
     max_steps: int,
     output_json: Path,
     extra: tuple[str, ...] = (),
+    vllm_gpu_memory_utilization: float = 0.90,
 ) -> tuple[str, ...]:
     args = (
         "-m",
@@ -84,7 +94,7 @@ def fixed_strategy_args(
     if backend == "vllm":
         args += (
             "--vllm-gpu-memory-utilization",
-            "0.90",
+            f"{vllm_gpu_memory_utilization:.2f}",
             "--vllm-tensor-parallel-size",
             "1",
         )
@@ -228,6 +238,104 @@ def build_manifest(repo: Path) -> list[Job]:
     return jobs
 
 
+def build_full_baseline_campaign(repo: Path) -> list[Job]:
+    """Build the approved five-strategy, four-model, five-cohort baseline matrix."""
+
+    jobs: list[Job] = []
+    campaign_root = repo / "outputs/baselines/full_baseline_20260803"
+    log_root = repo / "logs/full_baseline_20260803"
+    cohorts = (
+        (
+            "gsm",
+            "gsm_symbolic",
+            49,
+            900,
+            (
+                "--gsm-split-file",
+                GSM_SPLIT,
+                "--gsm-split-name",
+                "train",
+            ),
+        ),
+        (
+            "spider",
+            "spider",
+            300,
+            176,
+            (
+                "--spider-split-file",
+                SPIDER_SPLIT,
+                "--spider-split-name",
+                "train",
+            ),
+        ),
+        (
+            "smiles-acrylates",
+            "smiles",
+            50,
+            400,
+            (
+                "--smiles-classes",
+                "acrylates",
+                "--smiles-samples-per-class",
+                "50",
+            ),
+        ),
+        (
+            "smiles-chain_extenders",
+            "smiles",
+            50,
+            400,
+            (
+                "--smiles-classes",
+                "chain_extenders",
+                "--smiles-samples-per-class",
+                "50",
+            ),
+        ),
+        (
+            "smiles-isocyanates",
+            "smiles",
+            50,
+            400,
+            (
+                "--smiles-classes",
+                "isocyanates",
+                "--smiles-samples-per-class",
+                "50",
+            ),
+        ),
+    )
+
+    for cohort, dataset, sample_size, max_steps, extra in cohorts:
+        for model_slug, model, reservation_mib, gpu_utilization in FULL_BASELINE_MODELS:
+            for strategy in FULL_BASELINE_STRATEGIES:
+                output_json = campaign_root / cohort / model_slug / f"{strategy}.json"
+                log_path = log_root / f"{cohort}-{model_slug}-{strategy}.log"
+                jobs.append(
+                    Job(
+                        f"{cohort}-{model_slug}-{strategy}",
+                        output_json,
+                        log_path,
+                        fixed_strategy_args(
+                            strategy=strategy,
+                            dataset=dataset,
+                            model=model,
+                            backend="vllm",
+                            device="cuda",
+                            sample_size=sample_size,
+                            max_steps=max_steps,
+                            output_json=output_json,
+                            extra=extra,
+                            vllm_gpu_memory_utilization=gpu_utilization,
+                        ),
+                        estimated_memory_mib=reservation_mib,
+                    )
+                )
+
+    return jobs
+
+
 def ready_gpu_ids(
     memory_used_mib: dict[int, int],
     busy_gpu_ids: set[int],
@@ -343,6 +451,23 @@ def external_reserved_memory(external_jobs: dict[int, ExternalJob], gpu_ids: lis
         if external.gpu_id in reserved:
             reserved[external.gpu_id] += external.estimated_memory_mib
     return reserved
+
+
+def projected_gpu_memory(
+    *,
+    measured_memory_mib: dict[int, int],
+    external_reserved_mib: dict[int, int],
+    managed_reserved_mib: dict[int, int],
+) -> dict[int, int]:
+    """Conservatively combine live usage with jobs that have not allocated yet."""
+
+    return {
+        gpu_id: max(
+            measured_memory_mib[gpu_id] + managed_reserved_mib[gpu_id],
+            external_reserved_mib[gpu_id] + managed_reserved_mib[gpu_id],
+        )
+        for gpu_id in measured_memory_mib
+    }
 
 
 def reconcile_external_jobs(
@@ -505,6 +630,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-workers", type=int, default=8)
     parser.add_argument("--poll-seconds", type=float, default=5.0)
     parser.add_argument("--max-retries", type=int, default=1)
+    parser.add_argument(
+        "--campaign",
+        choices=("remaining", FULL_BASELINE_CAMPAIGN),
+        default="remaining",
+    )
     parser.add_argument("--exclude-output-json", action="append", type=Path, default=[])
     parser.add_argument("--external-job", action="append", type=parse_external_job, default=[])
     parser.add_argument("--dry-run", action="store_true")
@@ -515,8 +645,12 @@ def main() -> int:
     args = parse_args()
     repo = args.repo.resolve()
     python = args.python.resolve()
-    status_path = repo / "logs/focal_collection_pool_status.tsv"
-    manifest = build_manifest(repo)
+    if args.campaign == FULL_BASELINE_CAMPAIGN:
+        status_path = repo / "logs/full_baseline_20260803/status.tsv"
+        manifest = build_full_baseline_campaign(repo)
+    else:
+        status_path = repo / "logs/focal_collection_pool_status.tsv"
+        manifest = build_manifest(repo)
     jobs_by_output = {job.output_json.resolve(): job for job in manifest}
     external_jobs: dict[int, ExternalJob] = {}
     for external in args.external_job:
@@ -615,10 +749,11 @@ def main() -> int:
             managed_reserved = {gpu_id: 0 for gpu_id in args.gpu_ids}
             for gpu_id, active in running.values():
                 managed_reserved[gpu_id] += active.job.estimated_memory_mib
-            projected_memory = {
-                gpu_id: max(memory[gpu_id], external_reserved[gpu_id] + managed_reserved[gpu_id])
-                for gpu_id in args.gpu_ids
-            }
+            projected_memory = projected_gpu_memory(
+                measured_memory_mib=memory,
+                external_reserved_mib=external_reserved,
+                managed_reserved_mib=managed_reserved,
+            )
             launched = True
             while queue and len(running) < args.max_workers and launched:
                 launched = False

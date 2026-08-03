@@ -93,6 +93,15 @@ When touching parser validity logic, preserve DFA-mask-based validity checks (Sy
 ## Operational Defaults
 
 - Prefer GPUs `2,3` for local runs unless intentionally using another allocation.
+- For the approved focal five-strategy baseline collection, use
+  `scripts/run_focal_collection_pool.py --campaign full-baseline-20260803`.
+  Shared-GPU scheduling must add measured memory from other users to this
+  controller's outstanding reservations until each child has allocated; using
+  only the larger of those values can over-pack a GPU during model startup.
+- Build the matching cold queue only with
+  `scripts/runtime/build_full_baseline_cold_manifest.py`. It must bind all five
+  raw baseline hashes, derive thresholds from integer counts, cap syntax at
+  90%, and label the approved 95% perfect-baseline accuracy exception.
 - Keep changes minimal and localized. Occasionally scan through the repo and cut fat, because bloat is the enemy of progress.
 - Do not remove or alter formal contracts in Dafny files unless required by the task.
 - Do not create, edit, delete, or commit files under `paper/` unless the user explicitly requests changes there (the paper tree is out of scope for routine agent work).

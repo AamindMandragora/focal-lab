@@ -323,8 +323,12 @@ def synthesis_environment(
             "PYTHONUNBUFFERED": "1",
             # Claude Code Max author, pinned to the user-approved current account.
             "CSD_CLAUDE_EXECUTABLE": "/home/aadivyar/.local/bin/claude",
-            "CSD_CLAUDE_CONFIG_DIR": "/home/aadivyar/.claude-csd-ssdear",
-            "CSD_CLAUDE_EXPECTED_ACCOUNT": "ssdear@gmail.com",
+            "CSD_CLAUDE_CONFIG_DIR": str(
+                job.get("claude_config_dir", "/home/aadivyar/.claude-csd-ssdear")
+            ),
+            "CSD_CLAUDE_EXPECTED_ACCOUNT": str(
+                job.get("claude_expected_account", "ssdear@gmail.com")
+            ),
             # Per-job vLLM budget; without this run_synthesis falls back to the
             # global 0.81 and pooled eval workers OOM on shared GPUs.
             "CSD_VLLM_GPU_MEMORY_UTILIZATION": str(job["gpu_mem_util"]),
@@ -1159,6 +1163,12 @@ def main() -> int:
     )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
+        "--campaign-profile",
+        choices=("legacy", "full-baseline-20260803"),
+        default="legacy",
+        help="Select the manifest validation rules for this approved campaign.",
+    )
+    parser.add_argument(
         "--gpus",
         type=parse_gpu_list,
         default=None,
@@ -1171,7 +1181,18 @@ def main() -> int:
     logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(message)s")
     try:
         commit, jobs = load_manifest(args.manifest)
-        validate_exhaustive_campaign(jobs, repo=args.repo)
+        if args.campaign_profile == "full-baseline-20260803":
+            from scripts.runtime.build_full_baseline_cold_manifest import (
+                CampaignError,
+                validate_campaign,
+            )
+
+            try:
+                validate_campaign(jobs, args.repo)
+            except CampaignError as exc:
+                raise ConfigError(str(exc)) from exc
+        else:
+            validate_exhaustive_campaign(jobs, repo=args.repo)
         launch_commit = verify_repo_version(args.repo, commit, args.repair_attestation)
         for job in jobs:
             job["git_commit"] = commit

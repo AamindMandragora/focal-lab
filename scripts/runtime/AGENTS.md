@@ -16,6 +16,12 @@ Cold-queue and babysitter runtime scripts. Repo-wide rules live in `../../AGENTS
 - Claude Code synthesis queue commands use the fixed `claude-opus-5` model ID;
   direct Anthropic and Bedrock model IDs are separate routes and should not be
   changed by this contract.
+- The `full-baseline-20260803` profile must contain exactly 20 cold cells and
+  800 author attempts. Its manifest must bind the `aadivya@fermi.ai` Max
+  profile and all five raw baseline hashes before dispatch.
+- For that profile, use one exact example above the maximum baseline accuracy,
+  cap the maximum syntax rate at 90%, and use the explicitly labeled 95%
+  exception only when the maximum baseline accuracy is 100%.
 
 ## Zero-acc babysitter
 

@@ -65,6 +65,21 @@ Fixed-strategy baselines use legacy codepaths:
 
 Those three `legacy/*` trees are **gitignored** (large upstream copies). Install them locally with **`bash environment/clone_legacy_csds.sh`** — see **`legacy/README.md`**, **`environment/legacy/DIFFERENCES.md`**, and **`python synthesis/scripts/report_legacy_upstream_diff.py --help`** for upstream-vs-local diffing.
 
+On focal, `scripts/run_focal_collection_pool.py --campaign full-baseline-20260803`
+builds the fresh 100-cell baseline matrix: five fixed strategies across four
+Qwen models, GSM-Symbolic, Spider, and three class-specific SMILES cohorts. It
+uses the tracked train splits and packs jobs against live GPU use plus
+outstanding scheduler reservations; use `--dry-run` to inspect all commands
+without starting model processes.
+
+After those 100 artifacts are complete,
+`scripts/runtime/build_full_baseline_cold_manifest.py` hashes all five source
+artifacts for each model/cohort cell, computes the accuracy bar as one exact
+example above the best baseline, and caps the syntax bar at 90%. A perfect
+baseline uses the separately approved 95% accuracy exception. Its waiting mode
+then launches the 20 cold Opus 5 jobs (40 attempts each) through
+`run_cold_synthesis_queue.py --campaign-profile full-baseline-20260803`.
+
 ## Long runs (tmux)
 
 Use **`./run_tmux.sh`** to start or attach a session with conda, `.env`, and `CUDA_VISIBLE_DEVICES=2,3` already set:
