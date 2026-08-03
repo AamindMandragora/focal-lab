@@ -111,3 +111,25 @@ def test_cold_environment_uses_the_manifest_bound_claude_account(tmp_path: Path)
 
     assert environment["CSD_CLAUDE_CONFIG_DIR"] == "/home/aadivyar/.claude-csd-synthesis"
     assert environment["CSD_CLAUDE_EXPECTED_ACCOUNT"] == "aadivya@fermi.ai"
+
+
+def test_validation_rejects_manifest_contract_tampering(tmp_path: Path) -> None:
+    _write_all_artifacts(tmp_path)
+    evidence, manifest = builder.build_campaign(tmp_path, "f" * 40)
+    builder._atomic_json(tmp_path / builder.EVIDENCE_PATH, evidence)
+
+    manifest["jobs"][0]["eval_model"] = "Qwen/Other"
+    with pytest.raises(builder.CampaignError, match="eval_model"):
+        builder.validate_campaign(manifest["jobs"], tmp_path)
+
+    _, manifest = builder.build_campaign(tmp_path, "f" * 40)
+    manifest["jobs"][0]["initial_strategy"] = "forbidden"
+    with pytest.raises(builder.CampaignError, match="warm-start"):
+        builder.validate_campaign(manifest["jobs"], tmp_path)
+
+    _, manifest = builder.build_campaign(tmp_path, "f" * 40)
+    manifest["jobs"][1]["heldout_output_json"] = manifest["jobs"][0][
+        "heldout_output_json"
+    ]
+    with pytest.raises(builder.CampaignError, match="heldout outputs"):
+        builder.validate_campaign(manifest["jobs"], tmp_path)

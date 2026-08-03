@@ -240,13 +240,22 @@ def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def validate_campaign(jobs: list[dict[str, Any]], repo: Path) -> None:
-    expected_cells = {
-        _cell_id(cohort, model[0]) for cohort in COHORTS for model in MODELS
+    expected_by_cell = {
+        _cell_id(cohort, model[0]): (cohort, model)
+        for cohort in COHORTS
+        for model in MODELS
     }
+    expected_cells = set(expected_by_cell)
     if len(jobs) != 20 or {str(job.get("cell_id")) for job in jobs} != expected_cells:
         raise CampaignError("full baseline cold campaign must contain exactly 20 cells")
     if sum(int(job.get("max_iterations") or 0) for job in jobs) != 800:
         raise CampaignError("full baseline cold campaign must contain exactly 800 attempts")
+    output_names = [str(job.get("output_name")) for job in jobs]
+    if len(set(output_names)) != len(output_names):
+        raise CampaignError("cold output names must be unique")
+    heldout_outputs = [str(job.get("heldout_output_json")) for job in jobs]
+    if len(set(heldout_outputs)) != len(heldout_outputs):
+        raise CampaignError("heldout outputs must be unique")
     evidence_path = repo / EVIDENCE_PATH
     try:
         evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
@@ -256,12 +265,66 @@ def validate_campaign(jobs: list[dict[str, Any]], repo: Path) -> None:
         raise CampaignError("campaign evidence has the wrong campaign id")
     for job in jobs:
         cell = str(job["cell_id"])
+        cohort, model = expected_by_cell[cell]
+        model_slug, eval_model, reservation_mib, gpu_util = model
+        output_name = f"coldq_fullbaseline_20260803_{cell}"
+        expected_fields: dict[str, Any] = {
+            "task": cohort.task,
+            "dataset": cohort.dataset,
+            "eval_model": eval_model,
+            "max_iterations": 40,
+            "interrupted_author_calls": 0,
+            "eval_sample_size": cohort.sample_size,
+            "baseline_num_examples": cohort.sample_size,
+            "baseline_source": str(EVIDENCE_PATH),
+            "eval_max_steps": cohort.max_steps,
+            "eval_max_seconds": 90.0,
+            "memory_reservation_mib": reservation_mib,
+            "gpu_mem_util": gpu_util,
+            "output_name": output_name,
+            "log_file": f"outputs/generated/{output_name}/run.log",
+            "heldout_sample_size": cohort.heldout_sample_size,
+            "heldout_split_name": "test",
+            "heldout_output_json": str(
+                repo / "outputs/reeval/full_baseline_20260803" / f"{cell}.json"
+            ),
+            "claude_config_dir": "/home/aadivyar/.claude-csd-synthesis",
+            "claude_expected_account": "aadivya@fermi.ai",
+        }
+        if cohort.dataset == "gsm_symbolic":
+            expected_fields["heldout_split_file"] = (
+                "environment/benchmark_splits/"
+                "gsm_symbolic_crane_proportional_49x49_seed123.json"
+            )
+        elif cohort.dataset == "spider":
+            expected_fields["heldout_split_file"] = (
+                "environment/benchmark_splits/"
+                "spider_dev_proportional_300x300_seed334.json"
+            )
+        else:
+            expected_fields["smiles_class"] = cohort.smiles_class
+        for field, expected in expected_fields.items():
+            if job.get(field) != expected:
+                raise CampaignError(f"{cell}: {field} must be {expected!r}")
+        if any(str(field).startswith("initial") for field in job):
+            raise CampaignError(f"{cell}: warm-start fields are forbidden")
         entry = (evidence.get("cells") or {}).get(cell) or {}
+        if (
+            entry.get("dataset") != cohort.dataset
+            or entry.get("eval_model") != eval_model
+            or entry.get("split_name") != "train"
+            or entry.get("smiles_class") != cohort.smiles_class
+            or int(entry.get("num_examples") or -1) != cohort.sample_size
+        ):
+            raise CampaignError(f"{cell}: evidence metadata does not match the cell")
         rows = entry.get("baselines") or []
         if [row.get("strategy") for row in rows] != list(STRATEGIES):
             raise CampaignError(f"{cell}: evidence must include all five baselines")
-        for row in rows:
+        for strategy, row in zip(STRATEGIES, rows):
             source = repo / str(row.get("source_artifact", ""))
+            expected_source = baseline_artifact(repo, cohort, model, strategy)
+            if source.resolve() != expected_source.resolve():
+                raise CampaignError(f"{cell}: wrong source artifact for {strategy}")
             if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != row.get(
                 "source_sha256"
             ):
@@ -284,10 +347,6 @@ def validate_campaign(jobs: list[dict[str, Any]], repo: Path) -> None:
             or job.get("threshold_policy") != expected_policy
         ):
             raise CampaignError(f"{cell}: thresholds do not match baseline maxima")
-        if job.get("claude_expected_account") != "aadivya@fermi.ai":
-            raise CampaignError(f"{cell}: wrong approved Claude account")
-        if job.get("claude_config_dir") != "/home/aadivyar/.claude-csd-synthesis":
-            raise CampaignError(f"{cell}: wrong Claude config directory")
 
 
 def controller_is_alive(pid: int) -> bool:
