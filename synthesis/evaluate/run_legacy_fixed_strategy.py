@@ -1118,6 +1118,8 @@ def _install_itergen_transformers_compat(itergen_cls: type[Any]) -> None:
     if getattr(itergen_cls, "_csd_transformers_compat_installed", False):
         return
 
+    original_start = getattr(itergen_cls, "start", None)
+
     def _compatible_update_gen_args(self: Any, **gen_args: Any) -> None:
         self.generation_config.update(**gen_args)
         # Transformers 5 leaves these unset, while legacy IterGen expects the
@@ -1148,7 +1150,30 @@ def _install_itergen_transformers_compat(itergen_cls: type[Any]) -> None:
             file=sys.stderr,
         )
 
+    def _compatible_start(self: Any, *args: Any, **kwargs: Any) -> Any:
+        result = original_start(self, *args, **kwargs)
+        model_config = self.model.config
+        get_text_config = getattr(model_config, "get_text_config", None)
+        text_config = (
+            get_text_config(decoder=True)
+            if get_text_config is not None
+            else model_config
+        )
+        layer_types = getattr(text_config, "layer_types", None) or []
+        if any(layer_type in {"linear_attention", "hybrid"} for layer_type in layer_types):
+            from transformers.cache_utils import DynamicCache
+
+            self.model_kwargs["past_key_values"] = DynamicCache(config=model_config)
+            print(
+                "[legacy-itergen] initialized a config-aware cache for the "
+                "model's linear-attention layers.",
+                file=sys.stderr,
+            )
+        return result
+
     itergen_cls.update_gen_args = _compatible_update_gen_args
+    if original_start is not None:
+        itergen_cls.start = _compatible_start
     itergen_cls._csd_transformers_compat_installed = True
 
 

@@ -89,3 +89,61 @@ def test_older_transformers_keeps_the_original_logits_warper_path():
 
     assert value.logit_warper == "legacy-warper"
     assert value.model.calls == [(value.generation_config, "cuda:2")]
+
+
+def test_qwen35_itergen_rebuilds_its_cache_with_linear_attention_layers():
+    class TextConfig:
+        num_hidden_layers = 2
+        layer_types = ["linear_attention", "full_attention"]
+        sliding_window = None
+        attention_chunk_size = None
+
+    class ModelConfig:
+        def get_text_config(self, *, decoder):
+            assert decoder is True
+            return TextConfig()
+
+    class HybridModel:
+        config = ModelConfig()
+
+    class HybridIterGen:
+        def update_gen_args(self, **gen_args):
+            raise AssertionError("not used by this test")
+
+        def start(self, prompt):
+            self.model_kwargs = {"past_key_values": "legacy-lazy-cache"}
+            return prompt
+
+    _install_itergen_transformers_compat(HybridIterGen)
+    value = HybridIterGen()
+    value.model = HybridModel()
+
+    assert value.start("prompt") == "prompt"
+    assert value.model_kwargs["past_key_values"].has_previous_state() is False
+
+
+def test_full_attention_itergen_keeps_its_existing_cache_path():
+    class TextConfig:
+        layer_types = ["full_attention"]
+
+    class ModelConfig:
+        def get_text_config(self, *, decoder):
+            return TextConfig()
+
+    class FullAttentionModel:
+        config = ModelConfig()
+
+    class FullAttentionIterGen:
+        def update_gen_args(self, **gen_args):
+            raise AssertionError("not used by this test")
+
+        def start(self, prompt):
+            self.model_kwargs = {"past_key_values": "legacy-lazy-cache"}
+
+    _install_itergen_transformers_compat(FullAttentionIterGen)
+    value = FullAttentionIterGen()
+    value.model = FullAttentionModel()
+
+    value.start("prompt")
+
+    assert value.model_kwargs["past_key_values"] == "legacy-lazy-cache"
