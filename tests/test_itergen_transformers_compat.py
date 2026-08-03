@@ -54,6 +54,18 @@ def test_modern_transformers_greedy_itergen_uses_identity_warper():
     assert list(value.logit_warper) == []
 
 
+def test_modern_transformers_restores_legacy_greedy_beam_defaults():
+    _install_itergen_transformers_compat(_LegacyIterGen)
+    value = _instance(do_sample=False)
+    value.generation_config.num_beams = None
+    value.generation_config.num_beam_groups = None
+
+    value.update_gen_args(max_new_tokens=128)
+
+    assert value.generation_config.num_beams == 1
+    assert value.generation_config.num_beam_groups == 1
+
+
 def test_modern_transformers_sampling_fails_instead_of_changing_baseline_semantics():
     _install_itergen_transformers_compat(_LegacyIterGen)
     value = _instance(do_sample=True)

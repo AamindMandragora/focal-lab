@@ -1120,6 +1120,12 @@ def _install_itergen_transformers_compat(itergen_cls: type[Any]) -> None:
 
     def _compatible_update_gen_args(self: Any, **gen_args: Any) -> None:
         self.generation_config.update(**gen_args)
+        # Transformers 5 leaves these unset, while legacy IterGen expects the
+        # Transformers 4 greedy defaults and compares both values as integers.
+        if getattr(self.generation_config, "num_beams", None) is None:
+            self.generation_config.num_beams = 1
+        if getattr(self.generation_config, "num_beam_groups", None) is None:
+            self.generation_config.num_beam_groups = 1
         get_logits_warper = getattr(self.model, "_get_logits_warper", None)
         if get_logits_warper is not None:
             self.logit_warper = get_logits_warper(
