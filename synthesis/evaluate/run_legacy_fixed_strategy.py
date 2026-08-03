@@ -1108,6 +1108,44 @@ def _itergen_add_import_paths(itergen_root: Path) -> None:
             sys.path.insert(0, candidate_str)
 
 
+def _install_itergen_transformers_compat(itergen_cls: type[Any]) -> None:
+    """Keep legacy IterGen's greedy setup working with Transformers 5.
+
+    Transformers 5 removed ``_get_logits_warper`` and folds sampling warpers
+    into ``_get_logits_processor``. This adapter only runs IterGen greedily, so
+    an empty processor list is the exact identity operation needed here.
+    """
+    if getattr(itergen_cls, "_csd_transformers_compat_installed", False):
+        return
+
+    def _compatible_update_gen_args(self: Any, **gen_args: Any) -> None:
+        self.generation_config.update(**gen_args)
+        get_logits_warper = getattr(self.model, "_get_logits_warper", None)
+        if get_logits_warper is not None:
+            self.logit_warper = get_logits_warper(
+                self.generation_config,
+                device=self.device,
+            )
+            return
+        if self.generation_config.do_sample:
+            raise RuntimeError(
+                "Legacy IterGen sampling requires a Transformers version with "
+                "_get_logits_warper; this adapter is supported with do_sample=False only."
+            )
+
+        from transformers import LogitsProcessorList
+
+        self.logit_warper = LogitsProcessorList()
+        print(
+            "[legacy-itergen] _get_logits_warper is unavailable; using the "
+            "identity warper for greedy generation.",
+            file=sys.stderr,
+        )
+
+    itergen_cls.update_gen_args = _compatible_update_gen_args
+    itergen_cls._csd_transformers_compat_installed = True
+
+
 def _itergen_generate(iter_gen: Any, prompt: Any) -> str:
     iter_gen.start(prompt)
     generated = iter_gen.forward()
@@ -1180,6 +1218,8 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
 
     _itergen_add_import_paths(itergen_root)
     from itergen.main import IterGen
+
+    _install_itergen_transformers_compat(IterGen)
 
     from synthesis.evaluate.evaluator import Evaluator
     from synthesis.evaluate.benchmarks.registry import get_logic
