@@ -46,12 +46,31 @@ _DATASET_TO_CRANE_GRAMMAR: dict[str, str] = {
 }
 
 
-def _latest_crane_results(crane_src_dir: Path, dataset: str) -> Path | None:
-    dataset_dir = crane_src_dir / "logging" / dataset
-    if not dataset_dir.exists():
+def _latest_crane_results(
+    crane_src_dir: Path,
+    dataset: str,
+    *,
+    eval_model: str,
+    mode: str,
+    do_cot: bool,
+    grammar_flag: str,
+) -> Path | None:
+    model_name = eval_model.rsplit("/", maxsplit=1)[-1]
+    run_dir = (
+        crane_src_dir
+        / "logging"
+        / dataset
+        / "no_judge"
+        / f"cot-model={model_name}"
+        / f"cot={do_cot}"
+        / "parsing=regex"
+        / f"{grammar_flag}-{grammar_flag}"
+        / f"cot-grammar-mode={mode}"
+    )
+    if not run_dir.exists():
         return None
     candidates = sorted(
-        dataset_dir.rglob("*.jsonl"),
+        run_dir.rglob("*.jsonl"),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
@@ -68,6 +87,22 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
             rows.append(json.loads(line))
         except json.JSONDecodeError:
             continue
+    return rows
+
+
+def _load_expected_crane_rows(
+    path: Path,
+    *,
+    expected_rows: int,
+    strategy: str,
+    dataset: str,
+) -> list[dict[str, Any]]:
+    rows = _load_jsonl(path)
+    if len(rows) != expected_rows:
+        raise RuntimeError(
+            f"CRANE result row count mismatch for {strategy}/{dataset}: "
+            f"expected {expected_rows}, found {len(rows)} in {path}"
+        )
     return rows
 
 
@@ -188,13 +223,26 @@ def run_crane_repo_baseline(args: argparse.Namespace, dataset: str) -> int:
     started = time.perf_counter()
     subprocess.run(cmd, cwd=str(CRANE_SRC_DIR), check=True, env=env)
 
-    latest = _latest_crane_results(CRANE_SRC_DIR, dataset)
+    latest = _latest_crane_results(
+        CRANE_SRC_DIR,
+        dataset,
+        eval_model=args.eval_model,
+        mode=mode,
+        do_cot=do_cot,
+        grammar_flag=grammar_flag,
+    )
     if latest is None:
         raise RuntimeError(
             f"No CRANE result JSONL found under {CRANE_SRC_DIR}/logging/{dataset}/"
         )
 
-    rows = _load_jsonl(latest)
+    expected_rows = int(num_examples_arg)
+    rows = _load_expected_crane_rows(
+        latest,
+        expected_rows=expected_rows,
+        strategy=args.strategy,
+        dataset=dataset,
+    )
     rows = _annotate_legacy_rows_with_syntax(rows, args, dataset)
 
     _build_minimal_json(
