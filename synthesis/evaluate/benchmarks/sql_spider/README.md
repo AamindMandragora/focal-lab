@@ -21,6 +21,9 @@ This module evaluates synthesized CSD strategies on text-to-SQL tasks using the 
 ## Constraint mode
 
 The evaluator exposes two prompt surfaces. `format_prompt_expression_only` renders the flattened string prompt used by hard-mask / constrained decoders, while `format_prompt_chain_of_thought` returns the chat-style legacy CRANE prompt. Both paths instruct the model to wrap its SQL query in `<< >>` delimiters — CRANE can reason before emitting `<<SELECT ...>>`, while GCD constrains from token 1. The evaluator extracts the answer from `<< >>` when present and falls back to the raw first paragraph for unconstrained baselines.
+Fixed IterGen pre-renders the flattened prompt through the Qwen3.5 chat
+template with thinking disabled for that model only. Scoring and evidence keep
+the original flattened prompt.
 
 ## Runtime Notes
 

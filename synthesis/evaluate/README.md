@@ -59,12 +59,15 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
 - For Spider, the IterGen adapter follows the checked-in upstream protocol:
   incremental column/table generation, schema validation with bounded
   backtracking, 20 search iterations, and recurrence penalty 0.3 under greedy
-  decoding.
+  decoding. Qwen3.5 prompts are rendered through the model chat template with
+  thinking disabled; other models and datasets keep their existing prompt
+  surface.
 - SMILES GCD uses sampling at temperature 0.7 so a failed first molecule does
   not force the same malformed molecule for the full trial. GSM and Spider GCD
   remain greedy. SMILES GCD and IterGen honor the requested token budget.
-  CRANE's delimiter-free SMILES surface starts constrained at token zero;
-  delimiter-based GSM and Spider behavior is unchanged.
+  CRANE's delimiter-free SMILES surface starts constrained at token zero and
+  passes no delimiter stop word; delimiter-based GSM and Spider behavior is
+  unchanged.
 - Concurrent CRANE-backed runs select result JSONL files only from the requested model, strategy mode, grammar, and chain-of-thought directory, then require the exact requested row count before exporting a baseline artifact.
 - Generic baseline exports may contain empty generated strings, but campaign
   evidence rejects an exact 0/0 batch when every answer is blank or when all

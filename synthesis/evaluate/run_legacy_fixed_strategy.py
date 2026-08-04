@@ -256,7 +256,9 @@ def _gcd_generation_kwargs(dataset: str) -> dict[str, Any]:
     return {"do_sample": False}
 
 
-def _crane_stop_words(dataset: str) -> list[str]:
+def _crane_stop_words(dataset: str) -> list[str] | None:
+    if dataset == "smiles":
+        return None
     return [">>"]
 
 
@@ -1235,6 +1237,42 @@ def _itergen_generation_kwargs(
     return kwargs
 
 
+def _itergen_render_prompt_for_model(
+    iter_gen: Any,
+    prompt: str,
+    *,
+    dataset: str,
+) -> str:
+    """Use Qwen3.5 chat formatting for Spider without enabling thinking tokens."""
+    if dataset != "spider":
+        return prompt
+
+    config = getattr(getattr(iter_gen, "model", None), "config", None)
+    model_type = (
+        str(getattr(config, "model_type", ""))
+        .lower()
+        .replace("-", "_")
+        .replace(".", "_")
+    )
+    if model_type != "qwen3_5":
+        return prompt
+
+    rendered = iter_gen.tokenizer.apply_chat_template(
+        [{"role": "user", "content": prompt}],
+        add_generation_prompt=True,
+        tokenize=False,
+        enable_thinking=False,
+    )
+    if not isinstance(rendered, str):
+        raise TypeError("Qwen3.5 IterGen chat template must return text when tokenize=False")
+    LOGGER.debug(
+        "[legacy-itergen-spider] rendered Qwen3.5 prompt chars=%d thinking=%s",
+        len(rendered),
+        False,
+    )
+    return rendered
+
+
 def _itergen_spider_schema(example: dict[str, Any]) -> dict[str, set[str]]:
     """Parse the Spider ``db_info`` surface used by the upstream adapter."""
     schema: dict[str, set[str]] = {}
@@ -1492,10 +1530,15 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
         if dataset == "gsm_symbolic":
             prompt = prompt.rstrip() + "<<"
 
+        generation_prompt = _itergen_render_prompt_for_model(
+            iter_gen,
+            prompt,
+            dataset=dataset,
+        )
         gen_started = time.perf_counter()
         raw_completion, _timed_out = _itergen_generate_with_timeout(
             iter_gen,
-            prompt,
+            generation_prompt,
             _ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS,
             spider_example=example if dataset == "spider" else None,
         )

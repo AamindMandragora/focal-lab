@@ -209,10 +209,10 @@ def get_generation_runner():
     if _token0_enabled():
         # Begin inside a constrained chunk from token 0 (no leading << forced, no
         # visible delimiters) — the IterGen-style decoding surface.
-        # completion_mode=True: IterGen `start(str)` tokenizes the raw prompt with
-        # NO apply_chat_template (chat template only when prompt is a message list).
-        # Our adapter always passes expression_only / aligned prompts as strings, so
-        # ChatML here was an asymmetry vs frozen IterGen (bare SELECT vs leading WS).
+        # completion_mode=True keeps the generated SQL surface delimiter-free.
+        # Fixed IterGen tokenizes the raw string for other models; its Qwen3.5
+        # adapter pre-renders the same string with the chat template and thinking
+        # disabled before generation. Both paths still emit bare SQL completions.
         def _token0_runner(*args, **kwargs):
             kwargs.setdefault("start_inside_constrained", True)
             kwargs.setdefault("completion_mode", True)

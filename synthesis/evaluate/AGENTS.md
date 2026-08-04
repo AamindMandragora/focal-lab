@@ -24,8 +24,12 @@
 - Spider IterGen must use the checked-in upstream iterative column/table search,
   schema backtracking, 20-iteration limit, and greedy recurrence penalty 0.3;
   a single default-unit `forward()` is not the Spider protocol.
+- Spider IterGen must render Qwen3.5 prompts through the model chat template
+  with `enable_thinking=False`; other model and dataset prompt surfaces remain
+  unchanged.
 - Delimiter-free SMILES CRANE evaluation starts constrained at the first
-  generated token. Do not wrap the grammar or prompt in `<< >>` markers.
+  generated token and passes no delimiter stop word. Do not wrap the grammar or
+  prompt in `<< >>` markers.
 - GCD SMILES evaluation samples at temperature 0.7 to avoid repeating one
   malformed output across the whole trial; GSM and Spider GCD evaluation stays
   greedy.

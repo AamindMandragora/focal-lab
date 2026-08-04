@@ -75,6 +75,23 @@ hashed 100-cell evidence
 | H5 | Qwen3.5 CRANE prompt/chat formatting leaves thinking or prompt-echo text in the constrained completion. | Likely for the visible Qwen3.5 CRANE signatures | A one-example prompt/render trace and output-boundary assertion. |
 | H6 | One or more zeros are faithful model failures after the adapter issues are removed. | Open | A clean smoke and full rerun with valid control flow that still scores zero. |
 
+## Focused-test-verified repairs awaiting live reruns
+
+- Commit `951ef778` hardens the synthesis block and evidence monitor and
+  contains the tested SMILES GCD sampling repair. The first quarantined GCD
+  cell still needs a versioned post-fix rerun.
+- Focused tests identify bypassed Qwen3.5 chat formatting as the Spider IterGen
+  blank-output cause. The repair renders only that model/dataset pair with
+  thinking disabled while retaining the original scoring and evidence prompt.
+  Both post-fix Spider baseline reruns are still pending.
+- Focused tests show delimiter-free SMILES CRANE received the unreachable `>>`
+  stop word. The repair removes it only for SMILES; the affected post-fix
+  baseline rerun is still pending.
+- Repeated malformed SMILES IterGen output remains quarantined. Sampling or
+  changing prompt history would change strategy behavior and still requires
+  user approval if no semantics-preserving harness fault is found.
+
+
 ## Test-first repair loop
 
 1. Freeze the 31-label manifest with original artifact hashes and expected row

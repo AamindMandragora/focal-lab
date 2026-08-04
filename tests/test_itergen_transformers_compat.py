@@ -1,9 +1,16 @@
+import argparse
+import sys
+import types
+
 import pytest
 
+from synthesis.evaluate import run_legacy_fixed_strategy as legacy_runner
 from synthesis.evaluate.run_legacy_fixed_strategy import (
     _crane_adaptive_surface,
+    _crane_stop_words,
     _itergen_generation_kwargs,
     _itergen_generate_spider,
+    _itergen_render_prompt_for_model,
     _install_itergen_transformers_compat,
     _legacy_fixed_max_new_tokens,
 )
@@ -209,6 +216,210 @@ def test_spider_itergen_advances_by_schema_units_and_backtracks_invalid_names():
     ]
     assert value.backward_calls == ["column_name"]
     assert result == "SELECT name FROM singer"
+
+
+def test_spider_qwen35_itergen_renders_chat_template_without_thinking():
+    calls = []
+
+    class Tokenizer:
+        def apply_chat_template(self, messages, **kwargs):
+            calls.append((messages, kwargs))
+            return "<|user|>SQL prompt<|assistant|>"
+
+    class Config:
+        model_type = "qwen3_5"
+
+    class Model:
+        config = Config()
+
+    class FakeIterGen:
+        tokenizer = Tokenizer()
+        model = Model()
+
+    rendered = _itergen_render_prompt_for_model(
+        FakeIterGen(),
+        "SQL prompt",
+        dataset="spider",
+    )
+
+    assert rendered == "<|user|>SQL prompt<|assistant|>"
+    assert calls == [
+        (
+            [{"role": "user", "content": "SQL prompt"}],
+            {
+                "add_generation_prompt": True,
+                "tokenize": False,
+                "enable_thinking": False,
+            },
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    ("dataset", "model_type"),
+    [("smiles", "qwen3_5"), ("spider", "qwen2")],
+)
+def test_itergen_chat_rendering_leaves_other_inputs_unchanged(dataset, model_type):
+    class Tokenizer:
+        def apply_chat_template(self, messages, **kwargs):
+            raise AssertionError("chat template must not run")
+
+    class Config:
+        pass
+
+    Config.model_type = model_type
+
+    class Model:
+        config = Config()
+
+    class FakeIterGen:
+        tokenizer = Tokenizer()
+        model = Model()
+
+    assert (
+        _itergen_render_prompt_for_model(
+            FakeIterGen(),
+            "raw prompt",
+            dataset=dataset,
+        )
+        == "raw prompt"
+    )
+
+
+def test_crane_smiles_has_no_unreachable_delimiter_stop_word():
+    assert _crane_stop_words("smiles") is None
+    assert _crane_stop_words("gsm_symbolic") == [">>"]
+    assert _crane_stop_words("spider") == [">>"]
+
+
+def test_qwen35_spider_adapter_keeps_raw_prompt_for_scoring_and_evidence(
+    monkeypatch,
+    tmp_path,
+):
+    observed = {}
+    written = {}
+
+    class Tokenizer:
+        def apply_chat_template(self, messages, **kwargs):
+            observed["template_call"] = (messages, kwargs)
+            return "<|user|>RAW SPIDER PROMPT<|assistant|>"
+
+    class Config:
+        model_type = "qwen3_5"
+
+    class Model:
+        config = Config()
+
+    class FakeIterGen:
+        def __init__(self, **kwargs):
+            observed["constructor_kwargs"] = kwargs
+            self.model = Model()
+            self.tokenizer = Tokenizer()
+            self.steps = 0
+
+        def start(self, prompt):
+            observed["generation_prompt"] = prompt
+
+        def finished(self):
+            return self.steps >= 1
+
+        def forward(self, **kwargs):
+            self.steps += 1
+            return ["SELECT name FROM singer"]
+
+        def view(self, unit):
+            return {
+                "column_name": [["name"]],
+                "table_name": [["singer"]],
+            }[unit]
+
+        def backward(self, unit):
+            raise AssertionError(f"unexpected backtrack: {unit}")
+
+    class FakeEvaluator:
+        def __init__(self, **kwargs):
+            observed["evaluator_kwargs"] = kwargs
+
+        def _check_syntax_validity(self, scored_output, *, example):
+            return True, []
+
+    class FakeLogic:
+        def load_dataset_sample(self, evaluator):
+            return [
+                {
+                    "id": "spider-1",
+                    "db_info": "# singer ( singer_id , name )",
+                    "query": "SELECT name FROM singer",
+                }
+            ]
+
+        def expected_answer(self, evaluator, example):
+            return example["query"]
+
+        def extract_actual(self, evaluator, scored_output, example):
+            return scored_output, "completion", {}
+
+        def is_correct(self, evaluator, actual, expected, example, aux, scored_output):
+            return actual == expected
+
+    fake_itergen_package = types.ModuleType("itergen")
+    fake_itergen_package.__path__ = []
+    fake_itergen_main = types.ModuleType("itergen.main")
+    fake_itergen_main.IterGen = FakeIterGen
+    monkeypatch.setitem(sys.modules, "itergen", fake_itergen_package)
+    monkeypatch.setitem(sys.modules, "itergen.main", fake_itergen_main)
+
+    from synthesis.evaluate import evaluator as evaluator_module
+    from synthesis.evaluate.benchmarks import registry as registry_module
+
+    monkeypatch.setattr(evaluator_module, "Evaluator", FakeEvaluator)
+    monkeypatch.setattr(registry_module, "get_logic", lambda dataset: FakeLogic())
+    monkeypatch.setattr(legacy_runner, "_itergen_add_import_paths", lambda root: None)
+    monkeypatch.setattr(legacy_runner, "_install_itergen_transformers_compat", lambda cls: None)
+    monkeypatch.setattr(legacy_runner, "_configure_fixed_eval_runtime", lambda *args: None)
+    monkeypatch.setattr(legacy_runner, "_legacy_local_cuda_device", lambda device: "cuda:0")
+    monkeypatch.setattr(
+        legacy_runner,
+        "_legacy_benchmark_prompt",
+        lambda *args: "RAW SPIDER PROMPT",
+    )
+    monkeypatch.setattr(legacy_runner, "_baseline_row_question", lambda *args: "question")
+    monkeypatch.setattr(legacy_runner, "_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS", 0)
+
+    def score_completion(prompt, raw_completion):
+        observed["scoring_prompt"] = prompt
+        return raw_completion
+
+    monkeypatch.setattr(legacy_runner, "completion_for_scoring", score_completion)
+    monkeypatch.setattr(
+        legacy_runner,
+        "_build_minimal_json",
+        lambda rows, *args, **kwargs: written.update(rows=rows),
+    )
+
+    args = argparse.Namespace(
+        dataset="spider",
+        eval_model="Qwen/Qwen3.5-2B",
+        eval_backend="vllm",
+        device="cuda",
+        eval_sample_size=1,
+        eval_max_steps=64,
+        eval_step_token_budget=1,
+        vllm_gpu_memory_utilization=0.1,
+        vllm_tensor_parallel_size=1,
+        gsm_split_file=None,
+        gsm_split_name="eval",
+        spider_split_file=None,
+        spider_split_name="eval",
+        smiles_classes=None,
+        output_json=str(tmp_path / "baseline.json"),
+    )
+
+    assert legacy_runner._run_itergen_legacy_adapter_inner(args) == 0
+    assert observed["generation_prompt"] == "<|user|>RAW SPIDER PROMPT<|assistant|>"
+    assert observed["scoring_prompt"] == "RAW SPIDER PROMPT"
+    assert written["rows"][0]["prompt_used"] == "RAW SPIDER PROMPT"
+    assert written["rows"][0]["llm_response"] == "SELECT name FROM singer"
 
 
 @pytest.mark.parametrize("strategy", ["gcd", "itergen"])
