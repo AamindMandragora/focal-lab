@@ -250,6 +250,12 @@ def _gcd_stop_words(dataset: str) -> list[str] | None:
     return None
 
 
+def _gcd_generation_kwargs(dataset: str) -> dict[str, Any]:
+    if dataset == "smiles":
+        return {"do_sample": True, "temperature": 0.7}
+    return {"do_sample": False}
+
+
 def _crane_stop_words(dataset: str) -> list[str]:
     return [">>"]
 
@@ -1041,9 +1047,9 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
                 parse_output_only=True,
                 log_level=0,
                 max_new_tokens=_gcd_max_new_tokens(),
-                do_sample=False,
                 num_return_sequences=1,
                 opp=False,
+                **_gcd_generation_kwargs(dataset),
             )
         sc = syncode_cache[cache_key]
 

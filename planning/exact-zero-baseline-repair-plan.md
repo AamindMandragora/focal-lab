@@ -30,7 +30,10 @@ hashed 100-cell evidence
    recompute hashes, scores, maxima, and thresholds
                     |
                     v
- independent judge; stop before paid synthesis reruns
+        independent evidence and queue judge
+                    |
+                    v
+ launch approved synthesis work in priority order
 ```
 
 ## Boundaries
@@ -40,12 +43,13 @@ hashed 100-cell evidence
   on `codex/full-baseline-campaign-20260803`.
 - Preserve every original baseline, log, status row, synthesis artifact, process,
   and cold-queue state file. New baseline outputs go under a versioned repair root.
-- Do not stop, restart, or alter the running synthesis queue. Do not launch any
-  paid author calls or replacement synthesis cells.
+- The original synthesis controller is stopped under the approved priority change.
+  Do not launch synthesis while the repair monitor's block file exists.
 - Use only GPUs `0,2,3`, and only when the queue releases enough memory. Preserve
   unrelated users' GPU processes. GPU `1` is out of scope without new approval.
 - A repaired cell may still score zero. The target is a faithful, functioning
-  baseline path, not a forced nonzero score.
+  baseline path, not a forced nonzero score. A diverse exact 0/0 requires a
+  skeptical review bound to that artifact's SHA-256 before evidence can proceed.
 
 ## Verified starting evidence
 
@@ -56,8 +60,9 @@ hashed 100-cell evidence
   completions. In the current adapters, SMILES prompt history advances only
   after a syntax-valid molecule, so one deterministic invalid first answer
   leaves every later prompt unchanged.
-- The original synthesis queue is active on GPUs `0,2,3`; its artifacts and
-  thresholds must remain untouched during this repair campaign.
+- The original synthesis queue was active on GPUs `0,2,3`. Its selected cells
+  were interrupted with completed and started attempts recorded; its controller
+  is now stopped so the 31 baseline repairs have priority.
 
 ## Hypotheses and tests
 
@@ -103,9 +108,40 @@ hashed 100-cell evidence
 - A new evidence file points to the repaired artifacts, recomputes exact counts,
   and derives thresholds from all five baselines without changing old evidence.
 - A separate judge checks the repair semantics, hashes, row counts, score
-  recomputation, GPU/process isolation, and the no-paid-rerun boundary.
-- Work stops after reporting corrected baseline results and provisional threshold
-  changes. Any replacement synthesis run requires a later explicit approval.
+  recomputation, GPU/process isolation, remaining author budgets, and queue order.
+- Synthesis launches follow the approved order below and remain blocked until
+  corrected evidence and the queue inputs are independently verified.
+
+## Approved priority and recovery order
+
+Approved on 2026-08-04 after the question round:
+
+1. Interrupt GSM Qwen3.5-2B and SMILES chain-extenders Qwen2.5-1.5B now.
+   Preserve completed attempts and count every started author call against each
+   original 40-call cap.
+2. Let SMILES acrylates Qwen3.5-4B finish attempt 40's training evaluation.
+   Preserve any winning compiled CSD and defer held-out evaluation.
+3. Run all 31 versioned baseline repairs before any synthesis restart. Use only
+   GPUs `0,2,3`; GPU `1` remains out of scope.
+4. Inspect the repair pool every five minutes. A new 0/0 is suspicious: other
+   baselines may continue, but corrected evidence and synthesis stay blocked
+   until structural output, parser progress, stop reasons, and logs pass review.
+5. Bind every later job to one complete corrected evidence snapshot.
+6. Run fresh 40-attempt cold campaigns for cells whose corrected target rises.
+7. Retry the two earlier GPU-memory startup failures with a full-memory gate and
+   separate output names.
+8. Recover interrupted cells only when their target is unchanged. Restore
+   completed history and use only the unused original author-call budget.
+9. Run unchanged cells that never started, then deferred held-out evaluations.
+
+The live monitor PID is recorded in
+`.context/exact-zero-baseline-monitor.pid`; it polls every 300 seconds, writes
+`saved-results/2026-08-04-exact-zero-baseline-monitor.json`, and holds
+`.context/exact-zero-repair-synthesis.blocked` through all 31 row reviews,
+corrected evidence creation, and independent queue validation.
+If a monitor proves a harness fault, it may quarantine the artifact, add a
+narrow test-first repair, and rerun only that cell. Strategy semantics and
+prompt guidance still require user approval.
 
 ## Documentation and handoff
 

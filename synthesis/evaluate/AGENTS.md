@@ -26,6 +26,9 @@
   a single default-unit `forward()` is not the Spider protocol.
 - Delimiter-free SMILES CRANE evaluation starts constrained at the first
   generated token. Do not wrap the grammar or prompt in `<< >>` markers.
+- GCD SMILES evaluation samples at temperature 0.7 to avoid repeating one
+  malformed output across the whole trial; GSM and Spider GCD evaluation stays
+  greedy.
 - GCD and IterGen SMILES adapters must honor the requested generation-token
   budget rather than silently capping a 400-token campaign at 256.
 

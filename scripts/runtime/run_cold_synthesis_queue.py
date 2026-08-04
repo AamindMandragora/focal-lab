@@ -172,6 +172,15 @@ class ConfigError(ValueError):
     pass
 
 
+EXACT_ZERO_SYNTHESIS_BLOCK = Path(".context/exact-zero-repair-synthesis.blocked")
+
+
+def require_synthesis_unblocked(repo: Path) -> None:
+    block = repo / EXACT_ZERO_SYNTHESIS_BLOCK
+    if os.path.lexists(block):
+        raise ConfigError(f"exact-zero baseline repair blocks synthesis: {block}")
+
+
 def _is_pinned_code_path(path: str) -> bool:
     return any(path == root or path.startswith(f"{root}/") for root in PINNED_CODE_PATHS)
 
@@ -1077,7 +1086,13 @@ def run_job(
 
 
 def dispatch(
-    jobs, *, snapshot, worker, poll_seconds: float, allowed_gpus: tuple[int, ...] | None = None
+    jobs,
+    *,
+    snapshot,
+    worker,
+    poll_seconds: float,
+    allowed_gpus: tuple[int, ...] | None = None,
+    launch_guard=None,
 ) -> None:
     pending = [dict(job) for job in jobs]
     reservations: dict[int, dict[str, int]] = {}
@@ -1100,6 +1115,8 @@ def dispatch(
                     )
                     if gpus is None:
                         continue
+                    if launch_guard is not None:
+                        launch_guard()
                     cell = str(job["cell_id"])
                     for gpu in gpus:
                         reservations[gpu][cell] = synthesis_required_memory_mib(
@@ -1180,6 +1197,7 @@ def main() -> int:
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(message)s")
     try:
+        require_synthesis_unblocked(args.repo)
         commit, jobs = load_manifest(args.manifest)
         if args.campaign_profile == "full-baseline-20260803":
             from scripts.runtime.build_full_baseline_cold_manifest import (
@@ -1224,6 +1242,7 @@ def main() -> int:
             except BlockingIOError as exc:
                 raise ConfigError("another cold queue controller is active") from exc
             def worker(job: dict[str, Any], gpus: tuple[int, ...]) -> int:
+                require_synthesis_unblocked(args.repo)
                 return run_job(
                     job,
                     gpus,
@@ -1246,6 +1265,7 @@ def main() -> int:
                     worker=worker,
                     poll_seconds=args.poll_seconds,
                     allowed_gpus=args.gpus,
+                    launch_guard=lambda: require_synthesis_unblocked(args.repo),
                 )
         return 0
     except (ConfigError, subprocess.CalledProcessError) as exc:

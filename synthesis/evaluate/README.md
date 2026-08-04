@@ -60,7 +60,9 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
   incremental column/table generation, schema validation with bounded
   backtracking, 20 search iterations, and recurrence penalty 0.3 under greedy
   decoding.
-- SMILES GCD and IterGen runs honor the requested generation-token budget.
+- SMILES GCD uses sampling at temperature 0.7 so a failed first molecule does
+  not force the same malformed molecule for the full trial. GSM and Spider GCD
+  remain greedy. SMILES GCD and IterGen honor the requested token budget.
   CRANE's delimiter-free SMILES surface starts constrained at token zero;
   delimiter-based GSM and Spider behavior is unchanged.
 - Concurrent CRANE-backed runs select result JSONL files only from the requested model, strategy mode, grammar, and chain-of-thought directory, then require the exact requested row count before exporting a baseline artifact.

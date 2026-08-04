@@ -30,6 +30,34 @@ Cold-queue and babysitter runtime scripts. Repo-wide rules live in `../../AGENTS
 - Recompute SMILES baseline accuracy from distinct RDKit-valid, in-class,
   non-exemplar molecules across the full trial; do not trust per-row averages.
 
+## Exact-zero baseline repair monitor
+
+- Run `scripts.runtime.incident_repair.exact_zero_baseline_monitor` every 300
+  seconds while a selective exact-zero repair pool is active.
+- Keep `.context/exact-zero-repair-synthesis.blocked` in place until every
+  manifest row passes review and corrected evidence plus the later queue inputs
+  pass independent validation. Queue launchers must treat it as a hard stop.
+- Enforce that stop in the campaign builder immediately before launch, in the
+  queue at startup, before each GPU reservation, and again in each worker before
+  it runs a synthesis job.
+- Require the exact expected number of unique manifest labels, the matching
+  `source_exact_zero_count`, every frozen source SHA-256 and literal 0/0 score,
+  and the configured repair root
+  `outputs/baselines/exact-zero-repair-20260804`. Source and replacement paths
+  must be unique, must not overlap, and replacement paths must stay under that
+  root. The frozen source may itself contain blank or repeated malformed output
+  because that is the preserved failure being repaired.
+- Bind every report and block marker to the repair-manifest SHA-256. Malformed
+  manifest or acceptance input must record `monitor_error`, keep synthesis
+  blocked, and allow the next scheduled poll to retry.
+- Read each manifest, frozen source, and replacement artifact once per poll;
+  derive its hash, diagnostics, and scores from those exact bytes.
+- Preserve quarantined artifacts. Blank exact 0/0 output and one repeated
+  malformed answer are system failures, not baseline scores.
+- Diverse, nonblank exact 0/0 output remains blocked until skeptical review is
+  recorded against the exact artifact SHA-256 in the acceptance file. Never
+  accept a label-only approval after its artifact changes.
+
 ## Zero-acc babysitter
 
 Repair agents run in the sibling worktree

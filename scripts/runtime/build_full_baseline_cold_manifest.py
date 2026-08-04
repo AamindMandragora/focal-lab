@@ -76,6 +76,12 @@ class CampaignError(ValueError):
     pass
 
 
+def require_synthesis_unblocked(repo: Path) -> None:
+    from scripts.runtime import run_cold_synthesis_queue as queue
+
+    queue.require_synthesis_unblocked(repo)
+
+
 def baseline_artifact(
     repo: Path,
     cohort: Cohort,
@@ -102,7 +108,8 @@ def _rate_count(value: Any, total: int, label: str, path: Path) -> int:
     return count
 
 
-def _read_baseline(
+def _read_baseline_bytes(
+    raw: bytes,
     path: Path,
     total: int,
     strategy: str,
@@ -111,12 +118,12 @@ def _read_baseline(
     dataset: str | None = None,
     smiles_class: str | None = None,
 ) -> dict[str, Any]:
-    if not path.is_file():
-        raise CampaignError(f"missing baseline artifact: {path}")
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise CampaignError(f"invalid baseline artifact {path}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise CampaignError(f"{path}: baseline artifact must be an object")
     answers = payload.get("answers")
     if not isinstance(answers, list) or len(answers) != total:
         raise CampaignError(f"{path}: answer count must be {total}")
@@ -189,8 +196,34 @@ def _read_baseline(
         "nonblank_answer_count": len(nonblank_answers),
         "unique_generated_answer_count": len(unique_generated_answers),
         "source_artifact": str(relative),
-        "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "source_sha256": hashlib.sha256(raw).hexdigest(),
     }
+
+
+def _read_baseline(
+    path: Path,
+    total: int,
+    strategy: str,
+    repo: Path,
+    *,
+    dataset: str | None = None,
+    smiles_class: str | None = None,
+) -> dict[str, Any]:
+    if not path.is_file():
+        raise CampaignError(f"missing baseline artifact: {path}")
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise CampaignError(f"invalid baseline artifact {path}: {exc}") from exc
+    return _read_baseline_bytes(
+        raw,
+        path,
+        total,
+        strategy,
+        repo,
+        dataset=dataset,
+        smiles_class=smiles_class,
+    )
 
 
 def _cell_id(cohort: Cohort, model_slug: str) -> str:
@@ -512,6 +545,7 @@ def main() -> int:
         "--poll-seconds",
         str(args.poll_seconds),
     ]
+    require_synthesis_unblocked(args.repo)
     print(f"[full-baseline-cold] launching {len(manifest['jobs'])} jobs", flush=True)
     return subprocess.run(command, cwd=args.repo).returncode
 
