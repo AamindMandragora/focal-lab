@@ -8,7 +8,16 @@ from scripts.runtime import build_full_baseline_cold_manifest as builder
 from scripts.runtime import run_cold_synthesis_queue as queue
 
 
-def _write_artifact(path: Path, *, correct: int, syntax: int, total: int) -> None:
+def _write_artifact(
+    path: Path,
+    *,
+    correct: int,
+    syntax: int,
+    total: int,
+    generated_answers: list[str] | None = None,
+) -> None:
+    generated = generated_answers or [f"a-{index}" for index in range(total)]
+    assert len(generated) == total
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
@@ -17,8 +26,8 @@ def _write_artifact(path: Path, *, correct: int, syntax: int, total: int) -> Non
                 "syntax_rate": syntax / total,
                 "metrics": {"num_examples": total},
                 "answers": [
-                    {"question": f"q-{index}", "generated_answer": f"a-{index}"}
-                    for index in range(total)
+                    {"question": f"q-{index}", "generated_answer": answer}
+                    for index, answer in enumerate(generated)
                 ],
             }
         ),
@@ -100,6 +109,100 @@ def test_evidence_hash_binds_each_raw_artifact(tmp_path: Path) -> None:
     source = tmp_path / row["source_artifact"]
 
     assert row["source_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+
+
+def test_repaired_campaign_overlays_only_named_versioned_artifacts(tmp_path: Path) -> None:
+    _write_all_artifacts(tmp_path)
+    replacement_root = tmp_path / "outputs/baselines/exact-zero-repair-20260804"
+    label = "spider-qwen35-2b-itergen"
+    replacement = replacement_root / "spider/qwen35-2b/itergen.json"
+    _write_artifact(replacement, correct=7, syntax=250, total=300)
+
+    evidence, _manifest = builder.build_campaign(
+        tmp_path,
+        "d" * 40,
+        replacement_root=replacement_root,
+        replacement_labels={label},
+    )
+
+    repaired = next(
+        row
+        for row in evidence["cells"]["spider-qwen35-2b"]["baselines"]
+        if row["strategy"] == "itergen"
+    )
+    preserved = next(
+        row
+        for row in evidence["cells"]["spider-qwen35-2b"]["baselines"]
+        if row["strategy"] == "gcd"
+    )
+    assert repaired["source_artifact"] == str(replacement.relative_to(tmp_path))
+    assert "full_baseline_20260803" in preserved["source_artifact"]
+
+
+@pytest.mark.parametrize(
+    ("generated_answers", "reason"),
+    [
+        ([" ", "\t", "\n"], "all generated answers are blank"),
+        (["not-a-valid-answer"] * 3, "one repeated malformed answer"),
+    ],
+)
+def test_exact_zero_degenerate_generation_blocks_evidence(
+    tmp_path: Path,
+    generated_answers: list[str],
+    reason: str,
+) -> None:
+    path = tmp_path / "baseline.json"
+    _write_artifact(
+        path,
+        correct=0,
+        syntax=0,
+        total=3,
+        generated_answers=generated_answers,
+    )
+
+    with pytest.raises(builder.CampaignError, match=reason):
+        builder._read_baseline(path, 3, "itergen", tmp_path)
+
+
+def test_diverse_exact_zero_generation_is_recorded_as_a_real_result(tmp_path: Path) -> None:
+    path = tmp_path / "baseline.json"
+    _write_artifact(
+        path,
+        correct=0,
+        syntax=0,
+        total=3,
+        generated_answers=["bad-a", "bad-b", "bad-c"],
+    )
+
+    row = builder._read_baseline(path, 3, "itergen", tmp_path)
+
+    assert row["nonblank_answer_count"] == 3
+    assert row["unique_generated_answer_count"] == 3
+
+
+def test_smiles_baseline_accuracy_counts_unique_valid_molecules(tmp_path: Path) -> None:
+    path = tmp_path / "baseline.json"
+    _write_artifact(
+        path,
+        correct=3,
+        syntax=3,
+        total=3,
+        generated_answers=["C=CC(=O)OC", "C=CC(=O)OC", "C=CC(=O)OC"],
+    )
+
+    row = builder._read_baseline(
+        path,
+        3,
+        "cars",
+        tmp_path,
+        dataset="smiles",
+        smiles_class="acrylates",
+    )
+
+    assert row["num_correct"] == 1
+    assert row["accuracy"] == 1 / 3
+    assert row["syntax_count"] == 3
+    assert row["metric_source"] == "recomputed_smiles_unique_valid"
 
 
 def test_cold_environment_uses_the_manifest_bound_claude_account(tmp_path: Path) -> None:

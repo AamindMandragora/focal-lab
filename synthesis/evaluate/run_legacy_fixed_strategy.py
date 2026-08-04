@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import re
 import signal
@@ -17,6 +18,7 @@ from typing import Any
 from synthesis.evaluate.completion_text import completion_for_scoring, strip_prompt_prefix
 
 
+LOGGER = logging.getLogger(__name__)
 _MAX_PROMPT_CHARS = 50000  # ~12.5K tokens; leaves room for generation within 16384-token context
 _MAX_SUFFIX_CHARS = 45000
 
@@ -1006,11 +1008,11 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         raise ValueError(f"Unsupported dataset for GCD adapter: {dataset}")
 
     def _gcd_max_new_tokens() -> int:
-        if dataset == "gsm_symbolic":
-            return min(96, max(32, int(args.eval_max_steps)))
-        if dataset == "smiles":
-            return min(256, max(64, int(args.eval_max_steps)))
-        return max(32, int(args.eval_max_steps))
+        return _legacy_fixed_max_new_tokens(
+            dataset,
+            args.eval_max_steps,
+            strategy="gcd",
+        )
 
     def _gcd_prompt(prompt: str) -> str:
         if dataset == "gsm_symbolic":
@@ -1187,15 +1189,148 @@ def _itergen_generate(iter_gen: Any, prompt: Any) -> str:
     return str(generated)
 
 
+def _legacy_fixed_max_new_tokens(
+    dataset: str,
+    eval_max_steps: int,
+    *,
+    strategy: str,
+) -> int:
+    """Honor the campaign budget except for the documented GSM safety cap."""
+    max_steps = int(eval_max_steps)
+    if dataset == "gsm_symbolic":
+        return min(96, max(32, max_steps))
+    if dataset == "smiles":
+        return max(64, max_steps)
+    if dataset == "spider" and strategy == "itergen":
+        return min(512, max(64, max_steps))
+    return max(32, max_steps)
+
+
+def _itergen_generation_kwargs(
+    *,
+    dataset: str,
+    max_tokens: int,
+    max_new_tokens: int,
+) -> dict[str, Any]:
+    """Return dataset-faithful IterGen constructor settings."""
+    kwargs: dict[str, Any] = {
+        "parse_output_only": True,
+        "quantize": False,
+        "max_tokens": max_tokens,
+        "do_sample": False,
+        "max_new_tokens": max_new_tokens,
+        "num_return_sequences": 1,
+    }
+    if dataset == "spider":
+        # The checked-in upstream Spider experiment uses 0.3 for its greedy
+        # iterative search. This discourages immediate token recurrence without
+        # changing the deterministic baseline into sampling.
+        kwargs["recurrence_penalty"] = 0.3
+    return kwargs
+
+
+def _itergen_spider_schema(example: dict[str, Any]) -> dict[str, set[str]]:
+    """Parse the Spider ``db_info`` surface used by the upstream adapter."""
+    schema: dict[str, set[str]] = {}
+    for table in str(example.get("db_info") or "").split("#")[1:]:
+        try:
+            table_name, columns_text = table.split("(", 1)
+        except ValueError:
+            continue
+        columns = columns_text.split(")", 1)[0].split(",")
+        schema[table_name.strip().lower()] = {
+            column.strip().lower() for column in columns if column.strip()
+        }
+    return schema
+
+
+def _itergen_spider_column_exists(schema: dict[str, set[str]], value: str) -> bool:
+    column = value.strip().lower()
+    if column == "*":
+        return True
+    if "." in column:
+        table, column_name = column.split(".", 1)
+        return column_name in schema.get(table, set())
+    return any(column in columns for columns in schema.values())
+
+
+def _itergen_generate_spider(
+    iter_gen: Any,
+    prompt: Any,
+    example: dict[str, Any],
+    *,
+    max_iterations: int = 20,
+    backwards_limit: int = 10,
+) -> str:
+    """Run the checked-in upstream Spider IterGen protocol."""
+    iter_gen.start(prompt)
+    schema = _itergen_spider_schema(example)
+    generated: Any = ""
+    num_backwards = 0
+    iterations = 0
+    LOGGER.info(
+        "[legacy-itergen-spider] start tables=%d max_iterations=%d backwards_limit=%d",
+        len(schema),
+        max_iterations,
+        backwards_limit,
+    )
+    while not iter_gen.finished() and iterations < max_iterations:
+        iterations += 1
+        generated = iter_gen.forward(units=["column_name", "table_name"], num=1)
+
+        column_names = iter_gen.view("column_name")[0]
+        last_column = column_names[-1] if column_names else None
+        if (
+            last_column is not None
+            and not _itergen_spider_column_exists(schema, str(last_column))
+            and num_backwards < backwards_limit
+        ):
+            iter_gen.backward("column_name")
+            num_backwards += 1
+            LOGGER.info(
+                "[legacy-itergen-spider] backtrack unit=column_name value=%r count=%d",
+                last_column,
+                num_backwards,
+            )
+            continue
+
+        table_names = iter_gen.view("table_name")[0]
+        last_table = table_names[-1] if table_names else None
+        if (
+            last_table is not None
+            and str(last_table).strip().lower() not in schema
+            and num_backwards < backwards_limit
+        ):
+            iter_gen.backward("table_name")
+            num_backwards += 1
+            LOGGER.info(
+                "[legacy-itergen-spider] backtrack unit=table_name value=%r count=%d",
+                last_table,
+                num_backwards,
+            )
+
+    if isinstance(generated, list):
+        completion = str(generated[0]) if generated else ""
+    else:
+        completion = str(generated)
+    LOGGER.info(
+        "[legacy-itergen-spider] finish iterations=%d backtracks=%d finished=%s output_chars=%d",
+        iterations,
+        num_backwards,
+        bool(iter_gen.finished()),
+        len(completion),
+    )
+    return completion
+
+
 # Robustness guard, not an evaluation change: greedy (do_sample=False) IterGen can enter a
 # non-terminating regeneration loop on a degenerate example (e.g. an unbounded ``.``-repeated
 # SMILES) and never return from ``forward()``. A per-example wall-clock cap treats such a stuck
 # example as a non-answer (empty completion -> scored incorrect + syntax-invalid), which is exactly
 # how a fair harness handles a baseline that cannot produce an answer in bounded time. It does NOT
 # touch the grammar, grader, or scorer, and applies symmetrically to every method/example.
-# Override with CSD_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS. Default 300s: a legitimate capped decode
-# (max_new_tokens 256 for SMILES) finishes in well under a minute on a 9B, so 300s only ever fires
-# on the pathological non-terminating case.
+# Override with CSD_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS. Default 300s: a legitimate bounded decode
+# normally finishes well inside the cap, which is reserved for pathological non-terminating cases.
 _ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS = float(
     os.environ.get("CSD_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS", "300")
 )
@@ -1206,15 +1341,24 @@ class _ItergenPerExampleTimeout(Exception):
 
 
 def _itergen_generate_with_timeout(
-    iter_gen: Any, prompt: Any, cap_seconds: float
+    iter_gen: Any,
+    prompt: Any,
+    cap_seconds: float,
+    *,
+    spider_example: dict[str, Any] | None = None,
 ) -> tuple[str, bool]:
     """Run ``_itergen_generate`` under a SIGALRM wall-clock cap.
 
     Returns ``(completion, timed_out)``. On timeout returns ``("", True)`` so the caller scores the
     example as a non-answer. A cap of <= 0 disables the guard (unbounded, legacy behaviour).
     """
+    def _generate() -> str:
+        if spider_example is not None:
+            return _itergen_generate_spider(iter_gen, prompt, spider_example)
+        return _itergen_generate(iter_gen, prompt)
+
     if cap_seconds <= 0:
-        return _itergen_generate(iter_gen, prompt), False
+        return _generate(), False
 
     def _handler(signum: int, frame: Any) -> None:
         raise _ItergenPerExampleTimeout()
@@ -1222,7 +1366,7 @@ def _itergen_generate_with_timeout(
     old_handler = signal.signal(signal.SIGALRM, _handler)
     signal.setitimer(signal.ITIMER_REAL, cap_seconds)
     try:
-        return _itergen_generate(iter_gen, prompt), False
+        return _generate(), False
     except _ItergenPerExampleTimeout:
         return "", True
     finally:
@@ -1293,18 +1437,11 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
             1,
         )
 
-    def _itergen_max_new_tokens() -> int:
-        """Match GCD caps so the incremental parser stack cannot grow with eval_max_steps."""
-        ms = int(args.eval_max_steps)
-        if dataset == "gsm_symbolic":
-            return min(96, max(32, ms))
-        if dataset == "smiles":
-            return min(256, max(64, ms))
-        if dataset == "spider":
-            return min(512, max(64, ms))
-        return max(32, ms)
-
-    _new_tok = _itergen_max_new_tokens()
+    _new_tok = _legacy_fixed_max_new_tokens(
+        dataset,
+        args.eval_max_steps,
+        strategy="itergen",
+    )
 
     def _grammar_for_example(example: dict[str, Any]) -> str:
         if dataset == "gsm_symbolic":
@@ -1332,12 +1469,11 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
                 grammar=grammar_text,
                 model_id=args.eval_model,
                 device=device,
-                parse_output_only=True,
-                quantize=False,
-                max_tokens=_session_ceiling,
-                do_sample=False,
-                max_new_tokens=_new_tok,
-                num_return_sequences=1,
+                **_itergen_generation_kwargs(
+                    dataset=dataset,
+                    max_tokens=_session_ceiling,
+                    max_new_tokens=_new_tok,
+                ),
             )
         iter_gen = itergen_cache[cache_key]
 
@@ -1352,7 +1488,10 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
 
         gen_started = time.perf_counter()
         raw_completion, _timed_out = _itergen_generate_with_timeout(
-            iter_gen, prompt, _ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS
+            iter_gen,
+            prompt,
+            _ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS,
+            spider_example=example if dataset == "spider" else None,
         )
         if _timed_out:
             print(
@@ -1667,6 +1806,27 @@ def _crane_delimited_start_grammar(grammar_text: str) -> str:
     return 'start: "<<" crane_body ">>"\n' + wrapped_body
 
 
+def _crane_adaptive_surface(dataset: str, grammar_text: str) -> dict[str, Any]:
+    """Return the adaptive-decoder surface declared by each benchmark."""
+    if dataset == "smiles":
+        return {
+            "grammar": grammar_text,
+            "start_symbol": "",
+            "start_in_grammar": False,
+            "end_symbol": None,
+            "end_in_grammar": False,
+            "start_inside_constrained": True,
+        }
+    return {
+        "grammar": _crane_delimited_start_grammar(grammar_text),
+        "start_symbol": "<<",
+        "start_in_grammar": True,
+        "end_symbol": ">>",
+        "end_in_grammar": True,
+        "start_inside_constrained": False,
+    }
+
+
 def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
     """Run CRANE-style adaptive constrained decoding via vendored AdaptiveSynCode.
 
@@ -1718,12 +1878,12 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
     device = _legacy_local_cuda_device(args.device)
     base_gsm_grammar_text = ""
     if dataset == "gsm_symbolic":
-        base_gsm_grammar_text = _crane_delimited_start_grammar(
+        base_gsm_grammar_text = (
             _legacy_gsm_symbolic_grammar_base(repo_root, examples)
         )
     spider_grammar_text = ""
     if dataset == "spider":
-        spider_grammar_text = _crane_delimited_start_grammar(
+        spider_grammar_text = (
             (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
         )
 
@@ -1733,7 +1893,7 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
         if dataset == "spider":
             return spider_grammar_text
         if dataset == "smiles":
-            return _crane_delimited_start_grammar(str(example.get("grammar_text", "")))
+            return str(example.get("grammar_text", ""))
         raise ValueError(f"Unsupported dataset for AdaptiveSynCode adapter: {dataset}")
 
     syncode_cache: dict[str, Any] = {}
@@ -1741,7 +1901,8 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
     smiles_prompt_suffix: dict[str, str] = {}
 
     for example in examples:
-        grammar_text = _grammar_for_example(example)
+        surface = _crane_adaptive_surface(dataset, _grammar_for_example(example))
+        grammar_text = str(surface["grammar"])
         cache_key = f"{dataset}:{hash(grammar_text)}"
         if cache_key not in syncode_cache:
             syncode_cache[cache_key] = AdaptiveSynCode(
@@ -1752,8 +1913,11 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
                 grammar=grammar_text,
                 parse_output_only=True,
                 log_level=0,
-                start_symbol="<<",
-                end_symbol=">>",
+                start_symbol=surface["start_symbol"],
+                start_in_grammar=surface["start_in_grammar"],
+                end_symbol=surface["end_symbol"],
+                end_in_grammar=surface["end_in_grammar"],
+                start_inside_constrained=surface["start_inside_constrained"],
                 max_new_tokens=max(32, int(args.eval_max_steps)),
                 do_sample=False,
                 num_return_sequences=1,

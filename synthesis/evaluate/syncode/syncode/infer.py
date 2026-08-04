@@ -215,7 +215,7 @@ class Syncode:
                     print(prompt + completion)
 
 class AdaptiveSynCode(Syncode):
-    def __init__(self, model, mode = "grammar_strict", quantize = True, device = "cuda", grammar = None, parse_output_only = True, dev_mode = False, log_level = 1, new_mask_store = False, parser = "lalr", seed = None, opp = True, start_symbol = "<<", start_in_grammar = True, end_symbol = ">>", end_in_grammar = True, **kwargs):
+    def __init__(self, model, mode = "grammar_strict", quantize = True, device = "cuda", grammar = None, parse_output_only = True, dev_mode = False, log_level = 1, new_mask_store = False, parser = "lalr", seed = None, opp = True, start_symbol = "<<", start_in_grammar = True, end_symbol = ">>", end_in_grammar = True, start_inside_constrained = False, **kwargs):
         # Check inputs
         assert mode in ["original", "grammar_mask", "grammar_strict"]
         gen_kwargs = {'max_length', 'max_new_tokens', 'min_length', 'min_new_tokens', 'early_stopping', 'do_sample', 'num_beams', 'use_cache', 'temperature', 'top_k', 'top_p', 'num_return_sequences', 'pad_token_id', 'eos_token_id'}
@@ -277,6 +277,7 @@ class AdaptiveSynCode(Syncode):
             start_in_grammar=start_in_grammar,
             end_symbol=end_symbol,
             end_in_grammar=end_in_grammar,
+            start_inside_constrained=start_inside_constrained,
             **kwargs
             )
 

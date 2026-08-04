@@ -77,11 +77,16 @@ class CampaignError(ValueError):
 
 
 def baseline_artifact(
-    repo: Path, cohort: Cohort, model: tuple[str, str, int, float], strategy: str
+    repo: Path,
+    cohort: Cohort,
+    model: tuple[str, str, int, float],
+    strategy: str,
+    *,
+    campaign_root: Path | None = None,
 ) -> Path:
+    root = campaign_root or repo / "outputs/baselines/full_baseline_20260803"
     return (
-        repo
-        / "outputs/baselines/full_baseline_20260803"
+        root
         / cohort.slug
         / model[0]
         / f"{strategy}.json"
@@ -97,7 +102,15 @@ def _rate_count(value: Any, total: int, label: str, path: Path) -> int:
     return count
 
 
-def _read_baseline(path: Path, total: int, strategy: str, repo: Path) -> dict[str, Any]:
+def _read_baseline(
+    path: Path,
+    total: int,
+    strategy: str,
+    repo: Path,
+    *,
+    dataset: str | None = None,
+    smiles_class: str | None = None,
+) -> dict[str, Any]:
     if not path.is_file():
         raise CampaignError(f"missing baseline artifact: {path}")
     try:
@@ -112,14 +125,69 @@ def _read_baseline(path: Path, total: int, strategy: str, repo: Path) -> dict[st
     metrics = payload.get("metrics") or {}
     if int(metrics.get("num_examples") or -1) != total:
         raise CampaignError(f"{path}: metrics.num_examples must be {total}")
+    generated_answers = [str(row["generated_answer"]).strip() for row in answers]
+    metric_source = "artifact_summary"
+    if dataset == "smiles":
+        if not smiles_class:
+            raise CampaignError(f"{path}: smiles_class is required for SMILES rescoring")
+        from synthesis.evaluate.benchmarks.smiles.dataset import get_smiles_task
+        from synthesis.evaluate.benchmarks.smiles.metrics import (
+            evaluate_smiles_output,
+            smiles_trial_metrics,
+        )
+
+        task = get_smiles_task(smiles_class)
+        scored_samples = [
+            {
+                "smiles_eval": evaluate_smiles_output(
+                    class_name=smiles_class,
+                    output=answer,
+                    grammar_text=str(task["grammar_text"]),
+                    prompt_exemplars=list(task.get("prompt_exemplars", [])),
+                    require_rdkit=True,
+                )
+            }
+            for answer in generated_answers
+        ]
+        trial = smiles_trial_metrics(
+            scored_samples,
+            target_unique_valid=total,
+            sample_cap=total,
+        )
+        num_correct = int(trial["unique_valid_count"])
+        syntax_count = sum(
+            1
+            for sample in scored_samples
+            if bool(sample["smiles_eval"].get("syntax_valid"))
+        )
+        accuracy = num_correct / total
+        syntax_rate = syntax_count / total
+        metric_source = "recomputed_smiles_unique_valid"
+    else:
+        num_correct = _rate_count(payload.get("accuracy"), total, "accuracy", path)
+        syntax_count = _rate_count(payload.get("syntax_rate"), total, "syntax_rate", path)
+        accuracy = float(payload["accuracy"])
+        syntax_rate = float(payload["syntax_rate"])
+    nonblank_answers = [answer for answer in generated_answers if answer]
+    unique_generated_answers = set(nonblank_answers)
+    if num_correct == 0 and syntax_count == 0:
+        if not nonblank_answers:
+            raise CampaignError(f"{path}: all generated answers are blank")
+        if len(unique_generated_answers) == 1:
+            raise CampaignError(
+                f"{path}: one repeated malformed answer cannot support baseline evidence"
+            )
     relative = path.relative_to(repo)
     return {
         "strategy": strategy,
-        "num_correct": _rate_count(payload.get("accuracy"), total, "accuracy", path),
-        "syntax_count": _rate_count(payload.get("syntax_rate"), total, "syntax_rate", path),
+        "num_correct": num_correct,
+        "syntax_count": syntax_count,
         "num_examples": total,
-        "accuracy": float(payload["accuracy"]),
-        "syntax_rate": float(payload["syntax_rate"]),
+        "accuracy": accuracy,
+        "syntax_rate": syntax_rate,
+        "metric_source": metric_source,
+        "nonblank_answer_count": len(nonblank_answers),
+        "unique_generated_answer_count": len(unique_generated_answers),
         "source_artifact": str(relative),
         "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
     }
@@ -129,24 +197,61 @@ def _cell_id(cohort: Cohort, model_slug: str) -> str:
     return f"{cohort.slug}-{model_slug}"
 
 
-def build_campaign(repo: Path, git_commit: str) -> tuple[dict[str, Any], dict[str, Any]]:
+def build_campaign(
+    repo: Path,
+    git_commit: str,
+    *,
+    replacement_root: Path | None = None,
+    replacement_labels: set[str] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     if len(git_commit) != 40:
         raise CampaignError("git_commit must be a full 40-character hash")
+    selected_replacements = replacement_labels or set()
+    if bool(replacement_root) != bool(selected_replacements):
+        raise CampaignError(
+            "replacement_root and replacement_labels must be provided together"
+        )
+    if replacement_root is not None and not replacement_root.is_absolute():
+        replacement_root = repo / replacement_root
+    known_labels = {
+        f"{cohort.slug}-{model[0]}-{strategy}"
+        for cohort in COHORTS
+        for model in MODELS
+        for strategy in STRATEGIES
+    }
+    unknown_replacements = selected_replacements - known_labels
+    if unknown_replacements:
+        raise CampaignError(
+            f"unknown replacement labels: {sorted(unknown_replacements)}"
+        )
     evidence_cells: dict[str, Any] = {}
     jobs: list[dict[str, Any]] = []
     for cohort in COHORTS:
         for model in MODELS:
             model_slug, eval_model, reservation_mib, gpu_util = model
             cell = _cell_id(cohort, model_slug)
-            rows = [
-                _read_baseline(
-                    baseline_artifact(repo, cohort, model, strategy),
+            rows = []
+            for strategy in STRATEGIES:
+                label = f"{cell}-{strategy}"
+                path = baseline_artifact(
+                    repo,
+                    cohort,
+                    model,
+                    strategy,
+                    campaign_root=(
+                        replacement_root if label in selected_replacements else None
+                    ),
+                )
+                rows.append(
+                    _read_baseline(
+                    path,
                     cohort.sample_size,
                     strategy,
                     repo,
+                    dataset=cohort.dataset,
+                    smiles_class=cohort.smiles_class,
+                    )
                 )
-                for strategy in STRATEGIES
-            ]
             max_correct = max(row["num_correct"] for row in rows)
             max_syntax = max(row["syntax_count"] for row in rows)
             if max_correct == cohort.sample_size:

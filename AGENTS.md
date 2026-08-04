@@ -81,6 +81,12 @@ Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE
 - Maintain high syntax/format validity while improving accuracy.
 - Fixed-strategy GSM baselines should use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so comparisons are row-aligned.
 - For fixed-strategy baseline JSONs, do not infer valid syntax from missing legacy metadata. Annotate rows with benchmark parser checks or treat missing syntax booleans as invalid.
+- Full-campaign evidence must reject exact 0/0 batches that are all blank or
+  repeat one malformed output, record nonblank/distinct-output diagnostics,
+  and recompute SMILES accuracy from distinct valid molecules across the trial.
+- Selective baseline repairs must write to a new campaign output root and
+  overlay only explicitly named cells when rebuilding evidence; never replace
+  the original campaign artifacts in place.
 - For CRANE-backed GSM rows that lack `variable_types`, infer numeric symbolic identifiers from `gold_answer` before syntax checking.
 - Keep the GCD GSM-Symbolic adapter scoped to constrained expression bodies after `<<`; wrap those bodies for scoring, finalize the longest parseable expression prefix, and restrict identifiers to numeric placeholders from the evaluation sample.
 - For instantiated GSM rows without symbolic numeric variables, use numeric-only syntax checks; do not let arbitrary identifiers satisfy GSM expression syntax.

@@ -1,7 +1,11 @@
 import pytest
 
 from synthesis.evaluate.run_legacy_fixed_strategy import (
+    _crane_adaptive_surface,
+    _itergen_generation_kwargs,
+    _itergen_generate_spider,
     _install_itergen_transformers_compat,
+    _legacy_fixed_max_new_tokens,
 )
 
 
@@ -147,3 +151,79 @@ def test_full_attention_itergen_keeps_its_existing_cache_path():
     value.start("prompt")
 
     assert value.model_kwargs["past_key_values"] == "legacy-lazy-cache"
+
+
+def test_spider_itergen_uses_the_checked_in_upstream_search_settings():
+    kwargs = _itergen_generation_kwargs(
+        dataset="spider",
+        max_tokens=8192,
+        max_new_tokens=176,
+    )
+
+    assert kwargs["do_sample"] is False
+    assert kwargs["recurrence_penalty"] == 0.3
+
+
+def test_spider_itergen_advances_by_schema_units_and_backtracks_invalid_names():
+    class FakeIterGen:
+        def __init__(self):
+            self.started_with = None
+            self.forward_calls = []
+            self.backward_calls = []
+            self.iteration = 0
+
+        def start(self, prompt):
+            self.started_with = prompt
+
+        def finished(self):
+            return self.iteration >= 2
+
+        def forward(self, **kwargs):
+            self.forward_calls.append(kwargs)
+            self.iteration += 1
+            return ["SELECT invented FROM singer" if self.iteration == 1 else "SELECT name FROM singer"]
+
+        def view(self, unit):
+            if unit == "column_name":
+                return [["invented"]] if self.iteration == 1 else [["name"]]
+            if unit == "table_name":
+                return [["singer"]]
+            raise AssertionError(unit)
+
+        def backward(self, unit):
+            self.backward_calls.append(unit)
+
+    value = FakeIterGen()
+    result = _itergen_generate_spider(
+        value,
+        "SQL:",
+        {
+            "db_info": "# singer ( singer_id , name )",
+        },
+    )
+
+    assert value.started_with == "SQL:"
+    assert value.forward_calls == [
+        {"units": ["column_name", "table_name"], "num": 1},
+        {"units": ["column_name", "table_name"], "num": 1},
+    ]
+    assert value.backward_calls == ["column_name"]
+    assert result == "SELECT name FROM singer"
+
+
+@pytest.mark.parametrize("strategy", ["gcd", "itergen"])
+def test_smiles_fixed_decoders_honor_the_requested_token_budget(strategy):
+    assert _legacy_fixed_max_new_tokens("smiles", 400, strategy=strategy) == 400
+
+
+def test_crane_smiles_starts_constrained_without_visible_delimiters():
+    surface = _crane_adaptive_surface("smiles", "start: /[A-Z]+/")
+
+    assert surface == {
+        "grammar": "start: /[A-Z]+/",
+        "start_symbol": "",
+        "start_in_grammar": False,
+        "end_symbol": None,
+        "end_in_grammar": False,
+        "start_inside_constrained": True,
+    }

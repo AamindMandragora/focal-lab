@@ -20,6 +20,7 @@ LOGGER = logging.getLogger("focal-collection-pool")
 SPIDER_SPLIT = "environment/benchmark_splits/spider_dev_proportional_300x300_seed334.json"
 GSM_SPLIT = "environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json"
 FULL_BASELINE_CAMPAIGN = "full-baseline-20260803"
+FULL_BASELINE_OUTPUT_NAME = "full_baseline_20260803"
 FULL_BASELINE_STRATEGIES = ("unconstrained", "gcd", "crane", "itergen", "cars")
 FULL_BASELINE_MODELS = (
     ("qwen25-1p5b", "Qwen/Qwen2.5-1.5B-Instruct", 16_000, 0.30),
@@ -238,12 +239,19 @@ def build_manifest(repo: Path) -> list[Job]:
     return jobs
 
 
-def build_full_baseline_campaign(repo: Path) -> list[Job]:
+def build_full_baseline_campaign(
+    repo: Path,
+    *,
+    campaign_name: str = FULL_BASELINE_OUTPUT_NAME,
+    include_labels: set[str] | None = None,
+) -> list[Job]:
     """Build the approved five-strategy, four-model, five-cohort baseline matrix."""
 
+    if Path(campaign_name).name != campaign_name or campaign_name in {"", ".", ".."}:
+        raise ValueError("campaign_name must be one safe path component")
     jobs: list[Job] = []
-    campaign_root = repo / "outputs/baselines/full_baseline_20260803"
-    log_root = repo / "logs/full_baseline_20260803"
+    campaign_root = repo / "outputs/baselines" / campaign_name
+    log_root = repo / "logs" / campaign_name
     cohorts = (
         (
             "gsm",
@@ -333,7 +341,13 @@ def build_full_baseline_campaign(repo: Path) -> list[Job]:
                     )
                 )
 
-    return jobs
+    if include_labels is None:
+        return jobs
+    known_labels = {job.label for job in jobs}
+    unknown_labels = include_labels - known_labels
+    if unknown_labels:
+        raise ValueError(f"unknown full-baseline labels: {sorted(unknown_labels)}")
+    return [job for job in jobs if job.label in include_labels]
 
 
 def ready_gpu_ids(
@@ -635,6 +649,17 @@ def parse_args() -> argparse.Namespace:
         choices=("remaining", FULL_BASELINE_CAMPAIGN),
         default="remaining",
     )
+    parser.add_argument(
+        "--campaign-output-name",
+        default=FULL_BASELINE_OUTPUT_NAME,
+        help="Versioned output/log directory name for the full-baseline campaign.",
+    )
+    parser.add_argument(
+        "--include-label",
+        action="append",
+        default=[],
+        help="Run only this exact full-baseline label; repeat for multiple labels.",
+    )
     parser.add_argument("--exclude-output-json", action="append", type=Path, default=[])
     parser.add_argument("--external-job", action="append", type=parse_external_job, default=[])
     parser.add_argument("--dry-run", action="store_true")
@@ -646,8 +671,12 @@ def main() -> int:
     repo = args.repo.resolve()
     python = args.python.resolve()
     if args.campaign == FULL_BASELINE_CAMPAIGN:
-        status_path = repo / "logs/full_baseline_20260803/status.tsv"
-        manifest = build_full_baseline_campaign(repo)
+        status_path = repo / "logs" / args.campaign_output_name / "status.tsv"
+        manifest = build_full_baseline_campaign(
+            repo,
+            campaign_name=args.campaign_output_name,
+            include_labels=set(args.include_label) if args.include_label else None,
+        )
     else:
         status_path = repo / "logs/focal_collection_pool_status.tsv"
         manifest = build_manifest(repo)

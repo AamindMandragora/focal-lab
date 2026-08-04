@@ -56,7 +56,19 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
 - GSM syntax checks use a numeric-only grammar when examples do not expose numeric symbolic variables; arbitrary identifiers such as `reasoning` must not pass syntax on instantiated GSM rows.
 - The legacy CARS adapter runs through the same benchmark registry as the other fixed strategies and raises on failed runs so incomplete artifacts are not mistaken for valid zero-score baselines; it uses the same GSM grammar tightening as the GCD adapter (allowed variables or numeric-only, inferred from the evaluation batch) and expression-only prompts for gsm_symbolic, Spider, and SMILES like IterGen/GCD.
 - The legacy IterGen adapter keeps greedy decoding compatible with Transformers 5, where the private `_get_logits_warper` method was removed and beam counts may default to `None`. The compatibility path restores the Transformers 4 greedy beam defaults, creates a config-aware cache only for models with linear-attention layers, is identity-only for `do_sample=False`, and fails clearly for sampling instead of changing baseline behavior.
+- For Spider, the IterGen adapter follows the checked-in upstream protocol:
+  incremental column/table generation, schema validation with bounded
+  backtracking, 20 search iterations, and recurrence penalty 0.3 under greedy
+  decoding.
+- SMILES GCD and IterGen runs honor the requested generation-token budget.
+  CRANE's delimiter-free SMILES surface starts constrained at token zero;
+  delimiter-based GSM and Spider behavior is unchanged.
 - Concurrent CRANE-backed runs select result JSONL files only from the requested model, strategy mode, grammar, and chain-of-thought directory, then require the exact requested row count before exporting a baseline artifact.
-- Baseline exports may contain empty generated strings; those still count as answer rows. Corrupt fixed-strategy artifacts are the ones with no answer rows or missing `generated_answer` fields.
+- Generic baseline exports may contain empty generated strings, but campaign
+  evidence rejects an exact 0/0 batch when every answer is blank or when all
+  rows repeat one malformed answer. Evidence records nonblank and distinct
+  output counts so degenerate runs cannot silently set thresholds.
+- Campaign evidence rescoring uses trial-wide distinct-valid accuracy for
+  SMILES: duplicate RDKit-valid, in-class, non-exemplar molecules count once.
 - Legacy rows that do not report a syntax boolean are treated as syntax-invalid unless the adapter can annotate them with benchmark parser checks before export.
 - CRANE-backed GSM rows do not carry `variable_types`; the exporter infers numeric symbolic identifiers from `gold_answer` before applying the GSM syntax parser.

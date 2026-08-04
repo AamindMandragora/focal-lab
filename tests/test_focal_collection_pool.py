@@ -85,6 +85,30 @@ def test_full_baseline_campaign_covers_all_100_fresh_cells(tmp_path):
     assert all("claude" not in " ".join(job.args).lower() for job in jobs)
 
 
+def test_full_baseline_campaign_can_build_a_versioned_subset(tmp_path):
+    pool = load_pool_module()
+    labels = {
+        "spider-qwen35-2b-itergen",
+        "smiles-acrylates-qwen25-1p5b-gcd",
+    }
+
+    jobs = pool.build_full_baseline_campaign(
+        tmp_path,
+        campaign_name="exact-zero-repair-20260804",
+        include_labels=labels,
+    )
+
+    assert {job.label for job in jobs} == labels
+    assert all(
+        "outputs/baselines/exact-zero-repair-20260804" in str(job.output_json)
+        for job in jobs
+    )
+    assert all(
+        "logs/exact-zero-repair-20260804" in str(job.log_path)
+        for job in jobs
+    )
+
+
 def test_full_baseline_campaign_uses_matched_splits_counts_and_budgets(tmp_path):
     pool = load_pool_module()
     jobs = {job.label: job for job in pool.build_full_baseline_campaign(tmp_path)}

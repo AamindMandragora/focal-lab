@@ -80,6 +80,13 @@ baseline uses the separately approved 95% accuracy exception. Its waiting mode
 then launches the 20 cold Opus 5 jobs (40 attempts each) through
 `run_cold_synthesis_queue.py --campaign-profile full-baseline-20260803`.
 
+Campaign evidence also checks generated content: exact 0/0 batches that are
+all blank or repeat one malformed answer are rejected. SMILES accuracy is
+recomputed as the number of distinct RDKit-valid, in-class, non-exemplar
+molecules divided by the trial size. Selective repairs use a new
+`--campaign-output-name` plus exact `--include-label` filters, preserving the
+original 100 baseline artifacts.
+
 ## Long runs (tmux)
 
 Use **`./run_tmux.sh`** to start or attach a session with conda, `.env`, and `CUDA_VISIBLE_DEVICES=2,3` already set:
@@ -169,7 +176,7 @@ audit; see `planning/ws2-ws3-landed-audit.md`).
 - `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider` order (GSM and SQL/Spider) and strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn. The CARS molecular/SMILES benchmark remains available for explicit manual runs, but it is not part of the default matrix. Metadecode runs use `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and use `--min-accuracy` as the best matching legacy baseline accuracy plus `--accuracy-win-margin 0.03`.
 - Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `opus4.7` profile also forwards Anthropic adaptive thinking with `--anthropic-effort xhigh` and summarized thinking; the `gemini` profile uses Gemini thinking level `high` by default.
 - `run_all_tests.py` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
-- Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
+- Existing baseline JSONs are skipped by the general matrix runner when they contain at least one answer entry with a `generated_answer` field. Empty strings remain serializable answers there, but the full-campaign evidence gate rejects degenerate exact 0/0 batches; empty `answers: []` artifacts are incomplete and rerun.
 - Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so those strategies compare against the same questions.
 - Fixed-strategy exports do not assume missing syntax metadata means valid syntax. Legacy rows are annotated with benchmark parser checks where possible; otherwise missing syntax booleans count as invalid.
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
