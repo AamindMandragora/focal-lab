@@ -179,6 +179,11 @@ audit; see `planning/ws2-ws3-landed-audit.md`).
 - Existing baseline JSONs are skipped by the general matrix runner when they contain at least one answer entry with a `generated_answer` field. Empty strings remain serializable answers there, but the full-campaign evidence gate rejects degenerate exact 0/0 batches; empty `answers: []` artifacts are incomplete and rerun.
 - Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so those strategies compare against the same questions.
 - Fixed-strategy exports do not assume missing syntax metadata means valid syntax. Legacy rows are annotated with benchmark parser checks where possible; otherwise missing syntax booleans count as invalid.
+- Fixed-strategy SMILES GCD, IterGen, and CRANE sample at temperature 0.7;
+  GSM and Spider stay greedy. SMILES CRANE uses neutral reasoning before a
+  visible `<< >>` constrained span and scores only the final SMILES inside it.
+  Spider IterGen keeps recurrence penalty 0.3, applied sign-aware so repeated
+  positive and negative logits both become less likely.
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
 - The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.
 - GSM rows without exposed symbolic numeric variables use numeric-only syntax checks, so arbitrary words such as `reasoning` are not accepted as variable names.

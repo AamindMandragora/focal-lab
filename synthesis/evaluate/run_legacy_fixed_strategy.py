@@ -257,9 +257,26 @@ def _gcd_generation_kwargs(dataset: str) -> dict[str, Any]:
 
 
 def _crane_stop_words(dataset: str) -> list[str] | None:
-    if dataset == "smiles":
-        return None
     return [">>"]
+
+
+def _crane_generation_kwargs(dataset: str) -> dict[str, Any]:
+    if dataset == "smiles":
+        return {"do_sample": True, "temperature": 0.7}
+    return {"do_sample": False}
+
+
+_CRANE_SMILES_REASONING_GUIDANCE = (
+    "Think through the requested molecular class, then put only the final SMILES "
+    "between << and >>."
+)
+
+
+def _crane_prompt_for_generation(dataset: str, prompt: str) -> str:
+    if dataset == "smiles":
+        return f"{prompt.rstrip()}\n\n{_CRANE_SMILES_REASONING_GUIDANCE}"
+    return prompt
+
 
 
 def _legacy_gsm_symbolic_grammar_base(repo_root: Path, examples: list[dict[str, Any]]) -> str:
@@ -1119,11 +1136,11 @@ def _itergen_add_import_paths(itergen_root: Path) -> None:
 
 
 def _install_itergen_transformers_compat(itergen_cls: type[Any]) -> None:
-    """Keep legacy IterGen's greedy setup working with Transformers 5.
+    """Keep legacy IterGen generation working with Transformers 5.
 
     Transformers 5 removed ``_get_logits_warper`` and folds sampling warpers
-    into ``_get_logits_processor``. This adapter only runs IterGen greedily, so
-    an empty processor list is the exact identity operation needed here.
+    into ``_get_logits_processor``. Greedy generation keeps an identity list;
+    sampling uses Transformers 5's own processor builder.
     """
     if getattr(itergen_cls, "_csd_transformers_compat_installed", False):
         return
@@ -1146,10 +1163,28 @@ def _install_itergen_transformers_compat(itergen_cls: type[Any]) -> None:
             )
             return
         if self.generation_config.do_sample:
-            raise RuntimeError(
-                "Legacy IterGen sampling requires a Transformers version with "
-                "_get_logits_warper; this adapter is supported with do_sample=False only."
+            get_logits_processor = getattr(self.model, "_get_logits_processor", None)
+            if get_logits_processor is None:
+                raise RuntimeError(
+                    "Legacy IterGen sampling requires Transformers' "
+                    "_get_logits_processor when _get_logits_warper is unavailable."
+                )
+            self.logit_warper = get_logits_processor(
+                generation_config=self.generation_config,
+                input_ids_seq_length=0,
+                encoder_input_ids=None,
+                prefix_allowed_tokens_fn=None,
+                logits_processor=None,
+                device=self.device,
+                model_kwargs={},
             )
+            LOGGER.info(
+                "[legacy-itergen] using Transformers 5 sampling processors "
+                "device=%s temperature=%s",
+                self.device,
+                getattr(self.generation_config, "temperature", None),
+            )
+            return
 
         from transformers import LogitsProcessorList
 
@@ -1225,10 +1260,13 @@ def _itergen_generation_kwargs(
         "parse_output_only": True,
         "quantize": False,
         "max_tokens": max_tokens,
-        "do_sample": False,
         "max_new_tokens": max_new_tokens,
         "num_return_sequences": 1,
     }
+    if dataset == "smiles":
+        kwargs.update(do_sample=True, temperature=0.7)
+    else:
+        kwargs["do_sample"] = False
     if dataset == "spider":
         # The checked-in upstream Spider experiment uses 0.3 for its greedy
         # iterative search. This discourages immediate token recurrence without
@@ -1254,7 +1292,7 @@ def _itergen_render_prompt_for_model(
         .replace("-", "_")
         .replace(".", "_")
     )
-    if model_type != "qwen3_5":
+    if model_type not in {"qwen3_5", "qwen3_5_text"}:
         return prompt
 
     rendered = iter_gen.tokenizer.apply_chat_template(
@@ -1857,15 +1895,6 @@ def _crane_delimited_start_grammar(grammar_text: str) -> str:
 
 def _crane_adaptive_surface(dataset: str, grammar_text: str) -> dict[str, Any]:
     """Return the adaptive-decoder surface declared by each benchmark."""
-    if dataset == "smiles":
-        return {
-            "grammar": grammar_text,
-            "start_symbol": "",
-            "start_in_grammar": False,
-            "end_symbol": None,
-            "end_in_grammar": False,
-            "start_inside_constrained": True,
-        }
     return {
         "grammar": _crane_delimited_start_grammar(grammar_text),
         "start_symbol": "<<",
@@ -1874,6 +1903,22 @@ def _crane_adaptive_surface(dataset: str, grammar_text: str) -> dict[str, Any]:
         "end_in_grammar": True,
         "start_inside_constrained": False,
     }
+
+
+def _crane_completion_for_scoring(dataset: str, prompt: str, raw_output: str) -> str:
+    completion = completion_for_scoring(prompt, raw_output)
+    if dataset != "smiles":
+        return completion
+
+    complete_spans = re.findall(r"<<(.*?)>>", completion, flags=re.DOTALL)
+    if not complete_spans:
+        LOGGER.warning(
+            "[legacy-crane] SMILES output had no complete constrained span "
+            "output_chars=%d",
+            len(completion),
+        )
+        return ""
+    return complete_spans[-1].strip()
 
 
 def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
@@ -1968,8 +2013,19 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
                 end_in_grammar=surface["end_in_grammar"],
                 start_inside_constrained=surface["start_inside_constrained"],
                 max_new_tokens=max(32, int(args.eval_max_steps)),
-                do_sample=False,
                 num_return_sequences=1,
+                **_crane_generation_kwargs(dataset),
+            )
+            generation_kwargs = _crane_generation_kwargs(dataset)
+            LOGGER.info(
+                "[legacy-crane] initialized decoder dataset=%s model=%s "
+                "do_sample=%s temperature=%s start_symbol=%r end_symbol=%r",
+                dataset,
+                args.eval_model,
+                generation_kwargs["do_sample"],
+                generation_kwargs.get("temperature"),
+                surface["start_symbol"],
+                surface["end_symbol"],
             )
         sc = syncode_cache[cache_key]
 
@@ -1979,11 +2035,18 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
                 example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "evaluator_default")
+        prompt = _crane_prompt_for_generation(dataset, prompt)
         gen_started = time.perf_counter()
         completions = sc.infer(prompt, stop_words=_crane_stop_words(dataset))
         gen_seconds = time.perf_counter() - gen_started
         raw_output = completions[0] if completions else ""
-        completion = completion_for_scoring(prompt, raw_output)
+        completion = _crane_completion_for_scoring(dataset, prompt, raw_output)
+        LOGGER.info(
+            "[legacy-crane] completed example dataset=%s raw_chars=%d scored_chars=%d",
+            dataset,
+            len(raw_output),
+            len(completion),
+        )
         scored_output = (
             eval_runtime._truncate_gsm_output(completion)
             if dataset == "gsm_symbolic"

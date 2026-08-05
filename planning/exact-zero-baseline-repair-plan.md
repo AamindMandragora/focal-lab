@@ -1,6 +1,7 @@
 # Exact-zero baseline repair and selective rerun
 
 Date: 2026-08-04
+Updated: 2026-08-05
 
 ## Shape
 
@@ -159,6 +160,56 @@ corrected evidence creation, and independent queue validation.
 If a monitor proves a harness fault, it may quarantine the artifact, add a
 narrow test-first repair, and rerun only that cell. Strategy semantics and
 prompt guidance still require user approval.
+
+## 2026-08-05 authoritative repair update
+
+This section supersedes the earlier progress counts and any earlier statement
+that strategy changes still require approval.
+
+### Current accepted denominator
+
+- The first 31-cell repair pool is complete: 15 original artifacts are accepted
+  and 16 are quarantined.
+- One SHA-bound SMILES GCD supersession is independently accepted. Effective
+  accepted evidence is therefore 16/31.
+- Fifteen labels remain unresolved: two Spider IterGen, ten SMILES IterGen,
+  and three SMILES CRANE.
+- The five-cell known-fix pool completed, but all five replacements remain
+  quarantined system failures. Preserve every source and replacement artifact.
+
+### Approved repairs
+
+1. Preserve Spider IterGen's recurrence feature. For repeated-token logits,
+   multiply nonnegative logits by `0.3` and divide negative logits by `0.3`
+   so both signs become less likely. Apply this only where the existing Spider
+   recurrence penalty is active.
+2. Use `do_sample=True` and `temperature=0.7` for SMILES IterGen and SMILES
+   CRANE. Do not change GSM or Spider sampling behavior.
+3. Apply neutral reasoning plus delimiters only to SMILES CRANE. Use the prompt:
+   `Think through the requested molecular class, then put only the final SMILES between << and >>.`
+   Reasoning is unconstrained before `<<`; grammar-constrained generation
+   occurs inside the span; only the content inside `<< >>` is scored.
+4. Do not add molecule examples, chemistry hints, preferred structures, or
+   other strategy guidance.
+5. Investigate Qwen3.5 chat rendering with first-token and prompt-boundary
+   traces, but do not change it without a failing test and causal evidence.
+
+### Test-first execution
+
+1. Add red tests for sign-aware recurrence, SMILES sampling settings, CRANE's
+   delimited prompt surface, and inner-span-only scoring.
+2. Implement the smallest repairs, mirror any IterGen legacy edit in
+   `environment/legacy_patches/`, and update the required nearby docs.
+3. Run focused and adjacent tests, then search sibling uses of each changed
+   generation setting and delimiter contract.
+4. Run one-example smoke probes on approved free GPUs. Record prompt hashes,
+   token progress, parser state, stop reason, and output diversity.
+5. Rerun only the 15 unresolved labels into new versioned roots. Keep synthesis
+   blocked and never overwrite prior artifacts.
+6. Require skeptical validation for every result. Any diverse nonblank 0/0
+   needs an independent SHA-bound review before acceptance.
+7. Rebuild corrected all-five-baseline evidence and thresholds, run a separate
+   final judge, then launch synthesis in the previously approved order.
 
 ## Documentation and handoff
 

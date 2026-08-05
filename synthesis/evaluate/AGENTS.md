@@ -19,7 +19,10 @@
   from the aggregate counts.
 - **`run_legacy_fixed_strategy.main`** calls **`_ensure_repo_cache_env`** so subprocess CRANE runs inherit **`HF_HOME`**, **`HF_CACHE`**, **`TRANSFORMERS_CACHE`**, **`SYNCODE_CACHE`**, and **`ITER_SYNCODE_CACHE`** under the repository **`cache/`** unless **`CSD_CACHE_ROOT`** (or those variables) are already set; vendored **`syncode/syncode/common.py`** and legacy forks walk up to the same root when imports happen outside that entrypoint.
 - Edits inside gitignored **`legacy/{CRANE,itergen,cars}`** require tracked patches under **`environment/legacy_patches/`** per **`environment/legacy/AGENTS.md`** (prefer fixing **`run_legacy_fixed_strategy.py`** when that suffices).
-- Keep the tracked IterGen compatibility adapter greedy-only: Transformers 5 may use an identity logits warper for `do_sample=False`, and models with linear-attention layers may replace IterGen's empty lazy cache with `DynamicCache(config=model.config)`, but do not approximate legacy sampling after `_get_logits_warper` removal.
+- Keep the tracked IterGen compatibility adapter faithful to Transformers:
+  greedy runs use an identity logits processor, while approved SMILES sampling
+  at temperature 0.7 uses Transformers 5's own `_get_logits_processor` output.
+  Do not hand-build or approximate the sampling processors.
 - Keep CRANE result discovery scoped to the requested model, grammar mode, grammar, and chain-of-thought setting; never select the newest result across the whole dataset when baseline jobs run concurrently.
 - Spider IterGen must use the checked-in upstream iterative column/table search,
   schema backtracking, 20-iteration limit, and greedy recurrence penalty 0.3;
@@ -27,9 +30,10 @@
 - Spider IterGen must render Qwen3.5 prompts through the model chat template
   with `enable_thinking=False`; other model and dataset prompt surfaces remain
   unchanged.
-- Delimiter-free SMILES CRANE evaluation starts constrained at the first
-  generated token and passes no delimiter stop word. Do not wrap the grammar or
-  prompt in `<< >>` markers.
+- SMILES CRANE samples at temperature 0.7, permits neutral reasoning before
+  `<<`, constrains only the final SMILES inside `<< >>`, stops at `>>`, and
+  scores only that inner span. Keep molecule examples, chemistry hints, and
+  preferred structures out of the prompt.
 - GCD SMILES evaluation samples at temperature 0.7 to avoid repeating one
   malformed output across the whole trial; GSM and Spider GCD evaluation stays
   greedy.

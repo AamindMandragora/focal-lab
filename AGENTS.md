@@ -87,6 +87,12 @@ Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE
 - Selective baseline repairs must write to a new campaign output root and
   overlay only explicitly named cells when rebuilding evidence; never replace
   the original campaign artifacts in place.
+- Fixed-strategy SMILES GCD, IterGen, and CRANE use sampling at temperature
+  0.7; GSM and Spider stay greedy. SMILES CRANE may reason neutrally before
+  `<<`, constrains only the final molecule inside `<< >>`, and scores only the
+  inner span. Do not add molecule examples or chemistry strategy guidance.
+- Spider IterGen recurrence penalty 0.3 must lower both positive and negative
+  repeated-token logits; never multiply a negative logit by 0.3.
 - For CRANE-backed GSM rows that lack `variable_types`, infer numeric symbolic identifiers from `gold_answer` before syntax checking.
 - Keep the GCD GSM-Symbolic adapter scoped to constrained expression bodies after `<<`; wrap those bodies for scoring, finalize the longest parseable expression prefix, and restrict identifiers to numeric placeholders from the evaluation sample.
 - For instantiated GSM rows without symbolic numeric variables, use numeric-only syntax checks; do not let arbitrary identifiers satisfy GSM expression syntax.

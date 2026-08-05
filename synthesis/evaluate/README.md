@@ -55,19 +55,22 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
 - The GCD adapter uses Syncode DFA-mask decoding but keeps GSM-Symbolic generation scoped to expression bodies: it starts after `<<`, wraps the generated body for scoring, caps expression length, finalizes the longest parseable expression prefix, and restricts GSM variables to numeric placeholders observed in the evaluation sample.
 - GSM syntax checks use a numeric-only grammar when examples do not expose numeric symbolic variables; arbitrary identifiers such as `reasoning` must not pass syntax on instantiated GSM rows.
 - The legacy CARS adapter runs through the same benchmark registry as the other fixed strategies and raises on failed runs so incomplete artifacts are not mistaken for valid zero-score baselines; it uses the same GSM grammar tightening as the GCD adapter (allowed variables or numeric-only, inferred from the evaluation batch) and expression-only prompts for gsm_symbolic, Spider, and SMILES like IterGen/GCD.
-- The legacy IterGen adapter keeps greedy decoding compatible with Transformers 5, where the private `_get_logits_warper` method was removed and beam counts may default to `None`. The compatibility path restores the Transformers 4 greedy beam defaults, creates a config-aware cache only for models with linear-attention layers, is identity-only for `do_sample=False`, and fails clearly for sampling instead of changing baseline behavior.
+- The legacy IterGen adapter supports Transformers 5, where the private `_get_logits_warper` method was removed and beam counts may default to `None`. It restores the Transformers 4 greedy beam defaults, creates a config-aware cache only for models with linear-attention layers, keeps an identity processor for greedy runs, and uses Transformers 5's own processor list for approved SMILES sampling at temperature 0.7.
+- IterGen recurrence penalty 0.3 is sign-aware: positive repeated-token logits
+  are multiplied by 0.3 and negative logits are divided by 0.3.
 - For Spider, the IterGen adapter follows the checked-in upstream protocol:
   incremental column/table generation, schema validation with bounded
   backtracking, 20 search iterations, and recurrence penalty 0.3 under greedy
   decoding. Qwen3.5 prompts are rendered through the model chat template with
   thinking disabled; other models and datasets keep their existing prompt
   surface.
-- SMILES GCD uses sampling at temperature 0.7 so a failed first molecule does
-  not force the same malformed molecule for the full trial. GSM and Spider GCD
-  remain greedy. SMILES GCD and IterGen honor the requested token budget.
-  CRANE's delimiter-free SMILES surface starts constrained at token zero and
-  passes no delimiter stop word; delimiter-based GSM and Spider behavior is
-  unchanged.
+- SMILES GCD, IterGen, and CRANE sample at temperature 0.7 so a failed first
+  molecule does not force the same malformed molecule for the full trial. GSM
+  and Spider remain greedy. SMILES GCD and IterGen honor the requested token
+  budget. SMILES CRANE permits neutral reasoning before `<<`, constrains the
+  final molecule inside `<< >>`, stops at `>>`, and scores only the inner span.
+  Its prompt contains no molecule examples, chemistry hints, or preferred
+  structures. Delimiter-based GSM and Spider behavior is unchanged.
 - Concurrent CRANE-backed runs select result JSONL files only from the requested model, strategy mode, grammar, and chain-of-thought directory, then require the exact requested row count before exporting a baseline artifact.
 - Generic baseline exports may contain empty generated strings, but campaign
   evidence rejects an exact 0/0 batch when every answer is blank or when all

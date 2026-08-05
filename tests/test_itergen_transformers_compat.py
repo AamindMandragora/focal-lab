@@ -26,7 +26,12 @@ class _GenerationConfig:
 
 
 class _ModernModel:
-    pass
+    def __init__(self):
+        self.processor_calls = []
+
+    def _get_logits_processor(self, **kwargs):
+        self.processor_calls.append(kwargs)
+        return "transformers-5-processors"
 
 
 class _OldModel:
@@ -77,12 +82,18 @@ def test_modern_transformers_restores_legacy_greedy_beam_defaults():
     assert value.generation_config.num_beam_groups == 1
 
 
-def test_modern_transformers_sampling_fails_instead_of_changing_baseline_semantics():
+def test_modern_transformers_sampling_uses_transformers5_processors():
     _install_itergen_transformers_compat(_LegacyIterGen)
     value = _instance(do_sample=True)
 
-    with pytest.raises(RuntimeError, match="do_sample=False"):
-        value.update_gen_args(max_new_tokens=128)
+    value.update_gen_args(max_new_tokens=128, temperature=0.7)
+
+    assert value.logit_warper == "transformers-5-processors"
+    assert len(value.model.processor_calls) == 1
+    call = value.model.processor_calls[0]
+    assert call["generation_config"] is value.generation_config
+    assert call["input_ids_seq_length"] == 0
+    assert call["device"] == "cuda:0"
 
 
 def test_older_transformers_keeps_the_original_logits_warper_path():
@@ -170,6 +181,18 @@ def test_spider_itergen_uses_the_checked_in_upstream_search_settings():
     assert kwargs["do_sample"] is False
     assert kwargs["recurrence_penalty"] == 0.3
 
+def test_smiles_itergen_samples_at_the_approved_temperature():
+    kwargs = _itergen_generation_kwargs(
+        dataset="smiles",
+        max_tokens=8192,
+        max_new_tokens=400,
+    )
+
+    assert kwargs["do_sample"] is True
+    assert kwargs["temperature"] == 0.7
+    assert "recurrence_penalty" not in kwargs
+
+
 
 def test_spider_itergen_advances_by_schema_units_and_backtracks_invalid_names():
     class FakeIterGen:
@@ -218,7 +241,8 @@ def test_spider_itergen_advances_by_schema_units_and_backtracks_invalid_names():
     assert result == "SELECT name FROM singer"
 
 
-def test_spider_qwen35_itergen_renders_chat_template_without_thinking():
+@pytest.mark.parametrize("model_type", ["qwen3_5", "qwen3_5_text"])
+def test_spider_qwen35_itergen_renders_chat_template_without_thinking(model_type):
     calls = []
 
     class Tokenizer:
@@ -227,7 +251,9 @@ def test_spider_qwen35_itergen_renders_chat_template_without_thinking():
             return "<|user|>SQL prompt<|assistant|>"
 
     class Config:
-        model_type = "qwen3_5"
+        pass
+
+    Config.model_type = model_type
 
     class Model:
         config = Config()
@@ -286,8 +312,8 @@ def test_itergen_chat_rendering_leaves_other_inputs_unchanged(dataset, model_typ
     )
 
 
-def test_crane_smiles_has_no_unreachable_delimiter_stop_word():
-    assert _crane_stop_words("smiles") is None
+def test_crane_uses_the_closing_delimiter_as_its_stop_word():
+    assert _crane_stop_words("smiles") == [">>"]
     assert _crane_stop_words("gsm_symbolic") == [">>"]
     assert _crane_stop_words("spider") == [">>"]
 
@@ -427,14 +453,104 @@ def test_smiles_fixed_decoders_honor_the_requested_token_budget(strategy):
     assert _legacy_fixed_max_new_tokens("smiles", 400, strategy=strategy) == 400
 
 
-def test_crane_smiles_starts_constrained_without_visible_delimiters():
+def test_crane_smiles_uses_reasoning_before_a_delimited_constrained_span():
     surface = _crane_adaptive_surface("smiles", "start: /[A-Z]+/")
 
     assert surface == {
-        "grammar": "start: /[A-Z]+/",
-        "start_symbol": "",
-        "start_in_grammar": False,
-        "end_symbol": None,
-        "end_in_grammar": False,
-        "start_inside_constrained": True,
+        "grammar": 'start: "<<" crane_body ">>"\ncrane_body: /[A-Z]+/',
+        "start_symbol": "<<",
+        "start_in_grammar": True,
+        "end_symbol": ">>",
+        "end_in_grammar": True,
+        "start_inside_constrained": False,
     }
+
+
+def test_crane_smiles_samples_with_neutral_reasoning_and_scores_only_inner_span(
+    monkeypatch,
+    tmp_path,
+):
+    observed = {}
+    written = {}
+
+    class FakeAdaptiveSynCode:
+        def __init__(self, **kwargs):
+            observed["constructor_kwargs"] = kwargs
+
+        def infer(self, prompt, stop_words=None):
+            observed["generation_prompt"] = prompt
+            observed["stop_words"] = stop_words
+            return ["Reasoning about the class. <<C=CC(=O)OCC>> ignored tail"]
+
+    class FakeEvaluator:
+        def __init__(self, **kwargs):
+            observed["evaluator_kwargs"] = kwargs
+
+        def _check_syntax_validity(self, scored_output, *, example):
+            observed["syntax_input"] = scored_output
+            return scored_output == "C=CC(=O)OCC", []
+
+    class FakeLogic:
+        def load_dataset_sample(self, evaluator):
+            return [
+                {
+                    "class_name": "acrylates",
+                    "grammar_text": "start: /[A-Z0-9=()]+/",
+                    "prompt": "Generate a molecule.\nMolecule:",
+                }
+            ]
+
+        def expected_answer(self, evaluator, example):
+            return None
+
+        def extract_actual(self, evaluator, scored_output, example):
+            observed["extract_input"] = scored_output
+            return scored_output, "completion", {"syntax_valid": True}
+
+        def is_correct(self, evaluator, actual, expected, example, aux, scored_output):
+            return actual == "C=CC(=O)OCC"
+
+    fake_syncode_package = types.ModuleType("syncode")
+    fake_syncode_package.__path__ = []
+    fake_syncode_infer = types.ModuleType("syncode.infer")
+    fake_syncode_infer.AdaptiveSynCode = FakeAdaptiveSynCode
+    monkeypatch.setitem(sys.modules, "syncode", fake_syncode_package)
+    monkeypatch.setitem(sys.modules, "syncode.infer", fake_syncode_infer)
+
+    from synthesis.evaluate import evaluator as evaluator_module
+    from synthesis.evaluate.benchmarks import registry as registry_module
+
+    monkeypatch.setattr(evaluator_module, "Evaluator", FakeEvaluator)
+    monkeypatch.setattr(registry_module, "get_logic", lambda dataset: FakeLogic())
+    monkeypatch.setattr(legacy_runner, "_configure_fixed_eval_runtime", lambda *args: None)
+    monkeypatch.setattr(legacy_runner, "_legacy_local_cuda_device", lambda device: "cuda:0")
+    monkeypatch.setattr(legacy_runner, "_legacy_benchmark_prompt", lambda *args: "Generate a molecule.\nMolecule:")
+    monkeypatch.setattr(legacy_runner, "_baseline_row_question", lambda *args: "question")
+    monkeypatch.setattr(legacy_runner, "_build_minimal_json", lambda rows, *args, **kwargs: written.update(rows=rows))
+
+    args = argparse.Namespace(
+        dataset="smiles", eval_model="Qwen/Qwen2.5-Coder-7B-Instruct",
+        eval_backend="vllm", device="cuda", eval_sample_size=1, eval_max_steps=64,
+        eval_step_token_budget=1, vllm_gpu_memory_utilization=0.1,
+        vllm_tensor_parallel_size=1, gsm_split_file=None, gsm_split_name="eval",
+        spider_split_file=None, spider_split_name="eval", smiles_classes="acrylates",
+        output_json=str(tmp_path / "baseline.json"),
+    )
+
+    assert legacy_runner._crane_via_adaptive_syncode(args, "smiles") == 0
+
+    constructor = observed["constructor_kwargs"]
+    assert constructor["do_sample"] is True
+    assert constructor["temperature"] == 0.7
+    assert constructor["start_symbol"] == "<<"
+    assert constructor["end_symbol"] == ">>"
+    assert constructor["start_inside_constrained"] is False
+    assert observed["generation_prompt"] == (
+        "Generate a molecule.\nMolecule:\n\n"
+        "Think through the requested molecular class, then put only the final SMILES "
+        "between << and >>."
+    )
+    assert observed["stop_words"] == [">>"]
+    assert observed["extract_input"] == "C=CC(=O)OCC"
+    assert observed["syntax_input"] == "C=CC(=O)OCC"
+    assert written["rows"][0]["llm_response"] == "C=CC(=O)OCC"

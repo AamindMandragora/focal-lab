@@ -6,6 +6,8 @@ any **`*.patch`** files found here, per upstream tree:
 - `environment/legacy_patches/CRANE/*.patch`
 - `environment/legacy_patches/itergen/*.patch`
 - `environment/legacy_patches/cars/*.patch`
+- `itergen/010-sign-aware-recurrence-penalty.patch` fixes negative-logit
+  recurrence handling and carries its regression test.
 
 Patches should be **`git format-patch`**-style or **`git diff`** unified diffs
 generated **relative to the patched repository root** (prefix level `-p1`).
