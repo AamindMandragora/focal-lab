@@ -33,6 +33,7 @@ so baseline numbers remain interpretable.
 | Known upstream fragility | Lark `Tree.__deepcopy__` can recurse deeply on cyclic stacks | Partners sometimes patch upstream Lark/SynCode locally so long jobs finish; if needed, capture that change as a **`environment/legacy_patches/itergen/*.patch`** applied by **`clone_legacy_csds.sh`**. |
 | Recurrence penalty | Multiplies every repeated-token logit by the factor, which makes negative logits less negative when the factor is 0.3 | Patch **`environment/legacy_patches/itergen/010-sign-aware-recurrence-penalty.patch`** multiplies nonnegative logits and divides negative logits by 0.3 so both become less likely. |
 | Transformers 5 sampling | Uses the removed private `_get_logits_warper` method | The harness uses Transformers 5's official `_get_logits_processor` output for approved SMILES sampling; greedy behavior remains unchanged. |
+| Config-allocated cache | Treats any truthy cache as populated and feeds only the latest token | Patch **`environment/legacy_patches/itergen/011-empty-config-cache-full-prompt.patch`** checks cached sequence length, so Qwen3.5 receives the complete prompt on its first forward pass. |
 
 ## CARS (`legacy/cars`)
 

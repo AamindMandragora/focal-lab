@@ -23,6 +23,9 @@
   greedy runs use an identity logits processor, while approved SMILES sampling
   at temperature 0.7 uses Transformers 5's own `_get_logits_processor` output.
   Do not hand-build or approximate the sampling processors.
+- Config-allocated Qwen3.5 caches are truthy before they contain tokens. Check
+  `get_seq_length()` before switching IterGen to latest-token-only input so the
+  first forward pass receives the complete prompt.
 - Keep CRANE result discovery scoped to the requested model, grammar mode, grammar, and chain-of-thought setting; never select the newest result across the whole dataset when baseline jobs run concurrently.
 - Spider IterGen must use the checked-in upstream iterative column/table search,
   schema backtracking, 20-iteration limit, and greedy recurrence penalty 0.3;

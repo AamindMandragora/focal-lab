@@ -1,0 +1,44 @@
+diff --git a/itergen/main.py b/itergen/main.py
+index 8a71700..bd566d1 100644
+--- a/itergen/main.py
++++ b/itergen/main.py
+@@ -199,0 +200,6 @@ class IterGen:
++    @staticmethod
++    def _cache_has_tokens(past_key_values: DynamicCache) -> bool:
++        """Distinguish a populated cache from config-allocated empty layers."""
++        return past_key_values is not None and past_key_values.get_seq_length() > 0
++
++
+@@ -237 +243 @@ class IterGen:
+-                if self.model_kwargs['past_key_values']: # Get the last token if kv is cached for all previous tokens
++                if self._cache_has_tokens(self.model_kwargs['past_key_values']):
+diff --git a/tests/test_prompt_cache_input.py b/tests/test_prompt_cache_input.py
+new file mode 100644
+index 0000000..2d45e82
+--- /dev/null
++++ b/tests/test_prompt_cache_input.py
+@@ -0,0 +1,24 @@
++from itergen.main import IterGen
++
++
++class _ConfigAllocatedCache:
++    def __init__(self, sequence_length: int):
++        self.sequence_length = sequence_length
++
++    def __bool__(self) -> bool:
++        return True
++
++    def get_seq_length(self) -> int:
++        return self.sequence_length
++
++
++def test_truthy_empty_cache_is_not_ready_for_latest_token_generation():
++    assert not IterGen._cache_has_tokens(
++        _ConfigAllocatedCache(sequence_length=0)
++    )
++
++
++def test_populated_cache_is_ready_for_latest_token_generation():
++    assert IterGen._cache_has_tokens(
++        _ConfigAllocatedCache(sequence_length=2)
++    )

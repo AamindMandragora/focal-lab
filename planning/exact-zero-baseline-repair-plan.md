@@ -194,6 +194,22 @@ that strategy changes still require approval.
 5. Investigate Qwen3.5 chat rendering with first-token and prompt-boundary
    traces, but do not change it without a failing test and causal evidence.
 
+### Proven Qwen3.5 prompt-cache defect
+
+- A config-aware Qwen3.5 `DynamicCache` allocates empty layer objects before
+  the first forward pass, so the cache is truthy while its sequence length is
+  still zero.
+- IterGen treated that truthy empty cache as populated and sent only the final
+  prompt token on the first pass. The two Spider Qwen3.5 runs and the two
+  acrylates Qwen3.5 runs that started before this repair remain quarantined.
+- The repair checks `get_seq_length() > 0` before switching to one-token cached
+  decoding. Tests cover both a truthy empty cache and a populated cache. The
+  legacy edit is mirrored by patch `011-empty-config-cache-full-prompt.patch`.
+- Accept no Qwen3.5 result from this repair until a live one-example probe or a
+  post-repair pool worker demonstrates nonblank, prompt-specific parser
+  progress. Rerun only the four pre-repair Qwen3.5 cells in another versioned
+  root; preserve every v7 artifact.
+
 ### Test-first execution
 
 1. Add red tests for sign-aware recurrence, SMILES sampling settings, CRANE's
