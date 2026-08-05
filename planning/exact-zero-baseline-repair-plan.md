@@ -227,6 +227,56 @@ that strategy changes still require approval.
 7. Rebuild corrected all-five-baseline evidence and thresholds, run a separate
    final judge, then launch synthesis in the previously approved order.
 
+## 2026-08-05 finalization update
+
+### Accepted evidence
+
+All 31 exact-zero labels now have accepted effective evidence:
+
+- 15 accepted artifacts from the first repair root.
+- 1 independently reviewed SMILES GCD sampling-v2 supersession.
+- 11 accepted artifacts from the approved v7 root.
+- 4 accepted Qwen3.5 cache-repair artifacts from the v8 root.
+
+The final evidence builder must preserve those exact source and replacement
+hashes and must reproduce the selection counts `15 + 1 + 11 + 4 = 31`.
+
+### Corrected queue
+
+```text
+corrected all-five-baseline evidence
+                |
+                v
+10 fresh changed-target cells (40 calls each)
+                |
+                v
+2 full-memory retries (40 calls each, exclusive idle GPU)
+                |
+                v
+2 interrupted GSM recoveries (36 + 39 remaining calls)
+                |
+                v
+3 unchanged cells that never started (40 calls each)
+                |
+                v
+3 held-out-only jobs (0 author calls, exact CSD SHA pins)
+```
+
+The total approved new-author-call cap is exactly `675`. Each phase must finish
+before the next phase can dispatch. The corrected profile cannot exclude cells.
+
+### Launch gate
+
+1. Write the corrected evidence and queue manifest from the committed finalizer.
+2. Validate all 31 evidence mappings, exact thresholds, recovery histories,
+   held-out CSD pins, phase membership, and author-call accounting.
+3. Obtain a separate `gpt-5.6-sol` review. Its approval file must bind the
+   corrected evidence SHA-256, queue-manifest SHA-256, and pinned git commit.
+4. Preserve the block record, remove the active block path only after approval,
+   and launch on GPUs `0,2,3`. Recheck the block and approval before every job.
+5. Verify the controller, child process, phase-one state, logs, and GPU ownership
+   before declaring the synthesis queue running.
+
 ## Documentation and handoff
 
 - Update the nearest `README.md` / `AGENTS.md` files for changed behavior.

@@ -40,7 +40,11 @@ def _write_all_artifacts(repo: Path, *, perfect: bool = False) -> None:
         for model in builder.MODELS:
             for index, strategy in enumerate(builder.STRATEGIES):
                 total = cohort.sample_size
-                correct = total if perfect and strategy == "cars" else min(total - 1, index + 1)
+                correct = (
+                    total
+                    if perfect and strategy == "cars"
+                    else min(total - 1, index + 1)
+                )
                 syntax = min(total, total - index)
                 _write_artifact(
                     builder.baseline_artifact(repo, cohort, model, strategy),
@@ -50,7 +54,9 @@ def _write_all_artifacts(repo: Path, *, perfect: bool = False) -> None:
                 )
 
 
-def test_build_campaign_uses_all_five_baselines_and_exact_thresholds(tmp_path: Path) -> None:
+def test_build_campaign_uses_all_five_baselines_and_exact_thresholds(
+    tmp_path: Path,
+) -> None:
     _write_all_artifacts(tmp_path)
 
     evidence, manifest = builder.build_campaign(tmp_path, "a" * 40)
@@ -72,7 +78,9 @@ def test_build_campaign_uses_all_five_baselines_and_exact_thresholds(tmp_path: P
     assert job["eval_max_steps"] == 900
 
 
-def test_perfect_baseline_uses_the_approved_95_percent_exception(tmp_path: Path) -> None:
+def test_perfect_baseline_uses_the_approved_95_percent_exception(
+    tmp_path: Path,
+) -> None:
     _write_all_artifacts(tmp_path, perfect=True)
 
     evidence, manifest = builder.build_campaign(tmp_path, "b" * 40)
@@ -111,7 +119,9 @@ def test_evidence_hash_binds_each_raw_artifact(tmp_path: Path) -> None:
     assert row["source_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
 
 
-def test_repaired_campaign_overlays_only_named_versioned_artifacts(tmp_path: Path) -> None:
+def test_repaired_campaign_overlays_only_named_versioned_artifacts(
+    tmp_path: Path,
+) -> None:
     _write_all_artifacts(tmp_path)
     replacement_root = tmp_path / "outputs/baselines/exact-zero-repair-20260804"
     label = "spider-qwen35-2b-itergen"
@@ -139,6 +149,43 @@ def test_repaired_campaign_overlays_only_named_versioned_artifacts(tmp_path: Pat
     assert "full_baseline_20260803" in preserved["source_artifact"]
 
 
+def test_corrected_campaign_accepts_per_label_paths_and_versioned_evidence(
+    tmp_path: Path,
+) -> None:
+    _write_all_artifacts(tmp_path)
+    label = "spider-qwen35-2b-itergen"
+    replacement = (
+        tmp_path
+        / "outputs/baselines/exact-zero-repair-20260805-cache-v8"
+        / "spider/qwen35-2b/itergen.json"
+    )
+    _write_artifact(replacement, correct=58, syntax=300, total=300)
+    evidence_path = Path(
+        "saved-results/2026-08-05-corrected-full-baseline-evidence.json"
+    )
+
+    evidence, manifest = builder.build_campaign(
+        tmp_path,
+        "d" * 40,
+        replacement_paths={label: replacement},
+        evidence_path=evidence_path,
+    )
+    builder._atomic_json(tmp_path / evidence_path, evidence)
+
+    repaired = next(
+        row
+        for row in evidence["cells"]["spider-qwen35-2b"]["baselines"]
+        if row["strategy"] == "itergen"
+    )
+    assert repaired["source_artifact"] == str(replacement.relative_to(tmp_path))
+    assert repaired["supersedes_source_artifact"].endswith(
+        "full_baseline_20260803/spider/qwen35-2b/itergen.json"
+    )
+    assert len(repaired["supersedes_source_sha256"]) == 64
+    assert {job["baseline_source"] for job in manifest["jobs"]} == {str(evidence_path)}
+    builder.validate_campaign(manifest["jobs"], tmp_path)
+
+
 @pytest.mark.parametrize(
     ("generated_answers", "reason"),
     [
@@ -164,7 +211,9 @@ def test_exact_zero_degenerate_generation_blocks_evidence(
         builder._read_baseline(path, 3, "itergen", tmp_path)
 
 
-def test_diverse_exact_zero_generation_is_recorded_as_a_real_result(tmp_path: Path) -> None:
+def test_diverse_exact_zero_generation_is_recorded_as_a_real_result(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "baseline.json"
     _write_artifact(
         path,
@@ -205,14 +254,18 @@ def test_smiles_baseline_accuracy_counts_unique_valid_molecules(tmp_path: Path) 
     assert row["metric_source"] == "recomputed_smiles_unique_valid"
 
 
-def test_cold_environment_uses_the_manifest_bound_claude_account(tmp_path: Path) -> None:
+def test_cold_environment_uses_the_manifest_bound_claude_account(
+    tmp_path: Path,
+) -> None:
     _write_all_artifacts(tmp_path)
     _, manifest = builder.build_campaign(tmp_path, "e" * 40)
     job = manifest["jobs"][0]
 
     environment = queue.synthesis_environment(job, (0, 2), {}, tmp_path)
 
-    assert environment["CSD_CLAUDE_CONFIG_DIR"] == "/home/aadivyar/.claude-csd-synthesis"
+    assert (
+        environment["CSD_CLAUDE_CONFIG_DIR"] == "/home/aadivyar/.claude-csd-synthesis"
+    )
     assert environment["CSD_CLAUDE_EXPECTED_ACCOUNT"] == "aadivya@fermi.ai"
 
 

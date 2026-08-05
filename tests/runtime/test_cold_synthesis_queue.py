@@ -7,6 +7,7 @@ import hashlib
 import subprocess
 import threading
 import sys
+import pytest
 
 from scripts.runtime import run_cold_synthesis_queue as queue
 
@@ -121,12 +122,12 @@ def test_synthesis_command_is_cold_and_uses_large_bedrock_author():
     assert not any(flag.startswith("--initial-") for flag in command)
 
 
-
 def test_synthesis_command_uses_the_fixed_claude_code_opus5_author():
     command = queue.synthesis_command(_job(), Path("/env/python"))
 
     assert command[command.index("--generation-backend") + 1] == "claude"
     assert command[command.index("--generation-model") + 1] == "claude-opus-5"
+
 
 def test_bedrock_author_enables_extended_thinking(monkeypatch):
     from synthesis.generate.generator import StrategyGenerator
@@ -145,6 +146,25 @@ def test_bedrock_author_enables_extended_thinking(monkeypatch):
     assert author._bedrock_thinking_fields() == {
         "thinking": {"type": "enabled", "budget_tokens": 4096}
     }
+
+
+def test_recovery_command_uses_only_the_remaining_original_calls():
+    job = _job()
+    job.update(
+        {
+            "max_iterations": 36,
+            "initial_attempt_offset": 4,
+            "initial_attempt_history_file": "saved-results/recovery/gsm35-2b.json",
+        }
+    )
+
+    command = queue.synthesis_command(job, Path("/env/python"))
+
+    assert command[command.index("--max-iterations") + 1] == "36"
+    assert command[command.index("--initial-attempt-offset") + 1] == "4"
+    assert command[command.index("--initial-attempt-history-file") + 1] == (
+        "saved-results/recovery/gsm35-2b.json"
+    )
 
 
 def test_synthesis_command_only_uses_run_synthesis_cli_flags():
@@ -217,16 +237,13 @@ def test_run_synthesis_supplies_the_fixed_delimiter_default_to_the_benchmark():
     source = Path("synthesis/run_synthesis.py").read_text(encoding="utf-8")
 
     assert (
-        "require_delimiters=resolve_require_delimiters("
-        "args.dataset, cli_value=True)"
+        "require_delimiters=resolve_require_delimiters(" "args.dataset, cli_value=True)"
     ) in source
 
 
 def test_synthesis_environment_names_the_isolated_cold_output():
     gpus = tuple(range(queue.POOLABLE_GPU_COUNT))
-    env = queue.synthesis_environment(
-        _job(), gpus, {"PATH": "/bin"}, Path("/repo")
-    )
+    env = queue.synthesis_environment(_job(), gpus, {"PATH": "/bin"}, Path("/repo"))
     joined = ",".join(str(gpu) for gpu in gpus)
 
     assert env["CUDA_VISIBLE_DEVICES"] == joined
@@ -237,9 +254,7 @@ def test_synthesis_environment_names_the_isolated_cold_output():
 
 def test_synthesis_environment_pins_the_approved_current_claude_account():
     gpus = tuple(range(queue.POOLABLE_GPU_COUNT))
-    env = queue.synthesis_environment(
-        _job(), gpus, {"PATH": "/bin"}, Path("/repo")
-    )
+    env = queue.synthesis_environment(_job(), gpus, {"PATH": "/bin"}, Path("/repo"))
 
     assert env["CSD_CLAUDE_CONFIG_DIR"] == "/home/aadivyar/.claude-csd-ssdear"
     assert env["CSD_CLAUDE_EXPECTED_ACCOUNT"] == "ssdear@gmail.com"
@@ -248,9 +263,7 @@ def test_synthesis_environment_pins_the_approved_current_claude_account():
 def test_poolable_synthesis_environment_uses_the_reserved_gpu_bundle():
     """The bundle reaches the worker in the order it was handed out."""
     gpus = tuple(range(3, 3 - queue.POOLABLE_GPU_COUNT, -1))
-    env = queue.synthesis_environment(
-        _job(), gpus, {"PATH": "/bin"}, Path("/repo")
-    )
+    env = queue.synthesis_environment(_job(), gpus, {"PATH": "/bin"}, Path("/repo"))
     joined = ",".join(str(gpu) for gpu in gpus)
 
     assert env["CUDA_VISIBLE_DEVICES"] == joined
@@ -296,13 +309,17 @@ def test_resolve_vllm_gpu_memory_utilization_prefers_env_override(monkeypatch):
     from synthesis import run_synthesis as rs
 
     monkeypatch.delenv("CSD_VLLM_GPU_MEMORY_UTILIZATION", raising=False)
-    assert rs._resolve_vllm_gpu_memory_utilization() == float(rs.VLLM_GPU_MEMORY_UTILIZATION)
+    assert rs._resolve_vllm_gpu_memory_utilization() == float(
+        rs.VLLM_GPU_MEMORY_UTILIZATION
+    )
 
     monkeypatch.setenv("CSD_VLLM_GPU_MEMORY_UTILIZATION", "0.4")
     assert rs._resolve_vllm_gpu_memory_utilization() == 0.4
 
     monkeypatch.setenv("CSD_VLLM_GPU_MEMORY_UTILIZATION", "  ")
-    assert rs._resolve_vllm_gpu_memory_utilization() == float(rs.VLLM_GPU_MEMORY_UTILIZATION)
+    assert rs._resolve_vllm_gpu_memory_utilization() == float(
+        rs.VLLM_GPU_MEMORY_UTILIZATION
+    )
 
 
 def test_resolve_vllm_gpu_memory_utilization_uses_per_model_default(monkeypatch):
@@ -332,10 +349,7 @@ def test_expected_runtime_gpu_mem_util_matches_shared_table():
 def test_bundle_allocator_runs_poolable_cells_without_gpu_overlap():
     """Every cell gets its own GPUs, and the box runs dry rather than sharing."""
     width = queue.POOLABLE_GPU_COUNT
-    snapshots = {
-        gpu: {"used_mib": 0, "total_mib": 48_000}
-        for gpu in range(4)
-    }
+    snapshots = {gpu: {"used_mib": 0, "total_mib": 48_000} for gpu in range(4)}
     baseline = {gpu: dict(snapshot) for gpu, snapshot in snapshots.items()}
     reservations = {gpu: {} for gpu in snapshots}
     job = _job()
@@ -365,7 +379,9 @@ def test_heldout_command_binds_result_to_cell_commit_and_strategy():
     command = queue.heldout_command(job, Path("/env/python"), csd)
 
     assert command[command.index("--provenance-cell-id") + 1] == job["cell_id"]
-    assert command[command.index("--provenance-manifest-commit") + 1] == job["git_commit"]
+    assert (
+        command[command.index("--provenance-manifest-commit") + 1] == job["git_commit"]
+    )
 
 
 def test_heldout_environment_removes_paid_author_credentials():
@@ -381,6 +397,35 @@ def test_heldout_environment_removes_paid_author_credentials():
     )
 
     assert env == {"PATH": "/bin", "CUDA_VISIBLE_DEVICES": "1"}
+
+
+def test_full_memory_gate_requires_an_idle_unreserved_gpu():
+    job = _job("smiles")
+    job["requires_exclusive_gpu"] = True
+    snapshots = {
+        0: {"used_mib": 500, "total_mib": 48_000},
+        1: {"used_mib": 1_500, "total_mib": 48_000},
+    }
+    baseline = {gpu: dict(snapshot) for gpu, snapshot in snapshots.items()}
+    reservations = {0: {}, 1: {}}
+
+    assert queue.choose_gpu_bundle(job, snapshots, reservations, baseline) == (0,)
+
+    reservations[0]["other-cell"] = 1
+    assert queue.choose_gpu_bundle(job, snapshots, reservations, baseline) is None
+
+
+def test_pinned_heldout_csd_rejects_hash_drift(tmp_path: Path):
+    csd = tmp_path / "GeneratedCSD.py"
+    csd.write_text("# accepted\n", encoding="utf-8")
+    job = {
+        "heldout_csd_path": str(csd),
+        "heldout_csd_sha256": hashlib.sha256(csd.read_bytes()).hexdigest(),
+    }
+    assert queue.pinned_heldout_csd(job, tmp_path) == csd
+    csd.write_text("# changed\n", encoding="utf-8")
+    with pytest.raises(queue.ConfigError, match="held-out CSD hash"):
+        queue.pinned_heldout_csd(job, tmp_path)
 
 
 def test_dispatch_preserves_manifest_priority_on_one_gpu():
@@ -402,6 +447,36 @@ def test_dispatch_preserves_manifest_priority_on_one_gpu():
     )
 
     assert started == [("first", (0,)), ("second", (0,))]
+
+
+def test_dispatch_finishes_one_queue_phase_before_starting_the_next():
+    first = _job("smiles")
+    first.update({"cell_id": "phase-one", "queue_phase": 1})
+    second = _job("smiles")
+    second.update({"cell_id": "phase-two", "queue_phase": 2})
+    second_started = threading.Event()
+    started: list[str] = []
+
+    def worker(job, _gpus):
+        started.append(job["cell_id"])
+        if job["cell_id"] == "phase-one":
+            assert not second_started.wait(timeout=0.05)
+        else:
+            second_started.set()
+        return 0
+
+    queue.dispatch(
+        [first, second],
+        snapshot=lambda: {
+            0: {"used_mib": 0, "total_mib": 48_000},
+            1: {"used_mib": 0, "total_mib": 48_000},
+        },
+        worker=worker,
+        poll_seconds=0.001,
+    )
+
+    assert started == ["phase-one", "phase-two"]
+    assert second_started.is_set()
 
 
 def test_synthesis_reservation_matches_what_the_worker_will_actually_take():
@@ -462,9 +537,9 @@ def test_two_cells_share_one_card_without_overfilling_it():
     second_need = queue.synthesis_required_memory_mib(second, total)
     reservations[0]["spider-qwen25-1p5b"] = second_need
 
-    assert first_need + second_need + queue.GPU_SAFETY_MIB <= total, (
-        "the pair the allocator admitted does not actually fit with the margin"
-    )
+    assert (
+        first_need + second_need + queue.GPU_SAFETY_MIB <= total
+    ), "the pair the allocator admitted does not actually fit with the margin"
 
     # A third cell of the same size must be turned away, not squeezed in.
     assert queue.choose_gpu_bundle(third, snapshots, reservations, baseline) is None
@@ -501,9 +576,7 @@ def test_dispatch_starts_another_cell_as_soon_as_a_gpu_frees_up():
     def snapshot():
         polls["count"] += 1
         if polls["count"] > 40:
-            raise AssertionError(
-                f"dispatch never placed both cells; started={started}"
-            )
+            raise AssertionError(f"dispatch never placed both cells; started={started}")
         # Room for one 19200 MiB cell plus the 2000 MiB safety margin, not two.
         gpu1_used = 47_000 if polls["count"] < 4 else 20_000
         return {
@@ -549,11 +622,17 @@ def test_compiled_csd_uses_best_threshold_candidate_after_exhaustion(tmp_path):
             {
                 "attempt_number": 2,
                 "compilation": {"success": True, "output_dir": str(closest)},
-                "evaluation": {"accuracy": 0.58, "syntax_rate": 0.9, "num_examples": 49},
+                "evaluation": {
+                    "accuracy": 0.58,
+                    "syntax_rate": 0.9,
+                    "num_examples": 49,
+                },
             },
-        ]
+        ],
     }
-    (results_dir / "failure_report.json").write_text(json.dumps(report), encoding="utf-8")
+    (results_dir / "failure_report.json").write_text(
+        json.dumps(report), encoding="utf-8"
+    )
 
     selected = queue.compiled_csd(
         tmp_path, output_name, min_accuracy=0.65, min_syntax_rate=0.9, job=job
@@ -572,13 +651,16 @@ def test_compiled_csd_treats_a_truncated_report_as_incomplete(tmp_path):
     )
     (results_dir / "success_report.json").write_text("{", encoding="utf-8")
 
-    assert queue.compiled_csd(
-        tmp_path,
-        output_name,
-        min_accuracy=0.65,
-        min_syntax_rate=0.9,
-        job={**_job(), "git_commit": "a" * 40},
-    ) is None
+    assert (
+        queue.compiled_csd(
+            tmp_path,
+            output_name,
+            min_accuracy=0.65,
+            min_syntax_rate=0.9,
+            job={**_job(), "git_commit": "a" * 40},
+        )
+        is None
+    )
 
 
 def test_exhaustion_report_must_match_the_exact_cold_invocation():
@@ -615,10 +697,86 @@ def test_exhaustion_report_must_match_the_exact_cold_invocation():
         "run_configuration": _matching_run_configuration(smiles_job),
     }
     assert queue.report_matches_job(smiles_report, smiles_job, require_exhausted=True)
-    smiles_report["run_configuration"]["evaluation"]["smiles_classes"] = [
-        "acrylates"
-    ]
-    assert not queue.report_matches_job(smiles_report, smiles_job, require_exhausted=True)
+    smiles_report["run_configuration"]["evaluation"]["smiles_classes"] = ["acrylates"]
+    assert not queue.report_matches_job(
+        smiles_report, smiles_job, require_exhausted=True
+    )
+
+
+def test_smiles_report_accepts_the_runtime_string_class_shape():
+    job = _job("smiles")
+    job.update(
+        {
+            "git_commit": "a" * 40,
+            "smiles_class": "acrylates",
+            "task": queue.SMILES_TASK,
+        }
+    )
+    report = {
+        "total_attempts": job["max_iterations"],
+        "run_configuration": _matching_run_configuration(job),
+    }
+    report["run_configuration"]["author_model"].update(
+        {"backend": "claude", "model": queue.AUTHOR_MODEL}
+    )
+    report["run_configuration"]["evaluation"]["smiles_classes"] = "acrylates"
+
+    assert queue.report_matches_job(report, job, require_exhausted=True)
+
+
+def test_non_smiles_report_ignores_the_irrelevant_runtime_smiles_default():
+    job = _job()
+    job["git_commit"] = "a" * 40
+    report = {
+        "total_attempts": job["max_iterations"],
+        "run_configuration": _matching_run_configuration(job),
+    }
+    report["run_configuration"]["author_model"].update(
+        {"backend": "claude", "model": queue.AUTHOR_MODEL}
+    )
+    report["run_configuration"]["evaluation"][
+        "smiles_classes"
+    ] = "acrylates,chain_extenders,isocyanates"
+
+    assert queue.report_matches_job(report, job, require_exhausted=True)
+
+
+def test_corrected_launch_guard_requires_an_independent_approval(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(queue, "require_synthesis_unblocked", lambda _repo: None)
+
+    with pytest.raises(queue.ConfigError, match="independent corrected approval"):
+        queue.validate_corrected_launch(
+            tmp_path,
+            tmp_path / "manifest.json",
+            None,
+        )
+
+
+def test_recovery_exhaustion_counts_restored_and_remaining_attempts():
+    job = _job()
+    job.update(
+        {
+            "git_commit": "a" * 40,
+            "max_iterations": 36,
+            "initial_attempt_offset": 4,
+            "initial_completed_evaluations": 3,
+        }
+    )
+    configuration = _matching_run_configuration(job)
+    configuration["author_model"].update(
+        {"backend": "claude", "model": queue.AUTHOR_MODEL}
+    )
+    report = {
+        "total_attempts": 39,
+        "run_configuration": configuration,
+    }
+
+    assert queue.report_matches_job(report, job, require_exhausted=True)
+
+    report["total_attempts"] = 38
+    assert not queue.report_matches_job(report, job, require_exhausted=True)
 
 
 def test_exhausted_synthesis_still_runs_heldout_for_best_attempt(tmp_path, monkeypatch):
@@ -678,7 +836,9 @@ def test_unexpected_exit_one_is_an_error_not_a_scientific_loss(tmp_path, monkeyp
     assert state["status"] == "error"
 
 
-def test_existing_heldout_must_be_complete_before_restart_skips_cell(tmp_path, monkeypatch):
+def test_existing_heldout_must_be_complete_before_restart_skips_cell(
+    tmp_path, monkeypatch
+):
     job = _job()
     job["git_commit"] = "a" * 40
     heldout = tmp_path / "heldout.json"
@@ -711,7 +871,9 @@ def test_existing_heldout_must_be_complete_before_restart_skips_cell(tmp_path, m
                         "dataset": job["dataset"],
                         "eval_model": job["eval_model"],
                         "compiled_csd_path": str(csd.resolve()),
-                        "compiled_csd_sha256": hashlib.sha256(csd.read_bytes()).hexdigest(),
+                        "compiled_csd_sha256": hashlib.sha256(
+                            csd.read_bytes()
+                        ).hexdigest(),
                         "sample_size": job["heldout_sample_size"],
                         "max_steps": job["eval_max_steps"],
                         "step_token_budget": 1,
@@ -725,13 +887,16 @@ def test_existing_heldout_must_be_complete_before_restart_skips_cell(tmp_path, m
 
     monkeypatch.setattr(queue.subprocess, "run", run)
 
-    assert queue.run_job(
-        job,
-        (0, 1),
-        repo=tmp_path,
-        python=Path("/env/python"),
-        state_dir=tmp_path / "state",
-    ) == 0
+    assert (
+        queue.run_job(
+            job,
+            (0, 1),
+            repo=tmp_path,
+            python=Path("/env/python"),
+            state_dir=tmp_path / "state",
+        )
+        == 0
+    )
     assert len(calls) == 1
     assert queue.heldout_is_complete(heldout, job)
     payload = json.loads(heldout.read_text())
@@ -795,20 +960,30 @@ def test_cold_queue_service_uses_work_env_and_kills_its_process_group():
 
 def test_repo_version_allows_manifest_only_commit_but_rejects_code_drift(tmp_path):
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True
+    )
     subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
     script = tmp_path / "scripts" / "runtime" / "worker.py"
     script.parent.mkdir(parents=True)
     script.write_text("VERSION = 1\n", encoding="utf-8")
-    subprocess.run(["git", "add", "scripts/runtime/worker.py"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "add", "scripts/runtime/worker.py"], cwd=tmp_path, check=True
+    )
     subprocess.run(["git", "commit", "-qm", "code"], cwd=tmp_path, check=True)
     code_commit = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True, capture_output=True, check=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=True,
     ).stdout.strip()
     saved = tmp_path / "saved-results" / "manifest.json"
     saved.parent.mkdir()
     saved.write_text("{}\n", encoding="utf-8")
-    subprocess.run(["git", "add", "saved-results/manifest.json"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "add", "saved-results/manifest.json"], cwd=tmp_path, check=True
+    )
     subprocess.run(["git", "commit", "-qm", "manifest"], cwd=tmp_path, check=True)
 
     queue.verify_repo_version(tmp_path, code_commit)
@@ -846,15 +1021,23 @@ def test_repo_version_allows_manifest_only_commit_but_rejects_code_drift(tmp_pat
 
 def test_verified_repair_attestation_allows_only_its_exact_dirty_code(tmp_path):
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True
+    )
     subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
     script = tmp_path / "scripts" / "runtime" / "worker.py"
     script.parent.mkdir(parents=True)
     script.write_text("VERSION = 1\n", encoding="utf-8")
-    subprocess.run(["git", "add", str(script.relative_to(tmp_path))], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "add", str(script.relative_to(tmp_path))], cwd=tmp_path, check=True
+    )
     subprocess.run(["git", "commit", "-qm", "code"], cwd=tmp_path, check=True)
     commit = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True, capture_output=True, check=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=True,
     ).stdout.strip()
     script.write_text("VERSION = 2\n", encoding="utf-8")
     attestation = tmp_path / "repair.json"
@@ -863,7 +1046,9 @@ def test_verified_repair_attestation_allows_only_its_exact_dirty_code(tmp_path):
             {
                 "base_commit": commit,
                 "files": {
-                    "scripts/runtime/worker.py": hashlib.sha256(script.read_bytes()).hexdigest()
+                    "scripts/runtime/worker.py": hashlib.sha256(
+                        script.read_bytes()
+                    ).hexdigest()
                 },
                 "verifier_exit": 0,
             }
@@ -884,9 +1069,7 @@ def test_verified_repair_attestation_allows_only_its_exact_dirty_code(tmp_path):
 
 def test_saved_exhaustive_manifest_matches_the_approved_call_budget():
     repo = Path(__file__).parents[2]
-    manifest = (
-        repo / "saved-results" / "2026-07-19-exhaustive-cold-queue-manifest.json"
-    )
+    manifest = repo / "saved-results" / "2026-07-19-exhaustive-cold-queue-manifest.json"
 
     commit, jobs = queue.load_manifest(manifest)
     queue.validate_exhaustive_campaign(jobs)
@@ -900,9 +1083,11 @@ def test_saved_exhaustive_manifest_matches_the_approved_call_budget():
     assert len(jobs) == 21
     assert sum(job["max_iterations"] for job in jobs) == 834
     assert sum(job["interrupted_author_calls"] for job in jobs) == 8
-    assert sum(
-        job["max_iterations"] + job["interrupted_author_calls"] for job in jobs
-    ) == queue.APPROVED_AUTHOR_CALL_CAP == 842
+    assert (
+        sum(job["max_iterations"] + job["interrupted_author_calls"] for job in jobs)
+        == queue.APPROVED_AUTHOR_CALL_CAP
+        == 842
+    )
 
 
 def test_qwen35_9b_isocyanates_is_an_approved_cold_queue_cell():
@@ -926,16 +1111,22 @@ def test_qwen35_9b_isocyanates_is_an_approved_cold_queue_cell():
 
 
 def test_focal_service_launches_only_the_remaining_six_with_shared_caches():
-    service = Path(
-        "deploy/focal/systemd/csd-cold-synthesis-queue.service"
-    ).read_text(encoding="utf-8")
+    service = Path("deploy/focal/systemd/csd-cold-synthesis-queue.service").read_text(
+        encoding="utf-8"
+    )
 
     assert "Description=Dynamic CSD remaining six-cell cold synthesis queue" in service
     assert "Environment=CSD_CACHE_ROOT=/home/aadivyar/csd-generation/cache" in service
     assert "Environment=SYNCODE_CACHE=/home/aadivyar/csd-generation/cache/" in service
     assert "--gpus 0,2,3" in service
-    assert "--lock-file /home/aadivyar/csd-generation/.context/remaining_six_20260729/controller.lock" in service
-    assert "--state-dir /home/aadivyar/csd-generation/.context/remaining_six_20260729/state" in service
+    assert (
+        "--lock-file /home/aadivyar/csd-generation/.context/remaining_six_20260729/controller.lock"
+        in service
+    )
+    assert (
+        "--state-dir /home/aadivyar/csd-generation/.context/remaining_six_20260729/state"
+        in service
+    )
     assert service.count("--exclude-cell-prefix") == 5
     for prefix in (
         "spider-",
@@ -951,12 +1142,18 @@ def test_exhaustive_campaign_requires_all_twenty_one_exact_cells_and_unique_outp
     tmp_path, monkeypatch
 ):
     expected_ids = {
-        "gsm-qwen25-1p5b", "gsm-qwen25-7b",
-        "gsm-qwen35-2b", "gsm-qwen35-4b",
-        "spider-qwen25-1p5b", "spider-qwen25-7b",
-        "spider-qwen35-2b", "spider-qwen35-4b",
-        "smiles-acrylates-qwen25-1p5b", "smiles-acrylates-qwen25-7b",
-        "smiles-acrylates-qwen35-2b", "smiles-acrylates-qwen35-4b",
+        "gsm-qwen25-1p5b",
+        "gsm-qwen25-7b",
+        "gsm-qwen35-2b",
+        "gsm-qwen35-4b",
+        "spider-qwen25-1p5b",
+        "spider-qwen25-7b",
+        "spider-qwen35-2b",
+        "spider-qwen35-4b",
+        "smiles-acrylates-qwen25-1p5b",
+        "smiles-acrylates-qwen25-7b",
+        "smiles-acrylates-qwen35-2b",
+        "smiles-acrylates-qwen35-4b",
         "smiles-chain_extenders-qwen25-1p5b",
         "smiles-chain_extenders-qwen25-7b",
         "smiles-chain_extenders-qwen35-2b",
@@ -978,13 +1175,15 @@ def test_exhaustive_campaign_requires_all_twenty_one_exact_cells_and_unique_outp
         "gsm-qwen25-7b": 3,
         "gsm-qwen35-2b": 2,
     }
-    assert sum(
-        spec["max_iterations"] for spec in queue.EXPECTED_CELLS.values()
-    ) == 834
-    assert sum(
-        spec["max_iterations"] + spec["interrupted_author_calls"]
-        for spec in queue.EXPECTED_CELLS.values()
-    ) == queue.APPROVED_AUTHOR_CALL_CAP == 842
+    assert sum(spec["max_iterations"] for spec in queue.EXPECTED_CELLS.values()) == 834
+    assert (
+        sum(
+            spec["max_iterations"] + spec["interrupted_author_calls"]
+            for spec in queue.EXPECTED_CELLS.values()
+        )
+        == queue.APPROVED_AUTHOR_CALL_CAP
+        == 842
+    )
     jobs = []
     for cell, spec in queue.EXPECTED_CELLS.items():
         job = _job(spec["dataset"])
@@ -1000,9 +1199,13 @@ def test_exhaustive_campaign_requires_all_twenty_one_exact_cells_and_unique_outp
         job["log_file"] = f"outputs/generated/{job['output_name']}/run.log"
         job["heldout_output_json"] = f"outputs/reeval/exhaustive_0719/{cell}.json"
         if job["dataset"] == "gsm_symbolic":
-            job["heldout_split_file"] = "/repo/gsm_symbolic_crane_proportional_49x49_seed123.json"
+            job[
+                "heldout_split_file"
+            ] = "/repo/gsm_symbolic_crane_proportional_49x49_seed123.json"
         elif job["dataset"] == "spider":
-            job["heldout_split_file"] = "/repo/spider_dev_proportional_300x300_seed334.json"
+            job[
+                "heldout_split_file"
+            ] = "/repo/spider_dev_proportional_300x300_seed334.json"
         else:
             job.pop("heldout_split_file", None)
         jobs.append(job)
@@ -1064,7 +1267,9 @@ def test_heldout_split_must_resolve_to_the_canonical_repo_file(tmp_path):
     except queue.ConfigError as error:
         assert "canonical heldout split" in str(error)
     else:
-        raise AssertionError("a same-named split outside the repo path must be rejected")
+        raise AssertionError(
+            "a same-named split outside the repo path must be rejected"
+        )
 
 
 def test_baseline_evidence_binds_counts_model_train_side_and_source_hash(tmp_path):
@@ -1109,7 +1314,9 @@ def test_baseline_evidence_binds_counts_model_train_side_and_source_hash(tmp_pat
                         "num_correct": 20,
                         "num_examples": 49,
                         "source_artifact": str(artifact),
-                        "source_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
+                        "source_sha256": hashlib.sha256(
+                            artifact.read_bytes()
+                        ).hexdigest(),
                     }
                 }
             }
@@ -1155,7 +1362,9 @@ def test_baseline_evidence_binds_counts_model_train_side_and_source_hash(tmp_pat
         raise AssertionError("a different train split must block launch")
 
     normalized["split_file"] = str(split_file.relative_to(tmp_path))
-    normalized["split_file_sha256"] = hashlib.sha256(split_file.read_bytes()).hexdigest()
+    normalized["split_file_sha256"] = hashlib.sha256(
+        split_file.read_bytes()
+    ).hexdigest()
     normalized["num_correct"] = 19
     artifact.write_text(json.dumps(normalized), encoding="utf-8")
     payload["cells"][job["cell_id"]]["source_sha256"] = hashlib.sha256(
@@ -1181,7 +1390,9 @@ def test_baseline_evidence_binds_counts_model_train_side_and_source_hash(tmp_pat
     except queue.ConfigError as error:
         assert "does not match manifest counts" in str(error)
     else:
-        raise AssertionError("baseline evidence with different counts must block launch")
+        raise AssertionError(
+            "baseline evidence with different counts must block launch"
+        )
 
 
 def test_choose_gpu_bundle_stays_inside_the_allowed_gpu_set():
@@ -1298,7 +1509,10 @@ def test_saved_manifest_agrees_with_the_spider_decoding_cap():
     spider_jobs = [j for j in manifest["jobs"] if j["dataset"] == "spider"]
     assert spider_jobs, "manifest has no spider jobs"
     for job in spider_jobs:
-        assert job["eval_max_steps"] == queue.EXPECTED_CELLS[job["cell_id"]]["eval_max_steps"], (
+        assert (
+            job["eval_max_steps"]
+            == queue.EXPECTED_CELLS[job["cell_id"]]["eval_max_steps"]
+        ), (
             f"{job['cell_id']}: manifest says {job['eval_max_steps']}, "
             f"code says {queue.EXPECTED_CELLS[job['cell_id']]['eval_max_steps']}"
         )

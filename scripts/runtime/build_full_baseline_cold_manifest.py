@@ -91,12 +91,7 @@ def baseline_artifact(
     campaign_root: Path | None = None,
 ) -> Path:
     root = campaign_root or repo / "outputs/baselines/full_baseline_20260803"
-    return (
-        root
-        / cohort.slug
-        / model[0]
-        / f"{strategy}.json"
-    )
+    return root / cohort.slug / model[0] / f"{strategy}.json"
 
 
 def _rate_count(value: Any, total: int, label: str, path: Path) -> int:
@@ -127,7 +122,9 @@ def _read_baseline_bytes(
     answers = payload.get("answers")
     if not isinstance(answers, list) or len(answers) != total:
         raise CampaignError(f"{path}: answer count must be {total}")
-    if any(not isinstance(row, dict) or "generated_answer" not in row for row in answers):
+    if any(
+        not isinstance(row, dict) or "generated_answer" not in row for row in answers
+    ):
         raise CampaignError(f"{path}: every row must contain generated_answer")
     metrics = payload.get("metrics") or {}
     if int(metrics.get("num_examples") or -1) != total:
@@ -136,7 +133,9 @@ def _read_baseline_bytes(
     metric_source = "artifact_summary"
     if dataset == "smiles":
         if not smiles_class:
-            raise CampaignError(f"{path}: smiles_class is required for SMILES rescoring")
+            raise CampaignError(
+                f"{path}: smiles_class is required for SMILES rescoring"
+            )
         from synthesis.evaluate.benchmarks.smiles.dataset import get_smiles_task
         from synthesis.evaluate.benchmarks.smiles.metrics import (
             evaluate_smiles_output,
@@ -172,7 +171,9 @@ def _read_baseline_bytes(
         metric_source = "recomputed_smiles_unique_valid"
     else:
         num_correct = _rate_count(payload.get("accuracy"), total, "accuracy", path)
-        syntax_count = _rate_count(payload.get("syntax_rate"), total, "syntax_rate", path)
+        syntax_count = _rate_count(
+            payload.get("syntax_rate"), total, "syntax_rate", path
+        )
         accuracy = float(payload["accuracy"])
         syntax_rate = float(payload["syntax_rate"])
     nonblank_answers = [answer for answer in generated_answers if answer]
@@ -236,23 +237,36 @@ def build_campaign(
     *,
     replacement_root: Path | None = None,
     replacement_labels: set[str] | None = None,
+    replacement_paths: dict[str, Path] | None = None,
+    evidence_path: Path = EVIDENCE_PATH,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     if len(git_commit) != 40:
         raise CampaignError("git_commit must be a full 40-character hash")
     selected_replacements = replacement_labels or set()
+    selected_paths = replacement_paths or {}
     if bool(replacement_root) != bool(selected_replacements):
         raise CampaignError(
             "replacement_root and replacement_labels must be provided together"
         )
+    if selected_paths and (replacement_root is not None or selected_replacements):
+        raise CampaignError(
+            "replacement_paths cannot be combined with replacement_root or replacement_labels"
+        )
     if replacement_root is not None and not replacement_root.is_absolute():
         replacement_root = repo / replacement_root
+    normalized_paths = {
+        label: path if path.is_absolute() else repo / path
+        for label, path in selected_paths.items()
+    }
     known_labels = {
         f"{cohort.slug}-{model[0]}-{strategy}"
         for cohort in COHORTS
         for model in MODELS
         for strategy in STRATEGIES
     }
-    unknown_replacements = selected_replacements - known_labels
+    unknown_replacements = (
+        selected_replacements | set(normalized_paths)
+    ) - known_labels
     if unknown_replacements:
         raise CampaignError(
             f"unknown replacement labels: {sorted(unknown_replacements)}"
@@ -266,25 +280,39 @@ def build_campaign(
             rows = []
             for strategy in STRATEGIES:
                 label = f"{cell}-{strategy}"
-                path = baseline_artifact(
+                original_path = baseline_artifact(
                     repo,
                     cohort,
                     model,
                     strategy,
-                    campaign_root=(
-                        replacement_root if label in selected_replacements else None
-                    ),
                 )
-                rows.append(
-                    _read_baseline(
+                path = normalized_paths.get(label)
+                if path is None:
+                    path = baseline_artifact(
+                        repo,
+                        cohort,
+                        model,
+                        strategy,
+                        campaign_root=(
+                            replacement_root if label in selected_replacements else None
+                        ),
+                    )
+                row = _read_baseline(
                     path,
                     cohort.sample_size,
                     strategy,
                     repo,
                     dataset=cohort.dataset,
                     smiles_class=cohort.smiles_class,
-                    )
                 )
+                if path.resolve() != original_path.resolve():
+                    row["supersedes_source_artifact"] = str(
+                        original_path.relative_to(repo)
+                    )
+                    row["supersedes_source_sha256"] = hashlib.sha256(
+                        original_path.read_bytes()
+                    ).hexdigest()
+                rows.append(row)
             max_correct = max(row["num_correct"] for row in rows)
             max_syntax = max(row["syntax_count"] for row in rows)
             if max_correct == cohort.sample_size:
@@ -324,7 +352,7 @@ def build_campaign(
                 "eval_sample_size": cohort.sample_size,
                 "baseline_num_correct": max_correct,
                 "baseline_num_examples": cohort.sample_size,
-                "baseline_source": str(EVIDENCE_PATH),
+                "baseline_source": str(evidence_path),
                 "min_accuracy": min_accuracy,
                 "min_syntax_rate": min_syntax,
                 "threshold_policy": threshold_policy,
@@ -387,14 +415,24 @@ def validate_campaign(jobs: list[dict[str, Any]], repo: Path) -> None:
     if len(jobs) != 20 or {str(job.get("cell_id")) for job in jobs} != expected_cells:
         raise CampaignError("full baseline cold campaign must contain exactly 20 cells")
     if sum(int(job.get("max_iterations") or 0) for job in jobs) != 800:
-        raise CampaignError("full baseline cold campaign must contain exactly 800 attempts")
+        raise CampaignError(
+            "full baseline cold campaign must contain exactly 800 attempts"
+        )
     output_names = [str(job.get("output_name")) for job in jobs]
     if len(set(output_names)) != len(output_names):
         raise CampaignError("cold output names must be unique")
     heldout_outputs = [str(job.get("heldout_output_json")) for job in jobs]
     if len(set(heldout_outputs)) != len(heldout_outputs):
         raise CampaignError("heldout outputs must be unique")
-    evidence_path = repo / EVIDENCE_PATH
+    evidence_sources = {str(job.get("baseline_source", "")) for job in jobs}
+    if len(evidence_sources) != 1 or not next(iter(evidence_sources)):
+        raise CampaignError("all jobs must bind one campaign evidence file")
+    relative_evidence_path = Path(next(iter(evidence_sources)))
+    evidence_path = (
+        relative_evidence_path
+        if relative_evidence_path.is_absolute()
+        else repo / relative_evidence_path
+    )
     try:
         evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -414,7 +452,7 @@ def validate_campaign(jobs: list[dict[str, Any]], repo: Path) -> None:
             "interrupted_author_calls": 0,
             "eval_sample_size": cohort.sample_size,
             "baseline_num_examples": cohort.sample_size,
-            "baseline_source": str(EVIDENCE_PATH),
+            "baseline_source": str(relative_evidence_path),
             "eval_max_steps": cohort.max_steps,
             "eval_max_seconds": 90.0,
             "memory_reservation_mib": reservation_mib,
@@ -461,12 +499,34 @@ def validate_campaign(jobs: list[dict[str, Any]], repo: Path) -> None:
         for strategy, row in zip(STRATEGIES, rows):
             source = repo / str(row.get("source_artifact", ""))
             expected_source = baseline_artifact(repo, cohort, model, strategy)
-            if source.resolve() != expected_source.resolve():
-                raise CampaignError(f"{cell}: wrong source artifact for {strategy}")
-            if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != row.get(
-                "source_sha256"
-            ):
+            if not source.is_file() or hashlib.sha256(
+                source.read_bytes()
+            ).hexdigest() != row.get("source_sha256"):
                 raise CampaignError(f"{cell}: baseline artifact hash mismatch")
+            if source.resolve() != expected_source.resolve():
+                try:
+                    relative_source = source.resolve().relative_to(repo.resolve())
+                except ValueError as exc:
+                    raise CampaignError(
+                        f"{cell}: replacement escaped the repository"
+                    ) from exc
+                if (
+                    len(relative_source.parts) < 3
+                    or relative_source.parts[:2] != ("outputs", "baselines")
+                    or not relative_source.parts[2].startswith("exact-zero-repair-")
+                ):
+                    raise CampaignError(
+                        f"{cell}: replacement is outside an exact-zero repair root"
+                    )
+                superseded = repo / str(row.get("supersedes_source_artifact", ""))
+                if superseded.resolve() != expected_source.resolve():
+                    raise CampaignError(
+                        f"{cell}: replacement supersedes the wrong source"
+                    )
+                if not superseded.is_file() or hashlib.sha256(
+                    superseded.read_bytes()
+                ).hexdigest() != row.get("supersedes_source_sha256"):
+                    raise CampaignError(f"{cell}: superseded baseline hash mismatch")
         total = int(job["eval_sample_size"])
         max_correct = max(int(row["num_correct"]) for row in rows)
         max_syntax = max(int(row["syntax_count"]) for row in rows)

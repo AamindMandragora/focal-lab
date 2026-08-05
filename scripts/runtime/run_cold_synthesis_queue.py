@@ -80,27 +80,229 @@ SMILES_TASK = (
 )
 APPROVED_AUTHOR_CALL_CAP = 842
 EXPECTED_CELLS: dict[str, dict[str, Any]] = {
-    "gsm-qwen25-1p5b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 38, "interrupted_author_calls": 3, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen25-7b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 38, "interrupted_author_calls": 3, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen35-2b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 38, "interrupted_author_calls": 2, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen35-4b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "spider-qwen25-1p5b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 176, "task": SPIDER_TASK},
-    "spider-qwen25-7b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 176, "task": SPIDER_TASK},
-    "spider-qwen35-2b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 176, "task": SPIDER_TASK},
-    "spider-qwen35-4b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 176, "task": SPIDER_TASK},
-    "smiles-acrylates-qwen25-1p5b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
-    "smiles-acrylates-qwen25-7b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
-    "smiles-acrylates-qwen35-2b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
-    "smiles-acrylates-qwen35-4b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
-    "smiles-chain_extenders-qwen25-1p5b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "chain_extenders"},
-    "smiles-chain_extenders-qwen25-7b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "chain_extenders"},
-    "smiles-chain_extenders-qwen35-2b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "chain_extenders"},
-    "smiles-chain_extenders-qwen35-4b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "chain_extenders"},
-    "smiles-isocyanates-qwen25-1p5b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
-    "smiles-isocyanates-qwen25-7b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
-    "smiles-isocyanates-qwen35-2b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
-    "smiles-isocyanates-qwen35-4b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
-    "smiles-qwen35-9b-isocyanates": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
+    "gsm-qwen25-1p5b": {
+        "dataset": "gsm_symbolic",
+        "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "max_iterations": 38,
+        "interrupted_author_calls": 3,
+        "eval_sample_size": 49,
+        "heldout_sample_size": 49,
+        "eval_max_steps": 900,
+        "task": GSM_TASK,
+    },
+    "gsm-qwen25-7b": {
+        "dataset": "gsm_symbolic",
+        "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+        "max_iterations": 38,
+        "interrupted_author_calls": 3,
+        "eval_sample_size": 49,
+        "heldout_sample_size": 49,
+        "eval_max_steps": 900,
+        "task": GSM_TASK,
+    },
+    "gsm-qwen35-2b": {
+        "dataset": "gsm_symbolic",
+        "eval_model": "Qwen/Qwen3.5-2B",
+        "max_iterations": 38,
+        "interrupted_author_calls": 2,
+        "eval_sample_size": 49,
+        "heldout_sample_size": 49,
+        "eval_max_steps": 900,
+        "task": GSM_TASK,
+    },
+    "gsm-qwen35-4b": {
+        "dataset": "gsm_symbolic",
+        "eval_model": "Qwen/Qwen3.5-4B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 49,
+        "heldout_sample_size": 49,
+        "eval_max_steps": 900,
+        "task": GSM_TASK,
+    },
+    "spider-qwen25-1p5b": {
+        "dataset": "spider",
+        "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 300,
+        "heldout_sample_size": 300,
+        "eval_max_steps": 176,
+        "task": SPIDER_TASK,
+    },
+    "spider-qwen25-7b": {
+        "dataset": "spider",
+        "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 300,
+        "heldout_sample_size": 300,
+        "eval_max_steps": 176,
+        "task": SPIDER_TASK,
+    },
+    "spider-qwen35-2b": {
+        "dataset": "spider",
+        "eval_model": "Qwen/Qwen3.5-2B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 300,
+        "heldout_sample_size": 300,
+        "eval_max_steps": 176,
+        "task": SPIDER_TASK,
+    },
+    "spider-qwen35-4b": {
+        "dataset": "spider",
+        "eval_model": "Qwen/Qwen3.5-4B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 300,
+        "heldout_sample_size": 300,
+        "eval_max_steps": 176,
+        "task": SPIDER_TASK,
+    },
+    "smiles-acrylates-qwen25-1p5b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "acrylates",
+    },
+    "smiles-acrylates-qwen25-7b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "acrylates",
+    },
+    "smiles-acrylates-qwen35-2b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen3.5-2B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "acrylates",
+    },
+    "smiles-acrylates-qwen35-4b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen3.5-4B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "acrylates",
+    },
+    "smiles-chain_extenders-qwen25-1p5b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "chain_extenders",
+    },
+    "smiles-chain_extenders-qwen25-7b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "chain_extenders",
+    },
+    "smiles-chain_extenders-qwen35-2b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen3.5-2B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "chain_extenders",
+    },
+    "smiles-chain_extenders-qwen35-4b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen3.5-4B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "chain_extenders",
+    },
+    "smiles-isocyanates-qwen25-1p5b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "isocyanates",
+    },
+    "smiles-isocyanates-qwen25-7b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "isocyanates",
+    },
+    "smiles-isocyanates-qwen35-2b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen3.5-2B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "isocyanates",
+    },
+    "smiles-isocyanates-qwen35-4b": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen3.5-4B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "isocyanates",
+    },
+    "smiles-qwen35-9b-isocyanates": {
+        "dataset": "smiles",
+        "eval_model": "Qwen/Qwen3.5-9B",
+        "max_iterations": 40,
+        "interrupted_author_calls": 0,
+        "eval_sample_size": 50,
+        "heldout_sample_size": 100,
+        "eval_max_steps": 400,
+        "task": SMILES_TASK,
+        "smiles_class": "isocyanates",
+    },
 }
 # gpu_mem_util comes from the shared table so a run_synthesis child resolves
 # the same per-model budget even when this controller is stale and fails to
@@ -181,8 +383,29 @@ def require_synthesis_unblocked(repo: Path) -> None:
         raise ConfigError(f"exact-zero baseline repair blocks synthesis: {block}")
 
 
+def validate_corrected_launch(
+    repo: Path,
+    manifest_path: Path,
+    approval_path: Path | None,
+) -> None:
+    require_synthesis_unblocked(repo)
+    if approval_path is None:
+        raise ConfigError("independent corrected approval is required")
+    from scripts.runtime.incident_repair.finalize_exact_zero_campaign import (
+        FinalizationError,
+        validate_launch_approval,
+    )
+
+    try:
+        validate_launch_approval(repo, manifest_path, approval_path)
+    except FinalizationError as exc:
+        raise ConfigError(str(exc)) from exc
+
+
 def _is_pinned_code_path(path: str) -> bool:
-    return any(path == root or path.startswith(f"{root}/") for root in PINNED_CODE_PATHS)
+    return any(
+        path == root or path.startswith(f"{root}/") for root in PINNED_CODE_PATHS
+    )
 
 
 def _dirty_code_files(repo: Path) -> tuple[set[str], set[str]]:
@@ -220,15 +443,26 @@ def _verify_repair_attestation(
         raise ConfigError(f"repair attestation is invalid: {exc}") from exc
     files = payload.get("files")
     if payload.get("base_commit") != pinned_commit or payload.get("verifier_exit") != 0:
-        raise ConfigError("repair attestation does not match the pinned commit and verifier")
+        raise ConfigError(
+            "repair attestation does not match the pinned commit and verifier"
+        )
     if not isinstance(files, dict):
         raise ConfigError("repair attestation files must be an object")
-    pinned_attested = {str(path): str(digest) for path, digest in files.items() if _is_pinned_code_path(str(path))}
+    pinned_attested = {
+        str(path): str(digest)
+        for path, digest in files.items()
+        if _is_pinned_code_path(str(path))
+    }
     if set(pinned_attested) != dirty_files:
-        raise ConfigError("repair attestation file set does not match dirty pinned code")
+        raise ConfigError(
+            "repair attestation file set does not match dirty pinned code"
+        )
     for relative, expected_hash in pinned_attested.items():
         path = repo / relative
-        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:
+        if (
+            not path.is_file()
+            or hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash
+        ):
             raise ConfigError(f"repair attestation hash mismatch for {relative}")
 
 
@@ -236,7 +470,11 @@ def verify_repo_version(
     repo: Path, pinned_commit: str, repair_attestation: Path | None = None
 ) -> str:
     live_commit = subprocess.run(
-        ["git", "rev-parse", "HEAD"], cwd=repo, text=True, capture_output=True, check=True
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        text=True,
+        capture_output=True,
+        check=True,
     ).stdout.strip()
     if live_commit != pinned_commit:
         ancestor = subprocess.run(
@@ -247,20 +485,34 @@ def verify_repo_version(
                 f"manifest commit {pinned_commit} is not an ancestor of repo commit {live_commit}"
             )
         code_drift = subprocess.run(
-            ["git", "diff", "--quiet", f"{pinned_commit}..{live_commit}", "--", *PINNED_CODE_PATHS],
+            [
+                "git",
+                "diff",
+                "--quiet",
+                f"{pinned_commit}..{live_commit}",
+                "--",
+                *PINNED_CODE_PATHS,
+            ],
             cwd=repo,
         )
         if code_drift.returncode != 0:
-            raise ConfigError(f"code changed after pinned manifest commit {pinned_commit}")
+            raise ConfigError(
+                f"code changed after pinned manifest commit {pinned_commit}"
+            )
     tracked, untracked = _dirty_code_files(repo)
     if tracked or untracked:
         if repair_attestation is None:
             if tracked:
-                raise ConfigError("uncommitted code changes exist in a pinned code path")
+                raise ConfigError(
+                    "uncommitted code changes exist in a pinned code path"
+                )
             raise ConfigError(
-                "untracked code changes exist in a pinned code path: " + ", ".join(sorted(untracked))
+                "untracked code changes exist in a pinned code path: "
+                + ", ".join(sorted(untracked))
             )
-        _verify_repair_attestation(repo, pinned_commit, tracked | untracked, repair_attestation)
+        _verify_repair_attestation(
+            repo, pinned_commit, tracked | untracked, repair_attestation
+        )
     return live_commit
 
 
@@ -309,6 +561,15 @@ def synthesis_command(job: dict[str, Any], python: Path) -> list[str]:
                 str(job["heldout_sample_size"]),
             ]
         )
+    if "initial_attempt_offset" in job:
+        command.extend(["--initial-attempt-offset", str(job["initial_attempt_offset"])])
+    if "initial_attempt_history_file" in job:
+        command.extend(
+            [
+                "--initial-attempt-history-file",
+                str(job["initial_attempt_history_file"]),
+            ]
+        )
     return command
 
 
@@ -328,7 +589,9 @@ def synthesis_environment(
         {
             "CUDA_VISIBLE_DEVICES": gpu_list,
             "CSD_OUTPUT_NAME": str(job["output_name"]),
-            "CSD_OUTPUT_DIR": str(repo / "outputs" / "generated" / str(job["output_name"])),
+            "CSD_OUTPUT_DIR": str(
+                repo / "outputs" / "generated" / str(job["output_name"])
+            ),
             "PYTHONUNBUFFERED": "1",
             # Claude Code Max author, pinned to the user-approved current account.
             "CSD_CLAUDE_EXECUTABLE": "/home/aadivyar/.local/bin/claude",
@@ -411,6 +674,9 @@ def parse_gpu_list(raw: str) -> tuple[int, ...]:
     return tuple(sorted(gpus))
 
 
+EXCLUSIVE_GPU_MAX_USED_MIB = 1_000
+
+
 def choose_gpu_bundle(
     job: dict[str, Any],
     snapshots: dict[int, dict[str, int]],
@@ -435,6 +701,12 @@ def choose_gpu_bundle(
         required = synthesis_required_memory_mib(job, snapshot["total_mib"])
         reserved = sum(reservations.get(gpu, {}).values())
         baseline_used = baseline_snapshots.get(gpu, snapshot)["used_mib"]
+        if job.get("requires_exclusive_gpu") and (
+            snapshot["used_mib"] > EXCLUSIVE_GPU_MAX_USED_MIB
+            or baseline_used > EXCLUSIVE_GPU_MAX_USED_MIB
+            or reserved
+        ):
+            continue
         projected_used = max(snapshot["used_mib"], baseline_used + reserved)
         # Match vLLM: free must be >= util * total (see EngineCore request_memory).
         free_mib = int(
@@ -466,6 +738,21 @@ def current_run_dir(repo: Path, output_name: str) -> Path | None:
     return run_dir if run_dir.is_absolute() else repo / run_dir
 
 
+def pinned_heldout_csd(job: dict[str, Any], repo: Path) -> Path:
+    raw_path = Path(str(job.get("heldout_csd_path", "")))
+    path = raw_path if raw_path.is_absolute() else repo / raw_path
+    expected_sha = str(job.get("heldout_csd_sha256", ""))
+    if not path.is_file():
+        raise ConfigError(f"held-out CSD is missing: {path}")
+    actual_sha = hashlib.sha256(path.read_bytes()).hexdigest()
+    if not expected_sha or actual_sha != expected_sha:
+        raise ConfigError(
+            f"held-out CSD hash mismatch for {path}: "
+            f"expected={expected_sha or '<missing>'} actual={actual_sha}"
+        )
+    return path
+
+
 def report_matches_job(
     report: dict[str, Any], job: dict[str, Any], *, require_exhausted: bool
 ) -> bool:
@@ -478,9 +765,14 @@ def report_matches_job(
         max_iterations = int(job["max_iterations"])
     except (TypeError, ValueError, KeyError):
         return False
-    if total_attempts < 1 or total_attempts > max_iterations:
+    restored_attempts = int(job.get("initial_completed_evaluations", 0))
+    expected_total_attempts = restored_attempts + max_iterations
+    if (
+        total_attempts < max(1, restored_attempts)
+        or total_attempts > expected_total_attempts
+    ):
         return False
-    if require_exhausted and total_attempts != max_iterations:
+    if require_exhausted and total_attempts != expected_total_attempts:
         return False
     try:
         exact = (
@@ -505,8 +797,7 @@ def report_matches_job(
             and float(evaluation.get("eval_max_seconds_per_example") or -1)
             == float(job["eval_max_seconds"])
             and abs(
-                float(thresholds.get("min_accuracy") or 0)
-                - float(job["min_accuracy"])
+                float(thresholds.get("min_accuracy") or 0) - float(job["min_accuracy"])
             )
             <= 1e-12
             and abs(
@@ -520,11 +811,14 @@ def report_matches_job(
     if not exact:
         return False
     dataset = str(job["dataset"])
-    expected_smiles_classes = (
-        [str(job["smiles_class"])] if dataset == "smiles" else None
-    )
-    if evaluation.get("smiles_classes") != expected_smiles_classes:
-        return False
+    actual_smiles_classes = evaluation.get("smiles_classes")
+    if dataset == "smiles":
+        expected_smiles_class = str(job["smiles_class"])
+        if actual_smiles_classes not in (
+            expected_smiles_class,
+            [expected_smiles_class],
+        ):
+            return False
     if dataset in {"gsm_symbolic", "spider"}:
         split = evaluation.get("split_provenance") or {}
         if split.get("bar_split_name") != "train":
@@ -722,7 +1016,9 @@ def heldout_command(job: dict[str, Any], python: Path, csd: Path) -> list[str]:
     if job["dataset"] == "gsm_symbolic":
         command.extend(["--gsm-split-file", split_file, "--gsm-split-name", "test"])
     elif job["dataset"] == "spider":
-        command.extend(["--spider-split-file", split_file, "--spider-split-name", "test"])
+        command.extend(
+            ["--spider-split-file", split_file, "--spider-split-name", "test"]
+        )
     else:
         command.extend(["--smiles-classes", str(job["smiles_class"])])
     return command
@@ -743,11 +1039,23 @@ def load_manifest(path: Path) -> tuple[str, list[dict[str, Any]]]:
         raise ConfigError("manifest jobs must not be empty")
     seen: set[str] = set()
     required = {
-        "cell_id", "task", "dataset", "eval_model", "max_iterations",
+        "cell_id",
+        "task",
+        "dataset",
+        "eval_model",
+        "max_iterations",
         "interrupted_author_calls",
-        "eval_sample_size", "min_accuracy", "min_syntax_rate", "eval_max_steps",
-        "eval_max_seconds", "memory_reservation_mib", "gpu_mem_util", "output_name",
-        "heldout_sample_size", "heldout_split_name", "heldout_output_json",
+        "eval_sample_size",
+        "min_accuracy",
+        "min_syntax_rate",
+        "eval_max_steps",
+        "eval_max_seconds",
+        "memory_reservation_mib",
+        "gpu_mem_util",
+        "output_name",
+        "heldout_sample_size",
+        "heldout_split_name",
+        "heldout_output_json",
     }
     for job in jobs:
         missing = sorted(required - job.keys())
@@ -777,20 +1085,18 @@ def validate_baseline_evidence(cell: str, job: dict[str, Any], repo: Path) -> No
     entry = (payload.get("cells") or {}).get(cell) or {}
     if entry.get("pending_validity") or job.get("baseline_pending_validity"):
         try:
-            pending_counts_match = (
-                int(entry.get("num_correct")) == int(job["baseline_num_correct"])
-                and int(entry.get("num_examples")) == int(job["baseline_num_examples"])
-            )
+            pending_counts_match = int(entry.get("num_correct")) == int(
+                job["baseline_num_correct"]
+            ) and int(entry.get("num_examples")) == int(job["baseline_num_examples"])
         except (TypeError, ValueError):
             pending_counts_match = False
         if not pending_counts_match:
             raise ConfigError(f"{cell} pending baseline counts do not match manifest")
         return
     try:
-        counts_match = (
-            int(entry.get("num_correct")) == int(job["baseline_num_correct"])
-            and int(entry.get("num_examples")) == int(job["baseline_num_examples"])
-        )
+        counts_match = int(entry.get("num_correct")) == int(
+            job["baseline_num_correct"]
+        ) and int(entry.get("num_examples")) == int(job["baseline_num_examples"])
     except (TypeError, ValueError):
         counts_match = False
     if not counts_match:
@@ -805,21 +1111,24 @@ def validate_baseline_evidence(cell: str, job: dict[str, Any], repo: Path) -> No
         or entry.get("eval_model") != job["eval_model"]
         or entry.get("split_name") != "train"
     ):
-        raise ConfigError(f"{cell} baseline evidence has wrong model, dataset, or split")
+        raise ConfigError(
+            f"{cell} baseline evidence has wrong model, dataset, or split"
+        )
     artifact = Path(str(entry.get("source_artifact", "")))
     if not artifact.is_absolute():
         artifact = repo / artifact
     if not artifact.is_file():
         raise ConfigError(f"{cell} baseline source artifact is missing: {artifact}")
     if hashlib.sha256(artifact.read_bytes()).hexdigest() != entry.get("source_sha256"):
-        raise ConfigError(f"{cell} baseline source artifact hash does not match evidence")
+        raise ConfigError(
+            f"{cell} baseline source artifact hash does not match evidence"
+        )
     try:
         source_payload = json.loads(artifact.read_text(encoding="utf-8"))
-        source_counts_match = (
-            int(source_payload.get("num_correct"))
-            == int(job["baseline_num_correct"])
-            and int(source_payload.get("num_examples"))
-            == int(job["baseline_num_examples"])
+        source_counts_match = int(source_payload.get("num_correct")) == int(
+            job["baseline_num_correct"]
+        ) and int(source_payload.get("num_examples")) == int(
+            job["baseline_num_examples"]
         )
     except (OSError, json.JSONDecodeError, AttributeError, TypeError, ValueError):
         source_payload = {}
@@ -849,10 +1158,11 @@ def validate_baseline_evidence(cell: str, job: dict[str, Any], repo: Path) -> No
     if not raw_artifact.is_absolute():
         raw_artifact = repo / raw_artifact
     if not raw_artifact.is_file():
-        raise ConfigError(f"{cell} raw baseline source artifact is missing: {raw_artifact}")
-    if (
-        hashlib.sha256(raw_artifact.read_bytes()).hexdigest()
-        != source_payload.get("raw_source_sha256")
+        raise ConfigError(
+            f"{cell} raw baseline source artifact is missing: {raw_artifact}"
+        )
+    if hashlib.sha256(raw_artifact.read_bytes()).hexdigest() != source_payload.get(
+        "raw_source_sha256"
     ):
         raise ConfigError(f"{cell} raw baseline source artifact hash is invalid")
 
@@ -912,10 +1222,14 @@ def validate_exhaustive_campaign(
         except (KeyError, TypeError, ValueError) as exc:
             raise ConfigError(f"{cell} requires integer baseline counts") from exc
         if total != int(job["eval_sample_size"]) or not 0 <= correct < total:
-            raise ConfigError(f"{cell} baseline counts must match the train sample size")
+            raise ConfigError(
+                f"{cell} baseline counts must match the train sample size"
+            )
         strict_bar = (correct + 1) / total
         if abs(float(job["min_accuracy"]) - strict_bar) > 1e-12:
-            raise ConfigError(f"{cell} min_accuracy must be the one-example strict train bar")
+            raise ConfigError(
+                f"{cell} min_accuracy must be the one-example strict train bar"
+            )
         baseline_source = str(job.get("baseline_source", "")).strip()
         if not baseline_source:
             raise ConfigError(f"{cell} requires baseline_source evidence")
@@ -924,13 +1238,17 @@ def validate_exhaustive_campaign(
             if not baseline_path.is_absolute():
                 baseline_path = repo / baseline_path
             if not baseline_path.is_file():
-                raise ConfigError(f"{cell} baseline_source file is missing: {baseline_path}")
+                raise ConfigError(
+                    f"{cell} baseline_source file is missing: {baseline_path}"
+                )
             validate_baseline_evidence(cell, job, repo)
         if str(job.get("heldout_split_name")) != "test":
             raise ConfigError(f"{cell} requires heldout_split_name='test'")
         if not str(job["output_name"]).startswith(f"coldq_{cell}_"):
             raise ConfigError(f"{cell} output_name must be isolated and cold")
-        expected_log = Path("outputs") / "generated" / str(job["output_name"]) / "run.log"
+        expected_log = (
+            Path("outputs") / "generated" / str(job["output_name"]) / "run.log"
+        )
         if Path(str(job.get("log_file", ""))) != expected_log:
             raise ConfigError(f"{cell} log_file must be {expected_log}")
         dataset = str(job["dataset"])
@@ -940,8 +1258,13 @@ def validate_exhaustive_campaign(
             expected_split = "spider_dev_proportional_300x300_seed334.json"
         else:
             expected_split = None
-        if expected_split and Path(str(job.get("heldout_split_file", ""))).name != expected_split:
-            raise ConfigError(f"{cell} requires canonical heldout split {expected_split}")
+        if (
+            expected_split
+            and Path(str(job.get("heldout_split_file", ""))).name != expected_split
+        ):
+            raise ConfigError(
+                f"{cell} requires canonical heldout split {expected_split}"
+            )
         if expected_split and repo is not None:
             validate_heldout_split(cell, job, repo)
     total_author_calls = sum(
@@ -980,15 +1303,20 @@ def run_job(
     state_path = state_dir / f"{cell}.json"
     heldout_path = Path(str(job["heldout_output_json"]))
     if heldout_is_complete(heldout_path, job):
-        logger.warning("[coldq] already complete cell=%s heldout=%s", cell, heldout_path)
+        logger.warning(
+            "[coldq] already complete cell=%s heldout=%s", cell, heldout_path
+        )
         return 0
-    csd = compiled_csd(
-        repo,
-        output_name,
-        min_accuracy=float(job["min_accuracy"]),
-        min_syntax_rate=float(job["min_syntax_rate"]),
-        job=job,
-    )
+    if job.get("run_mode") == "heldout_only":
+        csd = pinned_heldout_csd(job, repo)
+    else:
+        csd = compiled_csd(
+            repo,
+            output_name,
+            min_accuracy=float(job["min_accuracy"]),
+            min_syntax_rate=float(job["min_syntax_rate"]),
+            job=job,
+        )
     synthesis_exhausted = csd is not None and synthesis_was_exhausted(
         repo, output_name, job
     )
@@ -1042,10 +1370,16 @@ def run_job(
                 previous_run_dir=previous_run_dir,
             )
             if status not in {0, 1}:
-                _write_state(state_path, {"cell_id": cell, "status": "error", "exit_code": status})
+                _write_state(
+                    state_path,
+                    {"cell_id": cell, "status": "error", "exit_code": status},
+                )
                 return status
             if status == 1 and not synthesis_exhausted:
-                _write_state(state_path, {"cell_id": cell, "status": "error", "exit_code": status})
+                _write_state(
+                    state_path,
+                    {"cell_id": cell, "status": "error", "exit_code": status},
+                )
                 return status
             csd = compiled_csd(
                 repo,
@@ -1056,10 +1390,14 @@ def run_job(
             )
         if csd is None:
             status = "complete_failure" if synthesis_exhausted else "error"
-            _write_state(state_path, {"cell_id": cell, "status": status, "reason": "missing_csd"})
+            _write_state(
+                state_path, {"cell_id": cell, "status": status, "reason": "missing_csd"}
+            )
             return TERMINAL_SYNTHESIS_FAILURE if synthesis_exhausted else 3
         if synthesis_exhausted:
-            logger.warning("[coldq] using best exhausted attempt cell=%s csd=%s", cell, csd)
+            logger.warning(
+                "[coldq] using best exhausted attempt cell=%s csd=%s", cell, csd
+            )
         heldout_path.parent.mkdir(parents=True, exist_ok=True)
         logger.warning(
             "[coldq] heldout start cell=%s gpu=%d csd=%s",
@@ -1078,10 +1416,14 @@ def run_job(
     heldout_complete = status == 0 and heldout_is_complete(heldout_path, job)
     if status == 0 and not heldout_complete:
         status = 4
-    state = "complete_loss" if synthesis_exhausted and heldout_complete else (
-        "complete_success" if heldout_complete else "error"
+    state = (
+        "complete_loss"
+        if synthesis_exhausted and heldout_complete
+        else ("complete_success" if heldout_complete else "error")
     )
-    _write_state(state_path, {"cell_id": cell, "status": state, "heldout": str(heldout_path)})
+    _write_state(
+        state_path, {"cell_id": cell, "status": state, "heldout": str(heldout_path)}
+    )
     return status
 
 
@@ -1096,7 +1438,7 @@ def dispatch(
 ) -> None:
     pending = [dict(job) for job in jobs]
     reservations: dict[int, dict[str, int]] = {}
-    running: dict[concurrent.futures.Future[int], tuple[tuple[int, ...], str]] = {}
+    running: dict[concurrent.futures.Future[int], tuple[tuple[int, ...], str, int]] = {}
     failures: list[tuple[str, int]] = []
     baseline = snapshot()
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(jobs)) as executor:
@@ -1109,9 +1451,20 @@ def dispatch(
             launched = True
             while pending and launched:
                 launched = False
+                active_phase = min(
+                    [int(job.get("queue_phase", 1)) for job in pending]
+                    + [phase for _gpus, _cell, phase in running.values()]
+                )
                 for index, job in enumerate(pending):
+                    phase = int(job.get("queue_phase", 1))
+                    if phase != active_phase:
+                        continue
                     gpus = choose_gpu_bundle(
-                        job, snapshots, reservations, baseline, allowed_gpus=allowed_gpus
+                        job,
+                        snapshots,
+                        reservations,
+                        baseline,
+                        allowed_gpus=allowed_gpus,
                     )
                     if gpus is None:
                         continue
@@ -1128,13 +1481,13 @@ def dispatch(
                         ",".join(str(gpu) for gpu in gpus),
                         len(gpus),
                     )
-                    running[executor.submit(worker, job, gpus)] = (gpus, cell)
+                    running[executor.submit(worker, job, gpus)] = (gpus, cell, phase)
                     pending.pop(index)
                     launched = True
                     break
             finished = [future for future in running if future.done()]
             for future in finished:
-                gpus, cell = running.pop(future)
+                gpus, cell, _phase = running.pop(future)
                 status = future.result()
                 for gpu in gpus:
                     reservations[gpu].pop(cell, None)
@@ -1156,7 +1509,10 @@ def dispatch(
             if pending or running:
                 time.sleep(max(0.0, poll_seconds))
     if failures:
-        raise ConfigError("worker failures: " + ", ".join(f"{cell}:{status}" for cell, status in failures))
+        raise ConfigError(
+            "worker failures: "
+            + ", ".join(f"{cell}:{status}" for cell, status in failures)
+        )
 
 
 def main() -> int:
@@ -1167,6 +1523,7 @@ def main() -> int:
     parser.add_argument("--lock-file", type=Path, required=True)
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--repair-attestation", type=Path)
+    parser.add_argument("--corrected-approval", type=Path)
     parser.add_argument("--nvidia-smi", default="nvidia-smi")
     parser.add_argument("--poll-seconds", type=float, default=30.0)
     parser.add_argument(
@@ -1181,7 +1538,11 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
         "--campaign-profile",
-        choices=("legacy", "full-baseline-20260803"),
+        choices=(
+            "legacy",
+            "full-baseline-20260803",
+            "full-baseline-corrected-20260805",
+        ),
         default="legacy",
         help="Select the manifest validation rules for this approved campaign.",
     )
@@ -1197,7 +1558,22 @@ def main() -> int:
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(message)s")
     try:
-        require_synthesis_unblocked(args.repo)
+        if args.campaign_profile == "full-baseline-corrected-20260805":
+            if args.exclude_cell_prefix:
+                raise ConfigError(
+                    "corrected campaign does not allow partial cell exclusions"
+                )
+
+            def launch_guard() -> None:
+                validate_corrected_launch(
+                    args.repo,
+                    args.manifest,
+                    args.corrected_approval,
+                )
+
+        else:
+            launch_guard = lambda: require_synthesis_unblocked(args.repo)
+        launch_guard()
         commit, jobs = load_manifest(args.manifest)
         if args.campaign_profile == "full-baseline-20260803":
             from scripts.runtime.build_full_baseline_cold_manifest import (
@@ -1209,6 +1585,8 @@ def main() -> int:
                 validate_campaign(jobs, args.repo)
             except CampaignError as exc:
                 raise ConfigError(str(exc)) from exc
+        elif args.campaign_profile == "full-baseline-corrected-20260805":
+            pass
         else:
             validate_exhaustive_campaign(jobs, repo=args.repo)
         launch_commit = verify_repo_version(args.repo, commit, args.repair_attestation)
@@ -1225,7 +1603,9 @@ def main() -> int:
             jobs = [
                 job
                 for job in jobs
-                if not any(str(job["cell_id"]).startswith(prefix) for prefix in prefixes)
+                if not any(
+                    str(job["cell_id"]).startswith(prefix) for prefix in prefixes
+                )
             ]
             logger.warning(
                 "[coldq] exclude prefixes=%s excluded=%s remaining=%d",
@@ -1241,8 +1621,9 @@ def main() -> int:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as exc:
                 raise ConfigError("another cold queue controller is active") from exc
+
             def worker(job: dict[str, Any], gpus: tuple[int, ...]) -> int:
-                require_synthesis_unblocked(args.repo)
+                launch_guard()
                 return run_job(
                     job,
                     gpus,
@@ -1250,6 +1631,7 @@ def main() -> int:
                     python=args.python,
                     state_dir=args.state_dir,
                 )
+
             if args.dry_run:
                 for job in jobs:
                     logger.warning(
@@ -1265,7 +1647,7 @@ def main() -> int:
                     worker=worker,
                     poll_seconds=args.poll_seconds,
                     allowed_gpus=args.gpus,
-                    launch_guard=lambda: require_synthesis_unblocked(args.repo),
+                    launch_guard=launch_guard,
                 )
         return 0
     except (ConfigError, subprocess.CalledProcessError) as exc:

@@ -30,6 +30,21 @@ Cold-queue and babysitter runtime scripts. Repo-wide rules live in `../../AGENTS
 - Recompute SMILES baseline accuracy from distinct RDKit-valid, in-class,
   non-exemplar molecules across the full trial; do not trust per-row averages.
 
+## Corrected exact-zero campaign
+
+- The `full-baseline-corrected-20260805` profile must contain the exact approved
+  20 cells and exactly 675 remaining author calls. Do not use cell exclusions.
+- Dispatch phases are strict: ten fresh changed-target cells, two exclusive-GPU
+  memory retries, two remaining-call recoveries, three unchanged cells that
+  never started, then three held-out-only jobs.
+- Recovery reports count restored completed evaluations plus remaining calls;
+  the two jobs must never exceed their original 40-call budgets.
+- Held-out-only jobs must pin the exact compiled CSD path and SHA-256. Validate
+  the pin again before dispatch.
+- Startup and every dispatch must revalidate an independent `gpt-5.6-sol`
+  approval bound to the corrected evidence SHA-256 and queue-manifest SHA-256.
+  The exact-zero synthesis block remains a hard stop until that approval exists.
+
 ## Exact-zero baseline repair monitor
 
 - Run `scripts.runtime.incident_repair.exact_zero_baseline_monitor` every 300
