@@ -141,7 +141,7 @@ def test_qwen35_itergen_rebuilds_its_cache_with_linear_attention_layers():
     value.model = HybridModel()
 
     assert value.start("prompt") == "prompt"
-    assert value.model_kwargs["past_key_values"].has_previous_state() is False
+    assert value.model_kwargs["past_key_values"].get_seq_length() == 0
 
 
 def test_full_attention_itergen_keeps_its_existing_cache_path():

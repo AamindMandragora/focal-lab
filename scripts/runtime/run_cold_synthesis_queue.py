@@ -402,6 +402,13 @@ def validate_corrected_launch(
         raise ConfigError(str(exc)) from exc
 
 
+def validate_corrected_gpu_scope(gpus: tuple[int, ...] | None) -> None:
+    if gpus != (0, 2, 3):
+        raise ConfigError(
+            "full-baseline-corrected-20260805 requires exactly GPUs 0,2,3"
+        )
+
+
 def _is_pinned_code_path(path: str) -> bool:
     return any(
         path == root or path.startswith(f"{root}/") for root in PINNED_CODE_PATHS
@@ -1559,6 +1566,7 @@ def main() -> int:
     logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(message)s")
     try:
         if args.campaign_profile == "full-baseline-corrected-20260805":
+            validate_corrected_gpu_scope(args.gpus)
             if args.exclude_cell_prefix:
                 raise ConfigError(
                     "corrected campaign does not allow partial cell exclusions"

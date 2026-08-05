@@ -34,6 +34,8 @@ Cold-queue and babysitter runtime scripts. Repo-wide rules live in `../../AGENTS
 
 - The `full-baseline-corrected-20260805` profile must contain the exact approved
   20 cells and exactly 675 remaining author calls. Do not use cell exclusions.
+  Require the explicit physical GPU scope `--gpus 0,2,3`; reject omission,
+  GPU `1`, missing approved GPUs, or any extra GPU before reading the queue.
 - Dispatch phases are strict: ten fresh changed-target cells, two exclusive-GPU
   memory retries, two remaining-call recoveries, three unchanged cells that
   never started, then three held-out-only jobs.

@@ -76,8 +76,8 @@ def _matching_run_configuration(job):
             "min_syntax_rate": job["min_syntax_rate"],
         },
         "author_model": {
-            "backend": "claude-bedrock",
-            "model": "us.anthropic.claude-sonnet-4-6",
+            "backend": "claude",
+            "model": queue.AUTHOR_MODEL,
             "max_new_tokens": 8192,
             "reasoning_budget_tokens": 4096,
             "anthropic_thinking": "always-on",
@@ -108,15 +108,11 @@ def test_gsm_task_matches_crane_task_and_cot_contract() -> None:
     } == {EXPECTED_CRANE_GSM_TASK}
 
 
-def test_synthesis_command_is_cold_and_uses_large_bedrock_author():
+def test_synthesis_command_is_cold_and_preserves_the_run_limits():
     command = queue.synthesis_command(_job(), Path("/env/python"))
 
     assert command[:3] == ["/env/python", "-m", "synthesis.run_synthesis"]
-    assert command[command.index("--generation-backend") + 1] == "claude-bedrock"
-    assert command[command.index("--generation-model") + 1] == (
-        "us.anthropic.claude-sonnet-4-6"
-    )
-    assert command[command.index("--synthesizer-reasoning-budget") + 1] == "4096"
+    assert command[command.index("--synthesis-max-tokens") + 1] == "8192"
     assert command[command.index("--max-iterations") + 1] == "80"
     assert "--bar-split-name" not in command
     assert not any(flag.startswith("--initial-") for flag in command)
@@ -754,6 +750,19 @@ def test_corrected_launch_guard_requires_an_independent_approval(
         )
 
 
+@pytest.mark.parametrize(
+    "gpus",
+    [None, (0, 2), (0, 1, 2, 3), (1,)],
+)
+def test_corrected_campaign_rejects_any_gpu_scope_except_zero_two_three(gpus):
+    with pytest.raises(queue.ConfigError, match="exactly GPUs 0,2,3"):
+        queue.validate_corrected_gpu_scope(gpus)
+
+
+def test_corrected_campaign_accepts_only_gpu_scope_zero_two_three():
+    queue.validate_corrected_gpu_scope((0, 2, 3))
+
+
 def test_recovery_exhaustion_counts_restored_and_remaining_attempts():
     job = _job()
     job.update(
@@ -793,9 +802,9 @@ def test_exhausted_synthesis_still_runs_heldout_for_best_attempt(tmp_path, monke
 
     def run(command, **kwargs):
         calls.append(command)
-        return SimpleNamespace(returncode=1 if len(calls) == 1 else 0)
+        return 1 if len(calls) == 1 else 0
 
-    monkeypatch.setattr(queue.subprocess, "run", run)
+    monkeypatch.setattr(queue, "_run_command_teeing_stdout", run)
 
     status = queue.run_job(
         job,
@@ -817,11 +826,7 @@ def test_unexpected_exit_one_is_an_error_not_a_scientific_loss(tmp_path, monkeyp
     job["heldout_output_json"] = str(tmp_path / "heldout.json")
     monkeypatch.setattr(queue, "compiled_csd", lambda *args, **kwargs: None)
     monkeypatch.setattr(queue, "synthesis_was_exhausted", lambda *args, **kwargs: False)
-    monkeypatch.setattr(
-        queue.subprocess,
-        "run",
-        lambda *args, **kwargs: SimpleNamespace(returncode=1),
-    )
+    monkeypatch.setattr(queue, "_run_command_teeing_stdout", lambda *args, **kwargs: 1)
 
     status = queue.run_job(
         job,
@@ -883,9 +888,9 @@ def test_existing_heldout_must_be_complete_before_restart_skips_cell(
             ),
             encoding="utf-8",
         )
-        return SimpleNamespace(returncode=0)
+        return 0
 
-    monkeypatch.setattr(queue.subprocess, "run", run)
+    monkeypatch.setattr(queue, "_run_command_teeing_stdout", run)
 
     assert (
         queue.run_job(
@@ -918,9 +923,9 @@ def test_restart_preserves_exhausted_state_while_running_heldout(tmp_path, monke
 
     def run(command, **kwargs):
         calls.append(command)
-        return SimpleNamespace(returncode=0)
+        return 0
 
-    monkeypatch.setattr(queue.subprocess, "run", run)
+    monkeypatch.setattr(queue, "_run_command_teeing_stdout", run)
 
     status = queue.run_job(
         job,
