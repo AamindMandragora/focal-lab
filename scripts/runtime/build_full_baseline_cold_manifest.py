@@ -27,8 +27,8 @@ MODELS = (
     ("qwen35-4b", "Qwen/Qwen3.5-4B", 19_000, 0.40),
 )
 SPIDER_TASK = (
-    "Generate a single valid SQL query as exactly `SQL: <<YOUR QUERY>>`, using only "
-    "the provided schema context."
+    "Generate a single valid SQL query using only the provided schema context. "
+    "Only output the SQL query."
 )
 SMILES_TASK = (
     "Generate valid SMILES strings that match the requested molecular class while "

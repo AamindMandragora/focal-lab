@@ -231,6 +231,34 @@ def _is_pathological_gsm_scoring_expression(expression: str) -> bool:
     return False
 
 
+# Numbers, names, and any other single non-space character. Used when no
+# tokenizer is available; unlike a whitespace split it still grows with the
+# length of the text.
+_SPAN_UNIT_PATTERN = re.compile(r"\d+|[A-Za-z_]\w*|\S")
+
+
+def span_token_length(tokenizer: Any, text: str) -> int:
+    """Return how many tokens a generated span is.
+
+    Measured with the eval model's own tokenizer when one is available. This
+    used to be a whitespace split, which is wrong for every benchmark we run:
+    GSM answers are arithmetic and SMILES answers are molecule strings, and
+    neither contains spaces, so a 1555-character runaway span counted as one
+    "token". That number is one of the axes `synthesis/failure_taxonomy.py`
+    clusters on, so runaway spans were filed under "spans are too tiny" and the
+    author model was told to lengthen spans that were already spiralling.
+    """
+    text = str(text or "").strip()
+    if not text:
+        return 0
+    if tokenizer is not None:
+        try:
+            return len(tokenizer.encode(text, add_special_tokens=False))
+        except Exception:
+            pass  # fall through to the pattern below
+    return len(_SPAN_UNIT_PATTERN.findall(text))
+
+
 class _PerExampleTimer:
     """Unix wall-clock timer for interrupting a single long-running example."""
 
@@ -990,13 +1018,11 @@ class EvaluationResult:
         if first_open >= 0:
             first_open_tokens = len(output[:first_open].split())
 
-        span_lengths = [len(span.strip().split()) for span in spans if span.strip()]
         complete_spans = len(spans)
         return {
             "opens": opens,
             "closes": closes,
             "complete_spans": complete_spans,
-            "span_lengths": span_lengths,
             "first_open_tokens": first_open_tokens,
             "unterminated": active_opens > 0 or opens > complete_spans,
             "unmatched_close": unmatched_closes > 0 or closes > complete_spans,
@@ -1287,10 +1313,13 @@ class EvaluationResult:
             for shape in shapes
             if shape["first_open_tokens"] is not None
         ]
+        # Read the per-sample token lengths recorded at generation time rather
+        # than re-deriving them from the output text: there is one measurement
+        # of span length, taken with the model's tokenizer, not two.
         visible_span_lengths = [
             float(length)
-            for shape in shapes
-            for length in shape["span_lengths"]
+            for sample in self.sample_outputs
+            for length in sample.get("visible_span_token_lengths", [])
         ]
         valid_span_lengths = [
             float(length)
@@ -1343,7 +1372,11 @@ class EvaluationResult:
             and max(sample.get("valid_visible_span_token_lengths")) <= 2
         )
         examples_with_long_visible_span = sum(
-            1 for shape in shapes if any(length > 64 for length in shape["span_lengths"])
+            1 for sample in self.sample_outputs
+            if any(
+                length > 64
+                for length in sample.get("visible_span_token_lengths", [])
+            )
         )
         examples_hitting_max_steps = sum(
             1 for sample in self.sample_outputs if sample.get("hit_max_steps")
@@ -1726,6 +1759,11 @@ class Evaluator:
         self.vllm_max_model_len = vllm_max_model_len
         self.vllm_enforce_eager = vllm_enforce_eager
         self.sample_seed = sample_seed
+        # Confirmation-slice offset for the greedy hill-climb search (slice B).
+        # 0 (the default) is the normal slice-A sampling behavior; a caller
+        # passes a nonzero value into evaluate_sample() to draw the NEXT
+        # sample_size examples instead. Reset on every evaluate_sample() call.
+        self.sample_offset: int = 0
         self.max_seconds_per_example = max_seconds_per_example
         self.step_token_budget = step_token_budget
         # CRANE-style answer early stop (default OFF): stop generation once the
@@ -1814,7 +1852,12 @@ class Evaluator:
         indices = manifest[key]
         if not isinstance(indices, list) or not all(isinstance(i, int) for i in indices):
             raise ValueError(f"{key} in {self.gsm_split_file} must be a list of integers")
-        return indices
+        # Skip the first `sample_offset` entries so the caller's existing
+        # limit-to-sample_size slicing takes the NEXT N indices instead of
+        # the usual first N -- this is the greedy hill-climb search's
+        # slice-B confirmation eval (see evaluate_sample's sample_offset).
+        offset = self.sample_offset or 0
+        return indices[offset:]
 
     def _load_spider_split_indices(self) -> Optional[List[int]]:
         """Load explicit Spider example indices from a train/test split manifest."""
@@ -1844,7 +1887,10 @@ class Evaluator:
         indices = manifest[key]
         if not isinstance(indices, list) or not all(isinstance(i, int) for i in indices):
             raise ValueError(f"{key} in {self.spider_split_file} must be a list of integers")
-        return indices
+        # See _load_gsm_split_indices: skip the first `sample_offset` entries
+        # so slice-B confirmation draws the NEXT N indices.
+        offset = self.sample_offset or 0
+        return indices[offset:]
 
     def _get_grammar_file(self) -> Path:
         """Get the grammar file path for the dataset."""
@@ -2377,6 +2423,7 @@ class Evaluator:
         prompt = self._format_prompt(example)
         expected = self._get_expected_answer(example)
         benchmark_aux: Optional[dict[str, Any]] = None
+        tokenizer = env.get("tokenizer")
 
         try:
             print(f"  [EVAL]   Running CSD strategy (max_steps={self.max_steps})...", flush=True)
@@ -2488,16 +2535,20 @@ class Evaluator:
             accuracy_applicable = self._accuracy_applicable_for_example(benchmark_aux)
             example_syntax_rate = 1.0 if example_syntax_pass else 0.0
             if self._uses_hidden_chunks() and self.dataset_name == "smiles":
-                visible_span_lengths = [len((benchmark_aux or {}).get("smiles", "").split())] if actual else []
+                visible_span_lengths = (
+                    [span_token_length(tokenizer, (benchmark_aux or {}).get("smiles", ""))]
+                    if actual
+                    else []
+                )
                 valid_visible_span_lengths = visible_span_lengths if example_syntax_pass else []
                 num_valid_visible_spans = 1 if example_syntax_pass and actual else 0
                 segments = [(actual or "", example_syntax_pass)] if actual else []
             else:
                 visible_span_lengths = [
-                    len(segment.strip().split()) for segment, _ in segments
+                    span_token_length(tokenizer, segment) for segment, _ in segments
                 ]
                 valid_visible_span_lengths = [
-                    len(segment.strip().split())
+                    span_token_length(tokenizer, segment)
                     for segment, is_valid in segments
                     if is_valid
                 ]
@@ -2871,6 +2922,7 @@ class Evaluator:
         self,
         compiled_module_path: Path,
         sample_size: Optional[int] = None,
+        sample_offset: int = 0,
         min_accuracy: Optional[float] = None,
         early_stop_min_accuracy: Optional[float] = None,
         early_stop_min_syntax_rate: Optional[float] = None,
@@ -2884,6 +2936,23 @@ class Evaluator:
         Args:
             compiled_module_path: Path to the compiled GeneratedCSD.py module
             sample_size: Number of examples to evaluate (overrides init value)
+            sample_offset: Number of leading examples to skip before taking
+                sample_size examples. 0 (the default) is the normal slice A.
+                The greedy hill-climb search's slice-B confirmation eval
+                passes a nonzero offset (typically == sample_size) to draw
+                the NEXT sample_size examples instead of re-scoring slice A
+                (a no-op under deterministic greedy decoding). For GSM/Spider
+                this skips the first `offset` entries of the fixed
+                split-index list (see _load_gsm_split_indices /
+                _load_spider_split_indices), so slice B is drawn from the
+                same canonical train split, disjoint from slice A. Datasets
+                with no index manifest (e.g. SMILES) have no list to offset
+                into, so the confirmation slice is instead drawn by shifting
+                the sample seed by `offset` -- a weaker pairing than the
+                index-based slices (see planning/monotonic-search-plan.md
+                §9). Reset to the passed value (default 0) on every call so
+                a later normal call is never contaminated by an earlier
+                confirmation-slice call.
             min_accuracy: Backward-compatible target accuracy for early stop.
             early_stop_min_accuracy: Optional target accuracy for early stop.
             early_stop_min_syntax_rate: Optional target syntax rate for early stop.
@@ -2905,6 +2974,7 @@ class Evaluator:
         """
         if sample_size is not None:
             self.sample_size = sample_size
+        self.sample_offset = sample_offset
 
         # Always re-sample so each iteration gets a fresh random example
         self._dataset = None
@@ -2912,76 +2982,94 @@ class Evaluator:
         start_time = time.time()
         sample_outputs: List[Dict[str, Any]] = []
 
+        # Datasets with a fixed split-index manifest (GSM/Spider) apply
+        # sample_offset by skipping entries in the index list itself (see
+        # _load_gsm_split_indices / _load_spider_split_indices). Datasets
+        # with no index manifest have no list to offset into, so the
+        # confirmation slice for non-indexed datasets is drawn by shifting
+        # the sample seed instead -- restored after this call so it never
+        # leaks into a later normal (offset=0) evaluation.
+        has_split_manifest = (
+            (self.dataset_name == "gsm_symbolic" and self.gsm_split_file is not None)
+            or (self.dataset_name == "spider" and self.spider_split_file is not None)
+        )
+        original_sample_seed = self.sample_seed
+        if self.sample_offset and not has_split_manifest:
+            self.sample_seed = (self.sample_seed or 0) + self.sample_offset
+
         try:
-            self._ensure_smiles_rdkit_available()
-            dataset = self._load_dataset_sample()
-            planned_num_examples = len(dataset)
-            target_min_accuracy = (
-                early_stop_min_accuracy
-                if early_stop_min_accuracy is not None
-                else min_accuracy
-            )
-            # Cheap (registry lookup only, no engine load) -- safe to call in the
-            # main process regardless of which branch below actually runs eval.
-            logic = self._benchmark_logic()
-
-            get_synthesis_eval_pool = (
-                _resolve_eval_pool_loader()
-                if self.dataset_name in POOLABLE_DATASETS
-                else None
-            )
-
-            if get_synthesis_eval_pool is not None:
-                # Do NOT call self._setup_environment() here: it loads a vLLM engine
-                # into the CALLING process. For the pooled path, each worker
-                # subprocess calls its own _setup_environment (and thus loads its own
-                # engine) once, on its own pinned GPU. Loading an engine here too
-                # would waste GPU memory in the main process and can starve/crash a
-                # worker pinned to the same GPU -- this was observed directly: the
-                # first identity-test run had the main process eagerly load an
-                # engine on GPU 0, leaving too little free memory for the pool's
-                # worker (also assigned GPU 0), which then failed immediately.
-                pool = get_synthesis_eval_pool(self)
-                sample_outputs = pool.evaluate_examples(self, compiled_module_path, dataset)
-                sample_outputs, early_stop_reason = self._posthoc_early_stop(
-                    sample_outputs, early_stop_runtime_failures
+            try:
+                self._ensure_smiles_rdkit_available()
+                dataset = self._load_dataset_sample()
+                planned_num_examples = len(dataset)
+                target_min_accuracy = (
+                    early_stop_min_accuracy
+                    if early_stop_min_accuracy is not None
+                    else min_accuracy
                 )
-            else:
-                env = self._setup_environment(compiled_module_path)
-                sample_outputs, early_stop_reason = self._evaluate_examples_sequential_with_early_stop(
-                    dataset,
-                    env,
-                    logic,
+                # Cheap (registry lookup only, no engine load) -- safe to call in the
+                # main process regardless of which branch below actually runs eval.
+                logic = self._benchmark_logic()
+
+                get_synthesis_eval_pool = (
+                    _resolve_eval_pool_loader()
+                    if self.dataset_name in POOLABLE_DATASETS
+                    else None
+                )
+
+                if get_synthesis_eval_pool is not None:
+                    # Do NOT call self._setup_environment() here: it loads a vLLM engine
+                    # into the CALLING process. For the pooled path, each worker
+                    # subprocess calls its own _setup_environment (and thus loads its own
+                    # engine) once, on its own pinned GPU. Loading an engine here too
+                    # would waste GPU memory in the main process and can starve/crash a
+                    # worker pinned to the same GPU -- this was observed directly: the
+                    # first identity-test run had the main process eagerly load an
+                    # engine on GPU 0, leaving too little free memory for the pool's
+                    # worker (also assigned GPU 0), which then failed immediately.
+                    pool = get_synthesis_eval_pool(self)
+                    sample_outputs = pool.evaluate_examples(self, compiled_module_path, dataset)
+                    sample_outputs, early_stop_reason = self._posthoc_early_stop(
+                        sample_outputs, early_stop_runtime_failures
+                    )
+                else:
+                    env = self._setup_environment(compiled_module_path)
+                    sample_outputs, early_stop_reason = self._evaluate_examples_sequential_with_early_stop(
+                        dataset,
+                        env,
+                        logic,
+                        target_min_accuracy,
+                        early_stop_min_syntax_rate,
+                        early_stop_runtime_failures,
+                        deadline,
+                    )
+
+                return self._build_evaluation_result(
+                    sample_outputs,
+                    early_stop_reason,
+                    planned_num_examples,
                     target_min_accuracy,
                     early_stop_min_syntax_rate,
-                    early_stop_runtime_failures,
-                    deadline,
+                    logic,
+                    start_time,
                 )
 
-            return self._build_evaluation_result(
-                sample_outputs,
-                early_stop_reason,
-                planned_num_examples,
-                target_min_accuracy,
-                early_stop_min_syntax_rate,
-                logic,
-                start_time,
-            )
-
-        except Exception as e:
-            return EvaluationResult(
-                success=False,
-                accuracy=0.0,
-                contains_delimiters=False,
-                syntax_rate=0.0,
-                num_examples=0,
-                num_correct=0,
-                total_time_seconds=time.time() - start_time,
-                error=str(e),
-                sample_outputs=sample_outputs,
-                task_guidance=sorted({
-                    sample.get("task_guidance")
-                    for sample in sample_outputs
-                    if sample.get("task_guidance")
-                }),
-            )
+            except Exception as e:
+                return EvaluationResult(
+                    success=False,
+                    accuracy=0.0,
+                    contains_delimiters=False,
+                    syntax_rate=0.0,
+                    num_examples=0,
+                    num_correct=0,
+                    total_time_seconds=time.time() - start_time,
+                    error=str(e),
+                    sample_outputs=sample_outputs,
+                    task_guidance=sorted({
+                        sample.get("task_guidance")
+                        for sample in sample_outputs
+                        if sample.get("task_guidance")
+                    }),
+                )
+        finally:
+            self.sample_seed = original_sample_seed

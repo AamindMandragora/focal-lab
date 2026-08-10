@@ -747,6 +747,24 @@ def _validate_difficulty_counts(counts: dict[str, int], field_name: str) -> dict
     return normalized
 
 
+def alias_gsm_eval_side_as_test(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Expose GSM held-out indices as ``test_*`` for ``--gsm-split-name test``.
+
+    Writers historically stored the held-out side as ``eval_indices``. The
+    evaluator and cold-queue held-out path require ``test_indices`` (same
+    convention as Spider). Keep ``eval_*`` for older readers; mirror into
+    ``test_*`` without changing which examples are selected.
+    """
+    if "eval_indices" not in manifest:
+        raise KeyError("GSM split manifest is missing eval_indices")
+    out = dict(manifest)
+    out["test_indices"] = list(out["eval_indices"])
+    out["test_size"] = int(out.get("eval_size", len(out["test_indices"])))
+    if "eval_composition" in out:
+        out["test_composition"] = dict(out["eval_composition"])
+    return out
+
+
 def make_gsm_proportional_train_eval_split(
     crane_dir: Path | str | None = None,
     train_size: int = 49,
@@ -783,24 +801,26 @@ def make_gsm_proportional_train_eval_split(
         difficulty: len([idx for idx, label in labels.items() if label == difficulty])
         for difficulty in GSM_DIFFICULTIES
     }
-    return split_manifest_metadata(
-        seed=seed,
-        split_strategy="stratified_proportional",
-        labels_by_index=labels,
-        split_sizes={"train": train_size, "eval": eval_size},
-        selected=selected,
-        extra={
-            "crane_dir": str(crane_dir),
-            "train_size_requested": train_size,
-            "eval_size_requested": eval_size,
-            "train_allocations_requested": proportional_allocations(
-                train_size, population, order=GSM_DIFFICULTIES
-            ),
-            "eval_allocations_requested": proportional_allocations(
-                eval_size, population, order=GSM_DIFFICULTIES
-            ),
-            **difficulty_info,
-        },
+    return alias_gsm_eval_side_as_test(
+        split_manifest_metadata(
+            seed=seed,
+            split_strategy="stratified_proportional",
+            labels_by_index=labels,
+            split_sizes={"train": train_size, "eval": eval_size},
+            selected=selected,
+            extra={
+                "crane_dir": str(crane_dir),
+                "train_size_requested": train_size,
+                "eval_size_requested": eval_size,
+                "train_allocations_requested": proportional_allocations(
+                    train_size, population, order=GSM_DIFFICULTIES
+                ),
+                "eval_allocations_requested": proportional_allocations(
+                    eval_size, population, order=GSM_DIFFICULTIES
+                ),
+                **difficulty_info,
+            },
+        )
     )
 
 
@@ -868,21 +888,23 @@ def make_gsm_stratified_train_eval_split(
     def composition(indices: Sequence[int]) -> dict[str, int]:
         return dict(sorted(Counter(labels[idx] for idx in indices).items()))
 
-    return {
-        "seed": seed,
-        "split_strategy": "stratified",
-        "crane_dir": str(crane_dir),
-        "total_examples": len(rows),
-        "train_indices": train_indices,
-        "eval_indices": eval_indices,
-        "train_size": len(train_indices),
-        "eval_size": len(eval_indices),
-        "train_counts_requested": train_counts,
-        "eval_counts_requested": eval_counts,
-        "train_composition": composition(train_indices),
-        "eval_composition": composition(eval_indices),
-        **difficulty_info,
-    }
+    return alias_gsm_eval_side_as_test(
+        {
+            "seed": seed,
+            "split_strategy": "stratified",
+            "crane_dir": str(crane_dir),
+            "total_examples": len(rows),
+            "train_indices": train_indices,
+            "eval_indices": eval_indices,
+            "train_size": len(train_indices),
+            "eval_size": len(eval_indices),
+            "train_counts_requested": train_counts,
+            "eval_counts_requested": eval_counts,
+            "train_composition": composition(train_indices),
+            "eval_composition": composition(eval_indices),
+            **difficulty_info,
+        }
+    )
 
 
 def write_gsm_stratified_train_eval_split(

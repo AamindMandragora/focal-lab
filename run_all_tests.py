@@ -630,7 +630,7 @@ class Runner:
         if benchmark == "gsm_symbolic":
             return "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters."
         if benchmark == "spider":
-            return "Generate a single valid SQL query as exactly `SQL: <<YOUR QUERY>>`, using only the provided schema context."
+            return "Generate a single valid SQL query using only the provided schema context. Only output the SQL query."
         if benchmark == "smiles":
             return "Generate valid SMILES strings that match the requested molecular class while maintaining parser-valid output."
         return "Generate parser-valid benchmark answers."

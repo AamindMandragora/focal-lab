@@ -79,7 +79,7 @@ args=(
   --min-accuracy "$MIN_ACC" --min-syntax-rate "$MIN_SYN"
   --eval-sample-size 49 --eval-max-steps 900 --eval-step-token-budget 1
   --eval-max-seconds-per-example 600 --eval-min-examples-before-threshold-stop 49
-  --max-tokens 32768 --restart-after-stuck-iters 0
+  --max-tokens 32768
   --vllm-gpu-memory-utilization "$UTIL" --vllm-max-model-len 16384 --device auto
   --adaptive-helper-mask --helper-selection-policy bandit --refinement-beam-size 2
   --anthropic-thinking enabled --anthropic-effort high --anthropic-thinking-display summarized

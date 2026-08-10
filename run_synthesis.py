@@ -314,31 +314,6 @@ Examples:
     )
 
     parser.add_argument(
-        "--restart-after-stuck-iters",
-        type=int,
-        default=0,
-        help=(
-            "If the Pareto-best anchor has not advanced for this many "
-            "consecutive iterations, the next refinement uses RESTART mode "
-            "(drops anchor, asks for a structurally different family). "
-            "Set to 0 to disable restart entirely. Default: 0."
-        ),
-    )
-
-    parser.add_argument(
-        "--restart-cooldown-iters",
-        type=int,
-        default=0,
-        help=(
-            "After a restart fires, the counter is set to -N so N normal "
-            "refinement iters run before another restart is eligible. "
-            "0 (default) means restart can fire on consecutive iters when "
-            "the anchor stays stuck — aggressive exploration. Set 2 for a "
-            "balanced explore/exploit rhythm."
-        ),
-    )
-
-    parser.add_argument(
         "--require-delimiters",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -814,9 +789,6 @@ Examples:
         # Evaluation thresholds
         min_accuracy=args.min_accuracy,
         min_syntax_rate=args.min_syntax_rate,
-        # Restart-from-scratch mechanism
-        restart_after_stuck_iters=args.restart_after_stuck_iters,
-        restart_cooldown_iters=args.restart_cooldown_iters,
         require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,

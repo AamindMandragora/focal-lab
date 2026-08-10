@@ -23,6 +23,7 @@ from .evaluator import ATTEMPT_DEADLINE_EARLY_STOP_REASON, Evaluator, Evaluation
 from ..generate.generator import StrategyGenerator
 from ..generate import prompts as generation_prompts
 from ..generate.rationale import extract_rationale
+from ..verify.tooling import build_default_compiler, build_default_verifier
 from ..verify.verifier import DafnyVerifier, VerificationResult
 
 try:
@@ -566,6 +567,23 @@ class SynthesisResult:
         }
 
 
+@dataclass
+class _Incumbent:
+    """The best evaluated strategy so far in the greedy hill-climb search.
+
+    Carries the incumbent's own per-slice EvaluationResults (never just a
+    scalar) so accept/reject decisions can be recomputed against slice A
+    alone (stage 1) and pooled A+B (stage 2) without re-evaluating anything.
+    Only slice-A numbers from this object are ever shown to the author
+    (planning/monotonic-search-plan.md §6).
+    """
+
+    strategy_code: str
+    attempt_number: int
+    a_result: EvaluationResult
+    b_result: EvaluationResult
+
+
 class SynthesisPipeline:
     """
     Main pipeline for synthesizing CSD strategies.
@@ -723,10 +741,6 @@ class SynthesisPipeline:
         local_neighborhood_refinement: bool = True,
         max_local_edit_ratio: float = 0.65,
         beam_verify_candidates: bool = True,
-        # Restart-from-scratch mechanism: escape local-search basins when
-        # anchor-based refinement gets stuck.
-        restart_after_stuck_iters: int = 0,
-        restart_cooldown_iters: int = 0,
         token_cap_feedback: bool = True,
     ):
         """
@@ -781,18 +795,16 @@ class SynthesisPipeline:
         """
         self.evaluator = evaluator
         self.generator = generator or StrategyGenerator()
-        self.verifier = verifier or DafnyVerifier()
-        self.compiler = compiler or DafnyCompiler()
+        self.verifier = verifier or build_default_verifier()
+        self.compiler = compiler or build_default_compiler()
         self.max_iterations = max_iterations
         self.output_dir = output_dir or self.DEFAULT_OUTPUT_DIR
         self.save_reports = save_reports
-        # Restart-from-scratch: after this many refinement iterations without
-        # the anchor advancing, generate fresh instead of refining. Optional
-        # cooldown after a restart prevents back-to-back restarts.
-        self.restart_after_stuck_iters = max(0, int(restart_after_stuck_iters))
-        self.restart_cooldown_iters = max(0, int(restart_cooldown_iters))
-        self._anchor_attempt_number: int | None = None
-        self._iters_since_anchor_changed: int = 0
+        # Greedy hill-climb search: the single best evaluated strategy so far
+        # (planning/monotonic-search-plan.md). Every refinement is based on
+        # this, never on a rejected candidate. Replaces the old Pareto-anchor
+        # bookkeeping outright.
+        self._incumbent: "_Incumbent | None" = None
 
         self.min_accuracy = min_accuracy
         self.min_syntax_rate = min_syntax_rate
@@ -1117,18 +1129,17 @@ class SynthesisPipeline:
         evaluated_attempts: list[SynthesisAttempt],
         prunable_pool: list[str],
     ) -> set[str]:
-        """Prunable helpers used by the pareto-best (refinement-anchor) attempt.
+        """Prunable helpers used by the incumbent (refinement-anchor) attempt.
 
-        Seeds the bandit's keep-set from the SAME anchor the author is told to
-        beat (the threshold-shortfall pareto-best), so the protected helpers
-        belong to the branch being chased rather than to whichever attempt
-        happened to win the composite scalar. Falls back to the scalar-best
-        attempt when no pareto anchor exists (e.g. nothing evaluated on >=1
-        example yet).
+        Seeds the bandit's keep-set from the SAME incumbent the author is told
+        to beat, so the protected helpers belong to the branch being chased
+        rather than to whichever attempt happened to win the composite scalar.
+        Falls back to the scalar-best attempt when there is no incumbent yet
+        (e.g. nothing evaluated on >=1 example yet).
         """
-        pareto_n, _, _ = self._compute_pareto_best(evaluated_attempts)
+        incumbent_n = self._incumbent.attempt_number if self._incumbent else None
         best_attempt = next(
-            (a for a in evaluated_attempts if a.attempt_number == pareto_n),
+            (a for a in evaluated_attempts if a.attempt_number == incumbent_n),
             None,
         )
         if best_attempt is None:
@@ -1305,130 +1316,190 @@ class SynthesisPipeline:
         )
         return sorted(allowed_helpers), status
 
-    def _update_anchor_state(self, new_anchor_attempt_number: int | None) -> None:
-        """Update the "iters since anchor moved" counter after an eval.
+    def _shortfall(self, accuracy: float, syntax_rate: float) -> float:
+        """Distance to both bars; 0.0 once both are met (no credit above a bar)."""
+        return max(0.0, self.min_accuracy - accuracy) + max(0.0, self.min_syntax_rate - syntax_rate)
 
-        Called once per eval, AFTER the new Pareto-best has been computed.
-        Resets the counter when the anchor identity changes; otherwise ticks.
-        First-ever anchor assignment counts as "moved" → counter starts at 0.
-        """
-        if new_anchor_attempt_number is None:
-            return
-        if new_anchor_attempt_number != self._anchor_attempt_number:
-            self._anchor_attempt_number = new_anchor_attempt_number
-            self._iters_since_anchor_changed = 0
-        else:
-            self._iters_since_anchor_changed += 1
-
-    def _should_restart(self, attempts: list[SynthesisAttempt]) -> bool:
-        """Predicate: should the next refinement use restart mode?
-
-        True iff restart is enabled, at least one prior evaluated attempt
-        exists (so the families-tried block has content), and the counter has
-        reached the configured threshold.
-        """
-        if self.restart_after_stuck_iters <= 0:
-            return False
-        evaluated = [
-            a for a in attempts
-            if a.eval_result is not None
-            and (a.eval_result.num_examples or 0) > 0
-        ]
-        if not evaluated:
-            return False
-        return self._iters_since_anchor_changed >= self.restart_after_stuck_iters
-
-    def _apply_restart_cooldown(self) -> None:
-        """Reset counter after a restart fires.
-
-        With cooldown=0 we leave the counter alone — it keeps ticking on
-        subsequent stuck iters so restart fires every iter until the anchor
-        moves (true Option X / aggressive exploration). With cooldown=K we
-        set the counter to -K so K refinement iters must run before another
-        restart is eligible (Option Y / balanced rhythm).
-
-        Earlier version unconditionally set counter to -cooldown, which with
-        cooldown=0 forced counter to 0 — same effect as a 2-iter cooldown.
-        This guard makes cooldown=0 do what the flag advertises.
-        """
-        if self.restart_cooldown_iters > 0:
-            self._iters_since_anchor_changed = -self.restart_cooldown_iters
-
-    def _compute_pareto_best(
-        self, attempts: list[SynthesisAttempt]
-    ) -> tuple[int | None, float | None, float | None]:
-        """Identify the best refinement anchor by threshold shortfall.
-
-        Only attempts with a completed evaluation on >=1 example are eligible.
-        The anchor should be the evaluated attempt closest to satisfying the
-        configured thresholds, not simply the highest-accuracy attempt. This
-        keeps refinement anchored on branches that are closest to a full win
-        when accuracy and syntax trade off.
-        """
-        candidates = [
-            a for a in attempts
-            if a.eval_result is not None
-            and (a.eval_result.num_examples or 0) > 0
-        ]
-        if not candidates:
-            return None, None, None
-
-        def anchor_key(attempt: SynthesisAttempt) -> tuple[float, float, float, int]:
-            result = attempt.eval_result
-            accuracy = float(result.accuracy or 0.0)
-            syntax_rate = float(result.syntax_rate or 0.0)
-            accuracy_shortfall = max(0.0, self.min_accuracy - accuracy)
-            syntax_shortfall = max(0.0, self.min_syntax_rate - syntax_rate)
-            total_shortfall = accuracy_shortfall + syntax_shortfall
-            return (
-                total_shortfall,
-                -accuracy,
-                -syntax_rate,
-                attempt.attempt_number,
-            )
-
-        best = min(
-            candidates,
-            key=anchor_key,
-        )
-        return (
-            best.attempt_number,
-            best.eval_result.accuracy,
-            best.eval_result.syntax_rate,
-        )
-
-    def _lookup_best_so_far(
+    def _should_accept(
         self,
-        attempts: list[SynthesisAttempt],
-        anchor_attempt_number: int | None,
-        current_attempt: SynthesisAttempt,
-        current_strategy_code: str,
-        current_eval_result: EvaluationResult,
-    ) -> tuple[str, float, float]:
-        """Resolve the best-so-far (strategy_code, accuracy, syntax_rate).
+        cand_shortfall: float,
+        cand_acc: float,
+        cand_syn: float,
+        inc_shortfall: float,
+        inc_acc: float,
+        inc_syn: float,
+    ) -> bool:
+        """Greedy hill-climb acceptance rule (plan §3).
 
-        Falls back to the current attempt's values when no prior Pareto-best
-        exists yet (e.g. first failed evaluation).
+        Accept iff shortfall strictly decreases, or shortfall is equal and
+        (accuracy, syntax_rate) is lexicographically higher. Everything else,
+        including an exact tie, rejects.
         """
-        if anchor_attempt_number is not None:
-            best = next(
-                (a for a in attempts if a.attempt_number == anchor_attempt_number),
-                None,
+        if cand_shortfall < inc_shortfall:
+            return True
+        if cand_shortfall > inc_shortfall:
+            return False
+        return (cand_acc, cand_syn) > (inc_acc, inc_syn)
+
+    def _pooled_metrics(
+        self, a: EvaluationResult, b: EvaluationResult
+    ) -> tuple[float, float]:
+        """Example-count-weighted average of (accuracy, syntax_rate) over two
+        eval results (plan §2 stage 2). Used only for the internal accept
+        decision -- pooled numbers never reach the author (plan §6)."""
+        a_n = a.num_examples or 0
+        b_n = b.num_examples or 0
+        total_n = a_n + b_n
+        if total_n == 0:
+            return 0.0, 0.0
+        pooled_acc = ((a.accuracy or 0.0) * a_n + (b.accuracy or 0.0) * b_n) / total_n
+        pooled_syn = ((a.syntax_rate or 0.0) * a_n + (b.syntax_rate or 0.0) * b_n) / total_n
+        return pooled_acc, pooled_syn
+
+    def _meets_threshold(self, result: EvaluationResult) -> bool:
+        return result.meets_threshold(
+            min_accuracy=self.min_accuracy,
+            min_syntax_rate=self.min_syntax_rate,
+            require_delimiters=self.require_delimiters,
+            max_seconds_per_example=self.eval_max_seconds_per_example,
+        )
+
+    def _render_flip_diff(
+        self, incumbent_result: EvaluationResult, candidate_result: EvaluationResult
+    ) -> str:
+        """Per-example pass/fail diff between two slice-A evals of the same
+        examples, paired by list position (early-stopped evals can be
+        shorter, so only pair up to the shorter length).
+
+        "pass->fail" = incumbent's sample was correct, candidate's wasn't --
+        rendered in full (actual answer + helper trace) for up to 3 examples,
+        with a count note for the rest. "fail->pass" is a count only. Returns
+        "" when nothing flipped either way.
+        """
+        inc_samples = incumbent_result.sample_outputs or []
+        cand_samples = candidate_result.sample_outputs or []
+        n = min(len(inc_samples), len(cand_samples))
+
+        regressions: list[tuple[int, dict, dict]] = []
+        improvements = 0
+        for i in range(n):
+            inc_s = inc_samples[i] or {}
+            cand_s = cand_samples[i] or {}
+            inc_correct = bool(inc_s.get("is_correct", False))
+            cand_correct = bool(cand_s.get("is_correct", False))
+            if inc_correct and not cand_correct:
+                regressions.append((i, inc_s, cand_s))
+            elif not inc_correct and cand_correct:
+                improvements += 1
+
+        if not regressions and not improvements:
+            return ""
+
+        cap = 3
+        lines = []
+        if regressions:
+            lines.append(
+                "pass->fail (incumbent got these right, candidate got them wrong):"
             )
-            if (
-                best is not None
-                and best.eval_result is not None
-                and (best.eval_result.num_examples or 0) > 0
-            ):
-                return (
-                    best.strategy_code or current_strategy_code,
-                    best.eval_result.accuracy or 0.0,
-                    best.eval_result.syntax_rate or 0.0,
+            for i, inc_s, cand_s in regressions[:cap]:
+                inc_trace = [e.get("helper", "?") for e in inc_s.get("helper_trace", []) or []]
+                cand_trace = [e.get("helper", "?") for e in cand_s.get("helper_trace", []) or []]
+                lines.append(f"  example {i}:")
+                lines.append(
+                    f"    incumbent actual: {inc_s.get('actual', '?')}  "
+                    f"(helpers: {' -> '.join(inc_trace) or 'none'})"
                 )
+                lines.append(
+                    f"    candidate actual: {cand_s.get('actual', '?')}  "
+                    f"(helpers: {' -> '.join(cand_trace) or 'none'})"
+                )
+            if len(regressions) > cap:
+                lines.append(f"  ... {len(regressions) - cap} more")
+        if improvements:
+            lines.append(
+                f"fail->pass: {improvements} example(s) the candidate fixed "
+                "relative to the incumbent"
+            )
+        return "\n".join(lines)
+
+    def _render_rejected_candidate_block(
+        self,
+        candidate_code: str,
+        candidate_a_result: EvaluationResult,
+        candidate_diagnostics: str,
+        incumbent: "_Incumbent",
+    ) -> str:
+        """Author-facing feedback block for a REJECTED candidate.
+
+        Quotes only slice-A numbers -- the candidate's and the incumbent's --
+        never slice-B or pooled numbers (plan §6), so the confirmation slice
+        can't be indirectly optimized against over a long run. The flip diff
+        (also slice-A vs slice-A) is built the same way, and only appears
+        when at least one example actually flipped -- e.g. an eval-error
+        candidate with no sample_outputs yields no flips and no section.
+        """
+        cand_acc = candidate_a_result.accuracy or 0.0
+        cand_syn = candidate_a_result.syntax_rate or 0.0
+        cand_shortfall = self._shortfall(cand_acc, cand_syn)
+        inc_acc = incumbent.a_result.accuracy or 0.0
+        inc_syn = incumbent.a_result.syntax_rate or 0.0
+        inc_shortfall = self._shortfall(inc_acc, inc_syn)
+        delta = cand_shortfall - inc_shortfall
+        flip_diff = self._render_flip_diff(incumbent.a_result, candidate_a_result)
+        parts = [
+            "The following candidate strategy was just tried and REJECTED --",
+            "keep refining the incumbent strategy above, not this one.",
+            "",
+            "Rejected candidate code:",
+            candidate_code,
+            "",
+            f"Rejected candidate accuracy: {cand_acc:.1%}, syntax: {cand_syn:.1%}",
+            "",
+            candidate_diagnostics,
+        ]
+        if flip_diff:
+            parts += ["", flip_diff]
+        parts += [
+            "",
+            f"REJECTED: candidate shortfall {cand_shortfall:.3f} vs incumbent "
+            f"shortfall {inc_shortfall:.3f} (delta {delta:+.3f})",
+        ]
+        return "\n".join(parts)
+
+    def _eval_error_candidate_feedback(self, eval_result: EvaluationResult) -> str:
+        """Diagnostic text for a candidate whose evaluation raised an error
+        (not a clean threshold miss)."""
+        return eval_result.get_feedback_summary(self.require_delimiters) + _final_span_failure_hint(
+            self.require_delimiters, eval_result.sample_outputs
+        )
+
+    def _threshold_miss_candidate_feedback(self, eval_result: EvaluationResult) -> str:
+        """Diagnostic text for a candidate that ran cleanly but missed a bar."""
         return (
-            current_strategy_code,
-            current_eval_result.accuracy or 0.0,
-            current_eval_result.syntax_rate or 0.0,
+            "Required thresholds:\n"
+            f"  Accuracy: {self.min_accuracy:.1%}\n"
+            f"  Syntax Rate: {self.min_syntax_rate:.1%}\n\n"
+            + ("  Contains << >>: required\n" if self.require_delimiters else "")
+            + (
+                f"  Max Runtime / Example: {self.eval_max_seconds_per_example:.2f}s\n"
+                if self.eval_max_seconds_per_example is not None
+                else ""
+            )
+            + _delimiter_miss_hint(
+                self.require_delimiters, eval_result.contains_delimiters, eval_result.sample_outputs
+            )
+            + _span_not_closed_hint(self.require_delimiters, eval_result.sample_outputs)
+            + _constraint_bypassed_hint(
+                self.require_delimiters, eval_result.contains_delimiters, eval_result.sample_outputs
+            )
+            + _final_span_failure_hint(self.require_delimiters, eval_result.sample_outputs)
+            + (
+                _token_cap_exhaustion_hint(eval_result.sample_outputs, self.evaluator.max_steps)
+                if self.token_cap_feedback
+                else ""
+            )
+            + "\n"
+            + eval_result.get_feedback_summary(self.require_delimiters)
         )
 
     def _compute_allowed_helpers(self, attempts: list[SynthesisAttempt]) -> tuple[list[str] | None, str]:
@@ -2130,58 +2201,22 @@ class SynthesisPipeline:
 
                 self._unload_evaluator_runtime_before_refinement()
                 print("  Refining based on evaluation error...")
-                evaluation_feedback = (
-                    eval_result.get_feedback_summary(self.require_delimiters)
-                    + _final_span_failure_hint(
-                        self.require_delimiters, eval_result.sample_outputs
-                    )
-                )
+                candidate_feedback = self._eval_error_candidate_feedback(eval_result)
                 mode_examples = eval_result._render_mode_examples()
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
                 if next_helper_status:
                     print(f"  Helper policy: {next_helper_status}")
-                anchor_n, anchor_acc, anchor_syn = self._compute_pareto_best(attempts)
-                self._update_anchor_state(anchor_n)
-                use_restart = self._should_restart(attempts)
-                if use_restart:
-                    print(
-                        f"  [synthesis] RESTART mode active for next refinement "
-                        f"({self._iters_since_anchor_changed} iters since anchor moved)"
-                    )
-                elif anchor_n is not None:
-                    print(
-                        f"  [synthesis] anchor for next refinement: attempt {anchor_n} "
-                        f"(acc={anchor_acc:.1%}, syn={anchor_syn:.1%})"
-                    )
-                best_strategy_code, best_acc_val, best_syn_val = (
-                    self._lookup_best_so_far(attempts, anchor_n, attempt, strategy_code, eval_result)
-                )
-                attempt_outcome_ledger = self._build_attempt_outcome_ledger(attempts, anchor_n)
-                prev_acc = eval_result.accuracy or 0.0
-                prev_syn = eval_result.syntax_rate or 0.0
-                prev_n = eval_result.num_examples or 0
-                if use_restart:
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_error_restart",
-                        previous_strategy=strategy_code,
-                        allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.generate_initial(
-                            task_description,
-                            allowed_helpers=next_allowed_helpers,
-                            start_inside_constrained=self._start_inside_constrained(),
-                        ),
-                    )
-                    self._apply_restart_cooldown()
-                else:
-                    refine_best_strategy = (
-                        best_strategy_code if best_strategy_code != strategy_code else None
-                    )
-                    refine_best_acc = (
-                        best_acc_val if refine_best_strategy is not None else None
-                    )
-                    refine_best_syn = (
-                        best_syn_val if refine_best_strategy is not None else None
-                    )
+                incumbent_attempt_number = self._incumbent.attempt_number if self._incumbent else None
+                attempt_outcome_ledger = self._build_attempt_outcome_ledger(attempts, incumbent_attempt_number)
+
+                if self._incumbent is None:
+                    # Nothing to reject back to yet (the very first candidate
+                    # errored before ever seeding an incumbent) -- fall back
+                    # to refining the errored candidate itself.
+                    print("  [greedy] no incumbent yet; refining the errored candidate directly")
+                    prev_acc = eval_result.accuracy or 0.0
+                    prev_syn = eval_result.syntax_rate or 0.0
+                    prev_n = eval_result.num_examples or 0
                     strategy_code = self._refine_with_beam(
                         stage_label="evaluation_error",
                         previous_strategy=strategy_code,
@@ -2193,10 +2228,46 @@ class SynthesisPipeline:
                             num_examples=prev_n,
                             goal_accuracy=self.min_accuracy,
                             goal_syntax_rate=self.min_syntax_rate,
-                            evaluation_feedback=evaluation_feedback,
-                            best_strategy=refine_best_strategy,
-                            best_accuracy=refine_best_acc,
-                            best_syntax_rate=refine_best_syn,
+                            evaluation_feedback=candidate_feedback,
+                            best_strategy=None,
+                            best_accuracy=None,
+                            best_syntax_rate=None,
+                            allowed_helpers=next_allowed_helpers,
+                            eval_max_seconds_per_example=self.eval_max_seconds_per_example,
+                            mode_examples=mode_examples,
+                            attempt_outcome_ledger=attempt_outcome_ledger,
+                        ),
+                    )
+                else:
+                    # REJECT: an errored candidate can never become incumbent.
+                    # Rebase onto the incumbent's own code/scores before
+                    # refining -- the author must never be handed a broken
+                    # candidate to build on top of.
+                    inc = self._incumbent
+                    print(
+                        f"  [greedy] REJECT (evaluation error): rebasing on incumbent "
+                        f"attempt {inc.attempt_number} (acc={inc.a_result.accuracy:.1%}, "
+                        f"syn={inc.a_result.syntax_rate:.1%})"
+                    )
+                    rejected_feedback = self._render_rejected_candidate_block(
+                        strategy_code, eval_result, candidate_feedback, inc
+                    )
+                    strategy_code = inc.strategy_code
+                    strategy_code = self._refine_with_beam(
+                        stage_label="evaluation_error",
+                        previous_strategy=strategy_code,
+                        allowed_helpers=next_allowed_helpers,
+                        refine_once=lambda: self.generator.refine_after_evaluation_failure(
+                            previous_strategy=strategy_code,
+                            previous_accuracy=inc.a_result.accuracy or 0.0,
+                            previous_syntax_rate=inc.a_result.syntax_rate or 0.0,
+                            num_examples=inc.a_result.num_examples or 0,
+                            goal_accuracy=self.min_accuracy,
+                            goal_syntax_rate=self.min_syntax_rate,
+                            evaluation_feedback=rejected_feedback,
+                            best_strategy=None,
+                            best_accuracy=None,
+                            best_syntax_rate=None,
                             allowed_helpers=next_allowed_helpers,
                             eval_max_seconds_per_example=self.eval_max_seconds_per_example,
                             mode_examples=mode_examples,
@@ -2205,199 +2276,359 @@ class SynthesisPipeline:
                     )
                 continue
 
-            # Check if evaluation meets thresholds
-            if not eval_result.meets_threshold(
-                min_accuracy=self.min_accuracy,
-                min_syntax_rate=self.min_syntax_rate,
-                require_delimiters=self.require_delimiters,
-                max_seconds_per_example=self.eval_max_seconds_per_example,
-            ):
-                print(f"  ✗ Evaluation below threshold:")
-                print(f"    Accuracy: {eval_result.accuracy:.1%} (min: {self.min_accuracy:.1%})")
-                if self.require_delimiters:
-                    print(
-                        "    Contains << >>: "
-                        f"{'yes' if eval_result.contains_delimiters else 'no'} "
-                        f"(required: {'yes' if self.require_delimiters else 'no'})"
-                    )
-                _delim_hint = _delimiter_miss_hint(
-                    self.require_delimiters, eval_result.contains_delimiters,
-                    eval_result.sample_outputs
+            # Evaluation ran cleanly on slice A. Greedy hill-climb accept/
+            # reject + slice-B confirmation (planning/monotonic-search-plan.md).
+            eval_kwargs = dict(
+                early_stop_min_accuracy=self.min_accuracy
+                if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
+                else None,
+                early_stop_min_syntax_rate=self.min_syntax_rate
+                if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
+                else None,
+                early_stop_runtime_failures=(
+                    int(os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP_RUNTIME_FAILURES", "3"))
+                    if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
+                    else None
+                ),
+                min_examples_before_threshold_stop=self.min_examples_before_threshold_stop,
+                deadline=attempt_deadline,
+            )
+
+            class _ConfirmationDeadlineHit(Exception):
+                """Internal signal: the slice-B eval crossed the attempt's
+                wall-clock cap. Raised before any incumbent state is mutated
+                so a timed-out confirmation can never corrupt the incumbent."""
+
+                def __init__(self, elapsed: float):
+                    self.elapsed = elapsed
+
+            def _run_confirmation_eval() -> EvaluationResult:
+                """Slice B: the NEXT eval_sample_size train examples, used
+                only to confirm a would-be accept (plan §1). Same sample_size
+                and early-stop/deadline args as slice A."""
+                print(f"  [greedy] confirming on slice B ({self.eval_sample_size} examples)...")
+                b_result = self.evaluator.evaluate_sample(
+                    compiled_module_path=compilation_result.main_module_path,
+                    sample_size=self.eval_sample_size,
+                    sample_offset=self.eval_sample_size,
+                    **eval_kwargs,
                 )
-                if _delim_hint:
-                    print(_delim_hint.rstrip("\n"))
-                _close_hint = _span_not_closed_hint(
-                    self.require_delimiters, eval_result.sample_outputs
-                )
-                if _close_hint:
-                    print(_close_hint.rstrip("\n"))
-                _bypass_hint = _constraint_bypassed_hint(
-                    self.require_delimiters, eval_result.contains_delimiters,
-                    eval_result.sample_outputs
-                )
-                if _bypass_hint:
-                    print(_bypass_hint.rstrip("\n"))
-                if self.token_cap_feedback:
-                    _cap_hint = _token_cap_exhaustion_hint(
-                        eval_result.sample_outputs, self.evaluator.max_steps
+                b_elapsed = time.time() - attempt_start_time
+                b_hit_deadline = bool(
+                    b_result.early_stop_reason
+                    and b_result.early_stop_reason.startswith(ATTEMPT_DEADLINE_EARLY_STOP_REASON)
+                ) or (self.max_attempt_seconds is not None and b_elapsed > self.max_attempt_seconds)
+                if b_hit_deadline:
+                    raise _ConfirmationDeadlineHit(b_elapsed)
+                return b_result
+
+            cand_acc_a = eval_result.accuracy or 0.0
+            cand_syn_a = eval_result.syntax_rate or 0.0
+            cand_shortfall_a = self._shortfall(cand_acc_a, cand_syn_a)
+            candidate_b_result: EvaluationResult | None = None
+
+            # --- TEMPORARY A-ONLY (2026-08-10) ---------------------------------
+            # GSM/Spider train splits have an empty slice B (sample_offset past
+            # the end of train_indices), so dual-slice confirmation cannot win.
+            # Active path: hill-climb and SUCCESS on slice A only.
+            # Dual-slice body preserved under `if False:` immediately below —
+            # flip to `if True:` (and remove the else) to restore B confirmation.
+            # -----------------------------------------------------------------
+            if False:  # dual-slice B confirmation (DISABLED — restore later)
+                candidate_b_result: EvaluationResult | None = None
+
+                try:
+                    if self._incumbent is None:
+                        print(
+                            f"  [greedy] seeding incumbent from attempt {attempt_num} "
+                            f"(A: acc={cand_acc_a:.1%}, syn={cand_syn_a:.1%})"
+                        )
+                        candidate_b_result = _run_confirmation_eval()
+                        self._incumbent = _Incumbent(
+                            strategy_code=strategy_code,
+                            attempt_number=attempt_num,
+                            a_result=eval_result,
+                            b_result=candidate_b_result,
+                        )
+                        became_incumbent = True
+                    else:
+                        inc = self._incumbent
+                        inc_acc_a = inc.a_result.accuracy or 0.0
+                        inc_syn_a = inc.a_result.syntax_rate or 0.0
+                        inc_shortfall_a = self._shortfall(inc_acc_a, inc_syn_a)
+
+                        stage1_pass = self._should_accept(
+                            cand_shortfall_a, cand_acc_a, cand_syn_a,
+                            inc_shortfall_a, inc_acc_a, inc_syn_a,
+                        )
+                        if not stage1_pass:
+                            print(
+                                f"  [greedy] REJECT (stage 1, slice A): attempt {attempt_num} "
+                                f"shortfall {cand_shortfall_a:.3f} vs incumbent attempt "
+                                f"{inc.attempt_number} shortfall {inc_shortfall_a:.3f}"
+                            )
+                            became_incumbent = False
+                        else:
+                            candidate_b_result = _run_confirmation_eval()
+                            cand_pooled_acc, cand_pooled_syn = self._pooled_metrics(eval_result, candidate_b_result)
+                            inc_pooled_acc, inc_pooled_syn = self._pooled_metrics(inc.a_result, inc.b_result)
+                            cand_pooled_shortfall = self._shortfall(cand_pooled_acc, cand_pooled_syn)
+                            inc_pooled_shortfall = self._shortfall(inc_pooled_acc, inc_pooled_syn)
+                            stage2_pass = self._should_accept(
+                                cand_pooled_shortfall, cand_pooled_acc, cand_pooled_syn,
+                                inc_pooled_shortfall, inc_pooled_acc, inc_pooled_syn,
+                            )
+                            if stage2_pass:
+                                print(
+                                    f"  [greedy] ACCEPT (stage 2, pooled A+B): attempt {attempt_num} "
+                                    f"pooled shortfall {cand_pooled_shortfall:.3f} vs incumbent "
+                                    f"pooled shortfall {inc_pooled_shortfall:.3f} -- new incumbent"
+                                )
+                                self._incumbent = _Incumbent(
+                                    strategy_code=strategy_code,
+                                    attempt_number=attempt_num,
+                                    a_result=eval_result,
+                                    b_result=candidate_b_result,
+                                )
+                                became_incumbent = True
+                            else:
+                                print(
+                                    f"  [greedy] REJECT (stage 2, pooled A+B): attempt {attempt_num} "
+                                    f"pooled shortfall {cand_pooled_shortfall:.3f} vs incumbent "
+                                    f"pooled shortfall {inc_pooled_shortfall:.3f}"
+                                )
+                                became_incumbent = False
+                except _ConfirmationDeadlineHit as deadline_hit:
+                    strategy_code = self._handle_attempt_timeout(
+                        attempt, attempts, deadline_hit.elapsed, task_description, output_name, run_results_dir,
                     )
-                    if _cap_hint:
-                        print(_cap_hint.rstrip("\n"))
-                print(f"    Syntax: {eval_result.syntax_rate:.1%} (min: {self.min_syntax_rate:.1%})")
-                if self.eval_max_seconds_per_example is not None:
-                    print(
-                        f"    Slowest Example Time: {eval_result.max_sample_time_seconds:.2f}s "
-                        f"(max: {self.eval_max_seconds_per_example:.2f}s)"
+                    continue
+
+                success = (
+                    became_incumbent
+                    and self._meets_threshold(eval_result)
+                    and self._meets_threshold(candidate_b_result)
+                )
+            else:
+                # A-only hill-climb / win (slice B not evaluated).
+                try:
+                    if self._incumbent is None:
+                        print(
+                            f"  [greedy] seeding incumbent from attempt {attempt_num} "
+                            f"(A-only: acc={cand_acc_a:.1%}, syn={cand_syn_a:.1%})"
+                        )
+                        self._incumbent = _Incumbent(
+                            strategy_code=strategy_code,
+                            attempt_number=attempt_num,
+                            a_result=eval_result,
+                            b_result=eval_result,
+                        )
+                        became_incumbent = True
+                    else:
+                        inc = self._incumbent
+                        inc_acc_a = inc.a_result.accuracy or 0.0
+                        inc_syn_a = inc.a_result.syntax_rate or 0.0
+                        inc_shortfall_a = self._shortfall(inc_acc_a, inc_syn_a)
+                        stage1_pass = self._should_accept(
+                            cand_shortfall_a, cand_acc_a, cand_syn_a,
+                            inc_shortfall_a, inc_acc_a, inc_syn_a,
+                        )
+                        if not stage1_pass:
+                            print(
+                                f"  [greedy] REJECT (stage 1, slice A): attempt {attempt_num} "
+                                f"shortfall {cand_shortfall_a:.3f} vs incumbent attempt "
+                                f"{inc.attempt_number} shortfall {inc_shortfall_a:.3f}"
+                            )
+                            became_incumbent = False
+                        else:
+                            print(
+                                f"  [greedy] ACCEPT (A-only): attempt {attempt_num} "
+                                f"shortfall {cand_shortfall_a:.3f} vs incumbent "
+                                f"shortfall {inc_shortfall_a:.3f} -- new incumbent"
+                            )
+                            self._incumbent = _Incumbent(
+                                strategy_code=strategy_code,
+                                attempt_number=attempt_num,
+                                a_result=eval_result,
+                                b_result=eval_result,
+                            )
+                            became_incumbent = True
+                except _ConfirmationDeadlineHit as deadline_hit:
+                    strategy_code = self._handle_attempt_timeout(
+                        attempt, attempts, deadline_hit.elapsed, task_description, output_name, run_results_dir,
                     )
-                attempt.failed_at = FailureStage.EVALUATION
-                attempt.error_summary = eval_result.get_feedback_summary(self.require_delimiters)
+                    continue
+
+                success = (
+                    became_incumbent
+                    and self._meets_threshold(eval_result)
+                )
+
+
+            if success:
+                print(f"  ✓ Evaluation passed (A-only; slice B confirmation disabled):")
+                print(f"    Accuracy: {cand_acc_a:.1%}")
+                print(f"    Contains << >>: {'yes' if eval_result.contains_delimiters else 'no'}")
+                print(f"    Syntax: {cand_syn_a:.1%}")
+
+                # Success!
                 attempts.append(attempt)
                 self._save_progress_report(attempts, task_description, output_name, run_results_dir)
+                total_time = (time.time() - start_time) * 1000
 
-                self._unload_evaluator_runtime_before_refinement()
-                print("  Refining based on evaluation results...")
-                threshold_feedback = (
-                    "Required thresholds:\n"
-                    f"  Accuracy: {self.min_accuracy:.1%}\n"
-                    f"  Syntax Rate: {self.min_syntax_rate:.1%}\n\n"
-                    + ("  Contains << >>: required\n" if self.require_delimiters else "")
-                    + (
-                        f"  Max Runtime / Example: {self.eval_max_seconds_per_example:.2f}s\n"
-                        if self.eval_max_seconds_per_example is not None
-                        else ""
-                    )
-                    + _delimiter_miss_hint(
-                        self.require_delimiters, eval_result.contains_delimiters,
-                        eval_result.sample_outputs
-                    )
-                    + _span_not_closed_hint(
-                        self.require_delimiters, eval_result.sample_outputs
-                    )
-                    + _constraint_bypassed_hint(
-                        self.require_delimiters, eval_result.contains_delimiters,
-                        eval_result.sample_outputs
-                    )
-                    + _final_span_failure_hint(
-                        self.require_delimiters, eval_result.sample_outputs
-                    )
-                    + (
-                        _token_cap_exhaustion_hint(
-                            eval_result.sample_outputs, self.evaluator.max_steps
-                        )
-                        if self.token_cap_feedback
-                        else ""
-                    )
-                    + "\n"
-                    + eval_result.get_feedback_summary(self.require_delimiters)
+                print(f"\n{'='*60}")
+                print(f"SUCCESS after {attempt_num} attempt(s)")
+                print(f"Total time: {total_time:.1f}ms")
+                print(f"{'='*60}")
+
+                # Save successful strategy
+                self._save_success_report(
+                    strategy_code,
+                    full_code,
+                    compilation_result,
+                    attempts,
+                    task_description,
+                    output_name,
+                    run_dir,
+                    run_dafny_dir,
+                    run_results_dir,
+                    eval_result,
                 )
-                threshold_mode_examples = eval_result._render_mode_examples()
-                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
-                if next_helper_status:
-                    print(f"  Helper policy: {next_helper_status}")
-                anchor_n, anchor_acc, anchor_syn = self._compute_pareto_best(attempts)
-                self._update_anchor_state(anchor_n)
-                use_restart = self._should_restart(attempts)
-                if use_restart:
-                    print(
-                        f"  [synthesis] RESTART mode active for next refinement "
-                        f"({self._iters_since_anchor_changed} iters since anchor moved)"
-                    )
-                elif anchor_n is not None:
-                    print(
-                        f"  [synthesis] anchor for next refinement: attempt {anchor_n} "
-                        f"(acc={anchor_acc:.1%}, syn={anchor_syn:.1%})"
-                    )
-                best_strategy_code, best_acc_val, best_syn_val = (
-                    self._lookup_best_so_far(attempts, anchor_n, attempt, strategy_code, eval_result)
+
+                return SynthesisResult(
+                    success=True,
+                    strategy_code=strategy_code,
+                    full_dafny_code=full_code,
+                    compiled_module_path=compilation_result.main_module_path,
+                    output_dir=compilation_result.output_dir,
+                    run_dir=run_dir,
+                    attempts=attempts,
+                    total_time_ms=total_time,
                 )
-                attempt_outcome_ledger = self._build_attempt_outcome_ledger(attempts, anchor_n)
-                prev_acc = eval_result.accuracy or 0.0
-                prev_syn = eval_result.syntax_rate or 0.0
-                prev_n = eval_result.num_examples or 0
-                if use_restart:
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_threshold_restart",
-                        previous_strategy=strategy_code,
-                        allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.generate_initial(
-                            task_description,
-                            allowed_helpers=next_allowed_helpers,
-                            start_inside_constrained=self._start_inside_constrained(),
-                        ),
-                    )
-                    self._apply_restart_cooldown()
-                else:
-                    refine_best_strategy = (
-                        best_strategy_code if best_strategy_code != strategy_code else None
-                    )
-                    refine_best_acc = (
-                        best_acc_val if refine_best_strategy is not None else None
-                    )
-                    refine_best_syn = (
-                        best_syn_val if refine_best_strategy is not None else None
-                    )
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_threshold",
-                        previous_strategy=strategy_code,
-                        allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.refine_after_evaluation_failure(
-                            previous_strategy=strategy_code,
-                            previous_accuracy=prev_acc,
-                            previous_syntax_rate=prev_syn,
-                            num_examples=prev_n,
-                            goal_accuracy=self.min_accuracy,
-                            goal_syntax_rate=self.min_syntax_rate,
-                            evaluation_feedback=threshold_feedback,
-                            best_strategy=refine_best_strategy,
-                            best_accuracy=refine_best_acc,
-                            best_syntax_rate=refine_best_syn,
-                            allowed_helpers=next_allowed_helpers,
-                            eval_max_seconds_per_example=self.eval_max_seconds_per_example,
-                            mode_examples=threshold_mode_examples,
-                            attempt_outcome_ledger=attempt_outcome_ledger,
-                        ),
-                    )
-                continue
 
-            print(f"  ✓ Evaluation passed:")
-            print(f"    Accuracy: {eval_result.accuracy:.1%}")
-            print(f"    Contains << >>: {'yes' if eval_result.contains_delimiters else 'no'}")
-            print(f"    Syntax: {eval_result.syntax_rate:.1%}")
+            # Not success: either rejected outright, or accepted as the new
+            # incumbent but still short of the bars on slice A and/or slice B
+            # (a single-slice bar crossing never ends the run -- plan §4).
+            print(f"  ✗ Evaluation below threshold (slice A):")
+            print(f"    Accuracy: {cand_acc_a:.1%} (min: {self.min_accuracy:.1%})")
+            if self.require_delimiters:
+                print(
+                    "    Contains << >>: "
+                    f"{'yes' if eval_result.contains_delimiters else 'no'} "
+                    f"(required: {'yes' if self.require_delimiters else 'no'})"
+                )
+            _delim_hint = _delimiter_miss_hint(
+                self.require_delimiters, eval_result.contains_delimiters, eval_result.sample_outputs
+            )
+            if _delim_hint:
+                print(_delim_hint.rstrip("\n"))
+            _close_hint = _span_not_closed_hint(self.require_delimiters, eval_result.sample_outputs)
+            if _close_hint:
+                print(_close_hint.rstrip("\n"))
+            _bypass_hint = _constraint_bypassed_hint(
+                self.require_delimiters, eval_result.contains_delimiters, eval_result.sample_outputs
+            )
+            if _bypass_hint:
+                print(_bypass_hint.rstrip("\n"))
+            if self.token_cap_feedback:
+                _cap_hint = _token_cap_exhaustion_hint(eval_result.sample_outputs, self.evaluator.max_steps)
+                if _cap_hint:
+                    print(_cap_hint.rstrip("\n"))
+            print(f"    Syntax: {cand_syn_a:.1%} (min: {self.min_syntax_rate:.1%})")
+            if self.eval_max_seconds_per_example is not None:
+                print(
+                    f"    Slowest Example Time: {eval_result.max_sample_time_seconds:.2f}s "
+                    f"(max: {self.eval_max_seconds_per_example:.2f}s)"
+                )
+            # TEMPORARY A-ONLY: confirmation-miss path disabled (B not evaluated).
+            # Original:
+            # confirmation_missed = (
+            #     became_incumbent
+            #     and candidate_b_result is not None
+            #     and self._meets_threshold(eval_result)
+            #     and not self._meets_threshold(candidate_b_result)
+            # )
+            # if confirmation_missed:
+            #     print("  [greedy] confirmation miss: slice A met the bars but slice B did not -- not a SUCCESS")
+            confirmation_missed = False
 
-            # Success!
+            attempt.failed_at = FailureStage.EVALUATION
+            attempt.error_summary = eval_result.get_feedback_summary(self.require_delimiters) + (
+                " (confirmation miss: slice A met the bars, slice B did not)" if confirmation_missed else ""
+            )
             attempts.append(attempt)
             self._save_progress_report(attempts, task_description, output_name, run_results_dir)
-            total_time = (time.time() - start_time) * 1000
 
-            print(f"\n{'='*60}")
-            print(f"SUCCESS after {attempt_num} attempt(s)")
-            print(f"Total time: {total_time:.1f}ms")
-            print(f"{'='*60}")
+            self._unload_evaluator_runtime_before_refinement()
+            candidate_feedback = self._threshold_miss_candidate_feedback(eval_result)
+            threshold_mode_examples = eval_result._render_mode_examples()
+            next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
+            if next_helper_status:
+                print(f"  Helper policy: {next_helper_status}")
+            incumbent_attempt_number = self._incumbent.attempt_number if self._incumbent else None
+            attempt_outcome_ledger = self._build_attempt_outcome_ledger(attempts, incumbent_attempt_number)
+            inc = self._incumbent  # always set by this point (seeded at worst by this attempt)
 
-            # Save successful strategy
-            self._save_success_report(
-                strategy_code,
-                full_code,
-                compilation_result,
-                attempts,
-                task_description,
-                output_name,
-                run_dir,
-                run_dafny_dir,
-                run_results_dir,
-                eval_result,
-            )
-
-            return SynthesisResult(
-                success=True,
-                strategy_code=strategy_code,
-                full_dafny_code=full_code,
-                compiled_module_path=compilation_result.main_module_path,
-                output_dir=compilation_result.output_dir,
-                run_dir=run_dir,
-                attempts=attempts,
-                total_time_ms=total_time,
-            )
+            if became_incumbent:
+                # This candidate IS the incumbent (seeded, or accepted but
+                # still short of a full win) -- refine from its own slice-A
+                # scores, no REJECTED framing since nothing was rejected.
+                print("  Refining based on evaluation results...")
+                strategy_code = self._refine_with_beam(
+                    stage_label="evaluation_threshold",
+                    previous_strategy=strategy_code,
+                    allowed_helpers=next_allowed_helpers,
+                    refine_once=lambda: self.generator.refine_after_evaluation_failure(
+                        previous_strategy=inc.strategy_code,
+                        previous_accuracy=inc.a_result.accuracy or 0.0,
+                        previous_syntax_rate=inc.a_result.syntax_rate or 0.0,
+                        num_examples=inc.a_result.num_examples or 0,
+                        goal_accuracy=self.min_accuracy,
+                        goal_syntax_rate=self.min_syntax_rate,
+                        evaluation_feedback=candidate_feedback,
+                        best_strategy=None,
+                        best_accuracy=None,
+                        best_syntax_rate=None,
+                        allowed_helpers=next_allowed_helpers,
+                        eval_max_seconds_per_example=self.eval_max_seconds_per_example,
+                        mode_examples=threshold_mode_examples,
+                        attempt_outcome_ledger=attempt_outcome_ledger,
+                    ),
+                )
+            else:
+                # REJECT: rebase onto the incumbent's own code/scores before
+                # refining, and tell the author this candidate was rejected.
+                print(
+                    f"  [greedy] rebasing refinement on incumbent attempt "
+                    f"{inc.attempt_number} (acc={inc.a_result.accuracy:.1%}, "
+                    f"syn={inc.a_result.syntax_rate:.1%})"
+                )
+                rejected_feedback = self._render_rejected_candidate_block(
+                    strategy_code, eval_result, candidate_feedback, inc
+                )
+                strategy_code = inc.strategy_code
+                strategy_code = self._refine_with_beam(
+                    stage_label="evaluation_threshold",
+                    previous_strategy=strategy_code,
+                    allowed_helpers=next_allowed_helpers,
+                    refine_once=lambda: self.generator.refine_after_evaluation_failure(
+                        previous_strategy=strategy_code,
+                        previous_accuracy=inc.a_result.accuracy or 0.0,
+                        previous_syntax_rate=inc.a_result.syntax_rate or 0.0,
+                        num_examples=inc.a_result.num_examples or 0,
+                        goal_accuracy=self.min_accuracy,
+                        goal_syntax_rate=self.min_syntax_rate,
+                        evaluation_feedback=rejected_feedback,
+                        best_strategy=None,
+                        best_accuracy=None,
+                        best_syntax_rate=None,
+                        allowed_helpers=next_allowed_helpers,
+                        eval_max_seconds_per_example=self.eval_max_seconds_per_example,
+                        mode_examples=threshold_mode_examples,
+                        attempt_outcome_ledger=attempt_outcome_ledger,
+                    ),
+                )
+            continue
 
         # All attempts exhausted
         total_time = (time.time() - start_time) * 1000

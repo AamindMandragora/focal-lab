@@ -1,0 +1,1424 @@
+{
+  "campaign": "full-baseline-20260803",
+  "git_commit": "3a210a506df3e8007a82f7a889d4c1a6de0a4540",
+  "baseline_strategies": [
+    "unconstrained",
+    "gcd",
+    "crane",
+    "itergen",
+    "cars"
+  ],
+  "cells": {
+    "gsm-qwen25-1p5b": {
+      "dataset": "gsm_symbolic",
+      "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "split_name": "train",
+      "smiles_class": null,
+      "num_examples": 49,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 6,
+          "syntax_count": 42,
+          "num_examples": 49,
+          "accuracy": 0.12244897959183673,
+          "syntax_rate": 0.8571428571428571,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen25-1p5b/unconstrained.json",
+          "source_sha256": "6960e2823cd0e9c6aab182ef56b3434c694ee94a3b2ed151b717b8babd497d00"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 7,
+          "syntax_count": 49,
+          "num_examples": 49,
+          "accuracy": 0.14285714285714285,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen25-1p5b/gcd.json",
+          "source_sha256": "bb80febd4e87f222ff56d7c29e8825156bfcae19caa411668a39852ef6200fc3"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 8,
+          "syntax_count": 45,
+          "num_examples": 49,
+          "accuracy": 0.16326530612244897,
+          "syntax_rate": 0.9183673469387755,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen25-1p5b/crane.json",
+          "source_sha256": "c49dfb95506ae0d2a69a15aa0a59dce5c7f5846c5b1ddcb9fbc7e437bfbe16ec"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 7,
+          "syntax_count": 36,
+          "num_examples": 49,
+          "accuracy": 0.14285714285714285,
+          "syntax_rate": 0.7346938775510204,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen25-1p5b/itergen.json",
+          "source_sha256": "4ec21b8302294bf16e3a1bfbedba62a21e34442dbb42a674b944f890cd99bf66"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 3,
+          "syntax_count": 49,
+          "num_examples": 49,
+          "accuracy": 0.061224489795918366,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen25-1p5b/cars.json",
+          "source_sha256": "f4ec7de6dcef389d384bcc0f45d475ca4b2c5eff1517f102c2f5425361c3baba"
+        }
+      ],
+      "max_accuracy_count": 8,
+      "max_accuracy_strategies": [
+        "crane"
+      ],
+      "max_syntax_count": 49,
+      "max_syntax_strategies": [
+        "gcd",
+        "cars"
+      ],
+      "min_accuracy": 0.1836734693877551,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "gsm-qwen25-7b": {
+      "dataset": "gsm_symbolic",
+      "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+      "split_name": "train",
+      "smiles_class": null,
+      "num_examples": 49,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 17,
+          "syntax_count": 47,
+          "num_examples": 49,
+          "accuracy": 0.3469387755102041,
+          "syntax_rate": 0.9591836734693877,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen25-7b/unconstrained.json",
+          "source_sha256": "183d4d8b99b27bc58e90bd75a428c8171c6eb9c9afaf098842da5e5a159ce865"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 14,
+          "syntax_count": 47,
+          "num_examples": 49,
+          "accuracy": 0.2857142857142857,
+          "syntax_rate": 0.9591836734693877,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen25-7b/gcd.json",
+          "source_sha256": "823aea9d83b16c92de11e21fd90f7213bc02c1b9b9b5d0a30d1d9a95e3480bdf"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 18,
+          "syntax_count": 48,
+          "num_examples": 49,
+          "accuracy": 0.3673469387755102,
+          "syntax_rate": 0.9795918367346939,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen25-7b/crane.json",
+          "source_sha256": "1c22cc039422622587dd4412f9f144340a25c5ebee3e9d6706a2dc50d81a6a60"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 10,
+          "syntax_count": 34,
+          "num_examples": 49,
+          "accuracy": 0.20408163265306123,
+          "syntax_rate": 0.6938775510204082,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen25-7b/itergen.json",
+          "source_sha256": "3dfaa19701e128c5b12a0ce2bb2064dd1ba43214b1ab1ba0c7ce937b31f771da"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 13,
+          "syntax_count": 49,
+          "num_examples": 49,
+          "accuracy": 0.2653061224489796,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen25-7b/cars.json",
+          "source_sha256": "2baf026d0626f9b0d478ae90d85b58293ca56a6d62ececeb30af9b30f34b3188"
+        }
+      ],
+      "max_accuracy_count": 18,
+      "max_accuracy_strategies": [
+        "crane"
+      ],
+      "max_syntax_count": 49,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.3877551020408163,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "gsm-qwen35-2b": {
+      "dataset": "gsm_symbolic",
+      "eval_model": "Qwen/Qwen3.5-2B",
+      "split_name": "train",
+      "smiles_class": null,
+      "num_examples": 49,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 3,
+          "syntax_count": 22,
+          "num_examples": 49,
+          "accuracy": 0.061224489795918366,
+          "syntax_rate": 0.4489795918367347,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen35-2b/unconstrained.json",
+          "source_sha256": "2f62450d9bc37b2f9494c7ee2f9690673532c903bbf2f3b22e27ca5b2405487e"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 4,
+          "syntax_count": 47,
+          "num_examples": 49,
+          "accuracy": 0.08163265306122448,
+          "syntax_rate": 0.9591836734693877,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen35-2b/gcd.json",
+          "source_sha256": "1aaa2d461006b930a25bbbfb9cb9f780007707e5a40434482881e21e7629591a"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 7,
+          "syntax_count": 42,
+          "num_examples": 49,
+          "accuracy": 0.14285714285714285,
+          "syntax_rate": 0.8571428571428571,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen35-2b/crane.json",
+          "source_sha256": "112c0beb07f90a6178f4303d193e27b301ee246dcd1140cebf33608993a317ed"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 2,
+          "syntax_count": 49,
+          "num_examples": 49,
+          "accuracy": 0.04081632653061224,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen35-2b/itergen.json",
+          "source_sha256": "98778ab50e67c94ebd960c8d7412b1ced58833cfb2ce639dc21e4df5893d14ef"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 1,
+          "syntax_count": 49,
+          "num_examples": 49,
+          "accuracy": 0.02040816326530612,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen35-2b/cars.json",
+          "source_sha256": "a278b7c961af78476bdbdc90b86234f23a8c41eecb61d3763d8086cc8ade8efd"
+        }
+      ],
+      "max_accuracy_count": 7,
+      "max_accuracy_strategies": [
+        "crane"
+      ],
+      "max_syntax_count": 49,
+      "max_syntax_strategies": [
+        "itergen",
+        "cars"
+      ],
+      "min_accuracy": 0.16326530612244897,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "gsm-qwen35-4b": {
+      "dataset": "gsm_symbolic",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "smiles_class": null,
+      "num_examples": 49,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 16,
+          "syntax_count": 38,
+          "num_examples": 49,
+          "accuracy": 0.32653061224489793,
+          "syntax_rate": 0.7755102040816326,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen35-4b/unconstrained.json",
+          "source_sha256": "276c9bbce603d0531cbf7f80d81f5fcd3f9862645cdf936e2e95bd6e82927156"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 18,
+          "syntax_count": 48,
+          "num_examples": 49,
+          "accuracy": 0.3673469387755102,
+          "syntax_rate": 0.9795918367346939,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen35-4b/gcd.json",
+          "source_sha256": "456aeb032d9c71964d32573844a60bf3074e6ff547efba6a60da4ae846950a7a"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 16,
+          "syntax_count": 42,
+          "num_examples": 49,
+          "accuracy": 0.32653061224489793,
+          "syntax_rate": 0.8571428571428571,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen35-4b/crane.json",
+          "source_sha256": "bd6f572e466ef0e7ccfb611beea6df97126605b83a6d30d27f91b3097788352d"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 3,
+          "syntax_count": 48,
+          "num_examples": 49,
+          "accuracy": 0.061224489795918366,
+          "syntax_rate": 0.9795918367346939,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen35-4b/itergen.json",
+          "source_sha256": "89ca0106c6b2fe9d527223a8369387b4fa129f84ca8324a211ebc6c2eae7c064"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 8,
+          "syntax_count": 49,
+          "num_examples": 49,
+          "accuracy": 0.16326530612244897,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/gsm/qwen35-4b/cars.json",
+          "source_sha256": "caffd929f8fa28dfcf9aafceba2cd039d3d11bc00ef8d0d404e8e520449516bf"
+        }
+      ],
+      "max_accuracy_count": 18,
+      "max_accuracy_strategies": [
+        "gcd"
+      ],
+      "max_syntax_count": 49,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.3877551020408163,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "spider-qwen25-1p5b": {
+      "dataset": "spider",
+      "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "split_name": "train",
+      "smiles_class": null,
+      "num_examples": 300,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 156,
+          "syntax_count": 300,
+          "num_examples": 300,
+          "accuracy": 0.52,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen25-1p5b/unconstrained.json",
+          "source_sha256": "a125a5a7cf27f479ea22a5b7d84ab6e532b55c23a662ff5623c41dbf1680a24d"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 8,
+          "syntax_count": 300,
+          "num_examples": 300,
+          "accuracy": 0.02666666666666667,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen25-1p5b/gcd.json",
+          "source_sha256": "5f27f34f370b4ee47ed65bfbefc559165039f1004286d8493019653a163cfa12"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 154,
+          "syntax_count": 300,
+          "num_examples": 300,
+          "accuracy": 0.5133333333333333,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen25-1p5b/crane.json",
+          "source_sha256": "75ba42ec19cff80a0d0b0c4daf07cd8dd3e197983154baa4a85420946abdb415"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 20,
+          "syntax_count": 299,
+          "num_examples": 300,
+          "accuracy": 0.06666666666666667,
+          "syntax_rate": 0.9966666666666667,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen25-1p5b/itergen.json",
+          "source_sha256": "f3b0027d10c9fb69deb5d4cbe93e8296d9b395dd1fe90b4d44bb97dc58f3c4a5"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 84,
+          "syntax_count": 300,
+          "num_examples": 300,
+          "accuracy": 0.28,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen25-1p5b/cars.json",
+          "source_sha256": "b319b4994369297bee51a17d7c38b03a1c7d13bfec45a34ed508aadd6001e48a"
+        }
+      ],
+      "max_accuracy_count": 156,
+      "max_accuracy_strategies": [
+        "unconstrained"
+      ],
+      "max_syntax_count": 300,
+      "max_syntax_strategies": [
+        "unconstrained",
+        "gcd",
+        "crane",
+        "cars"
+      ],
+      "min_accuracy": 0.5233333333333333,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "spider-qwen25-7b": {
+      "dataset": "spider",
+      "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+      "split_name": "train",
+      "smiles_class": null,
+      "num_examples": 300,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 8,
+          "syntax_count": 300,
+          "num_examples": 300,
+          "accuracy": 0.02666666666666667,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen25-7b/unconstrained.json",
+          "source_sha256": "d49eee9f9e98a24cf0383385b2bd5b93f381422ac43bfc714433794cc1181e3b"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 6,
+          "syntax_count": 300,
+          "num_examples": 300,
+          "accuracy": 0.02,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen25-7b/gcd.json",
+          "source_sha256": "8f02965aab3408db229df364f5434af461c1fe9cee358ff4982f732fd9c342da"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 6,
+          "syntax_count": 300,
+          "num_examples": 300,
+          "accuracy": 0.02,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen25-7b/crane.json",
+          "source_sha256": "5e3f37451d7f65f30a0a60b2b30514836a4d2bf83beb0e58f1d3bd37a6264513"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 23,
+          "syntax_count": 300,
+          "num_examples": 300,
+          "accuracy": 0.07666666666666666,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen25-7b/itergen.json",
+          "source_sha256": "42902099282e9249f09ea975f1aff1f30f7fb16e6e11380df976c5325149663b"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 174,
+          "syntax_count": 287,
+          "num_examples": 300,
+          "accuracy": 0.58,
+          "syntax_rate": 0.9566666666666667,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen25-7b/cars.json",
+          "source_sha256": "0bdbc731ea5fbe9f2f75f700f5d6ae8d730c0dbd8ddb3f62992ff0be6de4dc38"
+        }
+      ],
+      "max_accuracy_count": 174,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 300,
+      "max_syntax_strategies": [
+        "unconstrained",
+        "gcd",
+        "crane",
+        "itergen"
+      ],
+      "min_accuracy": 0.5833333333333334,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "spider-qwen35-2b": {
+      "dataset": "spider",
+      "eval_model": "Qwen/Qwen3.5-2B",
+      "split_name": "train",
+      "smiles_class": null,
+      "num_examples": 300,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 5,
+          "syntax_count": 24,
+          "num_examples": 300,
+          "accuracy": 0.016666666666666666,
+          "syntax_rate": 0.08,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen35-2b/unconstrained.json",
+          "source_sha256": "91640d51d8f732aa62bdb4c6d3486fbbe1b8f8693e625b820eddc0c9a0daf68a"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 13,
+          "syntax_count": 164,
+          "num_examples": 300,
+          "accuracy": 0.043333333333333335,
+          "syntax_rate": 0.5466666666666666,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen35-2b/gcd.json",
+          "source_sha256": "92f2380811eae67399dbea43fa20086e41681ddf6f9b507c031ffaa97572991e"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 5,
+          "syntax_count": 23,
+          "num_examples": 300,
+          "accuracy": 0.016666666666666666,
+          "syntax_rate": 0.07666666666666666,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen35-2b/crane.json",
+          "source_sha256": "3e68934463ed69dcfc92042ae30a3d6587a96b24e6bb7bb299f643aa7a456379"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 300,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen35-2b/itergen.json",
+          "source_sha256": "842bbbef7ef680ad7a1c7927804683a560fe8b8ac48611498ead737b7bb23580"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 51,
+          "syntax_count": 294,
+          "num_examples": 300,
+          "accuracy": 0.17,
+          "syntax_rate": 0.98,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen35-2b/cars.json",
+          "source_sha256": "04480c1e63f96d623d2281209a12dfb7ad36790df2e1198f7cb874c76c117756"
+        }
+      ],
+      "max_accuracy_count": 51,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 294,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.17333333333333334,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "spider-qwen35-4b": {
+      "dataset": "spider",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "smiles_class": null,
+      "num_examples": 300,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 64,
+          "syntax_count": 118,
+          "num_examples": 300,
+          "accuracy": 0.21333333333333335,
+          "syntax_rate": 0.3933333333333333,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen35-4b/unconstrained.json",
+          "source_sha256": "b402bdf1c0fea2ef58b5d9253f52fd54a3e29e3391791db738dbeb6d57667724"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 38,
+          "syntax_count": 298,
+          "num_examples": 300,
+          "accuracy": 0.12666666666666668,
+          "syntax_rate": 0.9933333333333333,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen35-4b/gcd.json",
+          "source_sha256": "d8a3c2adf12fc7f46011871e0f96f237eaea114d406020b12dc4b013983319ed"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 68,
+          "syntax_count": 123,
+          "num_examples": 300,
+          "accuracy": 0.22666666666666666,
+          "syntax_rate": 0.41,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen35-4b/crane.json",
+          "source_sha256": "7c836bfd2bddb36da66291d765be606a4b289e34c4dc7efe8e013ddd0b7b2dd6"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 300,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen35-4b/itergen.json",
+          "source_sha256": "9e17e786419cbb84dfd1afbfd7951cee1f0ceaaa2b647061a2bb057b5d8bc7ed"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 111,
+          "syntax_count": 263,
+          "num_examples": 300,
+          "accuracy": 0.37,
+          "syntax_rate": 0.8766666666666667,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/spider/qwen35-4b/cars.json",
+          "source_sha256": "de4fe932c87d597eaafcb7fc7bbde93ea2e140bd182e7c6432a954d281a28146"
+        }
+      ],
+      "max_accuracy_count": 111,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 298,
+      "max_syntax_strategies": [
+        "gcd"
+      ],
+      "min_accuracy": 0.37333333333333335,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "smiles-acrylates-qwen25-1p5b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "split_name": "train",
+      "smiles_class": "acrylates",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 2,
+          "syntax_count": 22,
+          "num_examples": 50,
+          "accuracy": 0.04,
+          "syntax_rate": 0.44,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen25-1p5b/unconstrained.json",
+          "source_sha256": "0ed36144b4ea8dd89902cb0a732fd00b56cca65c111d67942e1aa0c2f48427b8"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen25-1p5b/gcd.json",
+          "source_sha256": "c458e28384b7a9bdfae28bf429528d4f34ef088d4bb7dac858f5da042c5a0d70"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 1,
+          "syntax_count": 2,
+          "num_examples": 50,
+          "accuracy": 0.02,
+          "syntax_rate": 0.04,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen25-1p5b/crane.json",
+          "source_sha256": "b02ef9e97683fef72bdfff54d6c5aed8bfadd898c63f305a22f4c90ee5b0480e"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen25-1p5b/itergen.json",
+          "source_sha256": "29faaf06508b516083f300184fd7306aa51da07426ee5037a49446d0207d9586"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 23,
+          "syntax_count": 49,
+          "num_examples": 50,
+          "accuracy": 0.46,
+          "syntax_rate": 0.98,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen25-1p5b/cars.json",
+          "source_sha256": "83929674a6952ac897c72e16275612ffd862e34d8844115785dba550c008c6e6"
+        }
+      ],
+      "max_accuracy_count": 23,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 49,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.48,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "smiles-acrylates-qwen25-7b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+      "split_name": "train",
+      "smiles_class": "acrylates",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 8,
+          "syntax_count": 29,
+          "num_examples": 50,
+          "accuracy": 0.16,
+          "syntax_rate": 0.58,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen25-7b/unconstrained.json",
+          "source_sha256": "441a3b79951ad988a237100fe9bf306dfca091f7bdcd607b98a428bdd61f618b"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen25-7b/gcd.json",
+          "source_sha256": "1021e094631a1a6583673e9d17c862f662b393cbf6931d7f0cdc62f6a807428e"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen25-7b/crane.json",
+          "source_sha256": "1148fc468ada24a953ae9f348458816240ea4e63e7583f8486c97c66ffc6ebd7"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 1,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.02,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen25-7b/itergen.json",
+          "source_sha256": "8d6aa8334892c80d395a5e8fe89c98d27e83e05c410918b87f71cc0da8266a9c"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 50,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 1.0,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen25-7b/cars.json",
+          "source_sha256": "c4c6e32ca82a0c26182a2a9ac0d5c5e51f6ebe185ee76dad075c02ac3a09d988"
+        }
+      ],
+      "max_accuracy_count": 50,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 50,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.95,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "perfect_baseline_95_percent_exception"
+    },
+    "smiles-acrylates-qwen35-2b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-2B",
+      "split_name": "train",
+      "smiles_class": "acrylates",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 0,
+          "syntax_count": 16,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.32,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen35-2b/unconstrained.json",
+          "source_sha256": "2d72a40e8a70c61b870c64b88313272d991093e6fb7812ac702bc3d582551a1c"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen35-2b/gcd.json",
+          "source_sha256": "9d6c8716073662c5a1465855806cdf3ce9992c0e82b7bbc3f496dc3ffdbc49df"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen35-2b/crane.json",
+          "source_sha256": "60514d505a922e54c2e82ce71601930afe4409ebccb82f02fb9357209d3bec47"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen35-2b/itergen.json",
+          "source_sha256": "0af15197e65719630b54b7ff9e38c87149e3742a7fc65b211302ab854af11d83"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 13,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 0.26,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen35-2b/cars.json",
+          "source_sha256": "bec8924e95a0cda201a95132afbc221d05de98ceb694f990a200fc9f14b17b1e"
+        }
+      ],
+      "max_accuracy_count": 13,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 50,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.28,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "smiles-acrylates-qwen35-4b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "smiles_class": "acrylates",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 1,
+          "syntax_count": 10,
+          "num_examples": 50,
+          "accuracy": 0.02,
+          "syntax_rate": 0.2,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen35-4b/unconstrained.json",
+          "source_sha256": "9eb382accecf5d408c5dec52be5624506fe0950cf0c2ee929021ae8c48e8f8d7"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen35-4b/gcd.json",
+          "source_sha256": "c23ccadc3e99019aa6eb144b1c0bb85fe839dd905ba0214073778f19f986b237"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen35-4b/crane.json",
+          "source_sha256": "41615fe4e9bfe84af715a1aa6605f0b54ca38dbbacf9034d6ea52b5b1e476b46"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen35-4b/itergen.json",
+          "source_sha256": "6aa5089d8ce5d254e63351f613b6237755aff5ab2b2e99dc6e24b50a0db8a109"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 43,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 0.86,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-acrylates/qwen35-4b/cars.json",
+          "source_sha256": "5b407c84359209ad2e4dfbf8e45ded26507beb36ebd3d58b4fed02e657002a9e"
+        }
+      ],
+      "max_accuracy_count": 43,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 50,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.88,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "smiles-chain_extenders-qwen25-1p5b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "split_name": "train",
+      "smiles_class": "chain_extenders",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 7,
+          "syntax_count": 10,
+          "num_examples": 50,
+          "accuracy": 0.14,
+          "syntax_rate": 0.2,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen25-1p5b/unconstrained.json",
+          "source_sha256": "2053fbccbc27f81b5fef5b8cb58a4327bd71a050148d6c6e0e923fc734f47520"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 50,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 1.0,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen25-1p5b/gcd.json",
+          "source_sha256": "89ba999f8c675473773ff6779cd8c4243457f83102407e6650fb8ebd32a0f2d4"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 0,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen25-1p5b/crane.json",
+          "source_sha256": "a7909c00ea25783df94f3f3082a26d8c755c41ae52c2cebc1881aad9aac1b257"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 15,
+          "syntax_count": 15,
+          "num_examples": 50,
+          "accuracy": 0.3,
+          "syntax_rate": 0.3,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen25-1p5b/itergen.json",
+          "source_sha256": "65c2bf2702e949b6bd0281217a3a3a83a5aa25d393d1e5e71b64fd2eebda6590"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 50,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 1.0,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen25-1p5b/cars.json",
+          "source_sha256": "7519885827c07c21c02614d63af7aa9f484d6a472effe9d39d93c60f92c64760"
+        }
+      ],
+      "max_accuracy_count": 50,
+      "max_accuracy_strategies": [
+        "gcd",
+        "cars"
+      ],
+      "max_syntax_count": 50,
+      "max_syntax_strategies": [
+        "gcd",
+        "crane",
+        "cars"
+      ],
+      "min_accuracy": 0.95,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "perfect_baseline_95_percent_exception"
+    },
+    "smiles-chain_extenders-qwen25-7b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+      "split_name": "train",
+      "smiles_class": "chain_extenders",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 8,
+          "syntax_count": 25,
+          "num_examples": 50,
+          "accuracy": 0.16,
+          "syntax_rate": 0.5,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen25-7b/unconstrained.json",
+          "source_sha256": "3935c7bb735db0b8e087a850f3a8dd6b77372247c3d0bb6499e934c0739e0072"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen25-7b/gcd.json",
+          "source_sha256": "482e87ea13defa7dd97407954175345048d6595e2b5bfe58df0b86e9c68c49f4"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 1,
+          "syntax_count": 1,
+          "num_examples": 50,
+          "accuracy": 0.02,
+          "syntax_rate": 0.02,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen25-7b/crane.json",
+          "source_sha256": "728d2f5177e1f4618dd1ea8b86dd30f335dcd660c8dc5a7ede20c9f0ef71e780"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen25-7b/itergen.json",
+          "source_sha256": "8b1216792b8779efc9d0f01b213c313c0175c685a47f926221f554dd166049c5"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 47,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 0.94,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen25-7b/cars.json",
+          "source_sha256": "0b587c067a9fbcb88ccf0f926d856bca638b16fafc175be0de9f07d1dfac7c7c"
+        }
+      ],
+      "max_accuracy_count": 47,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 50,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.96,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "smiles-chain_extenders-qwen35-2b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-2B",
+      "split_name": "train",
+      "smiles_class": "chain_extenders",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 2,
+          "syntax_count": 14,
+          "num_examples": 50,
+          "accuracy": 0.04,
+          "syntax_rate": 0.28,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen35-2b/unconstrained.json",
+          "source_sha256": "733460636242a0a4a5ef5eca09d542a908e282b56f3d8e5be84afecb6b6b0388"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 50,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 1.0,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen35-2b/gcd.json",
+          "source_sha256": "033f6e750d24adc33fffef7ec844464bd273133377c121670dab64937e5e95e9"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen35-2b/crane.json",
+          "source_sha256": "ea9dbc856798072118436b49b5905f0895a1b317d2ef717b341cac662a7f3a06"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen35-2b/itergen.json",
+          "source_sha256": "209a6ca30589af102063505513fe17e455cc52101d514a9f976f2442633a1050"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 29,
+          "syntax_count": 49,
+          "num_examples": 50,
+          "accuracy": 0.58,
+          "syntax_rate": 0.98,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen35-2b/cars.json",
+          "source_sha256": "cf1d5ed81125750119e0bd592ad7ca6e495ed28b169b7a0202663abf55e77f9f"
+        }
+      ],
+      "max_accuracy_count": 50,
+      "max_accuracy_strategies": [
+        "gcd"
+      ],
+      "max_syntax_count": 50,
+      "max_syntax_strategies": [
+        "gcd"
+      ],
+      "min_accuracy": 0.95,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "perfect_baseline_95_percent_exception"
+    },
+    "smiles-chain_extenders-qwen35-4b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "smiles_class": "chain_extenders",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 6,
+          "syntax_count": 25,
+          "num_examples": 50,
+          "accuracy": 0.12,
+          "syntax_rate": 0.5,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen35-4b/unconstrained.json",
+          "source_sha256": "e8468fa66562dcd2851064f5a9ce01f5d7b5a5ec23b9bc650d4dc6289f4e267a"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen35-4b/gcd.json",
+          "source_sha256": "b3995dfc33077df221adfb34aed5fcd143b1efb643f156cbcebe3a80213268ec"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen35-4b/crane.json",
+          "source_sha256": "d4fc735de5beab2469d7de5879cdf3635fafc838158ca3d91d236806ad5462e2"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen35-4b/itergen.json",
+          "source_sha256": "4f7a83499710e0ef87230e3cee84e5cfdb9bbc5646f8df96ede7444f9c459130"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 30,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 0.6,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-chain_extenders/qwen35-4b/cars.json",
+          "source_sha256": "66d5ed9809a9a14f0439cff6b5d9247bbd38e82b6749fd359a6778887b574ad2"
+        }
+      ],
+      "max_accuracy_count": 30,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 50,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.62,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "smiles-isocyanates-qwen25-1p5b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "split_name": "train",
+      "smiles_class": "isocyanates",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 7,
+          "syntax_count": 10,
+          "num_examples": 50,
+          "accuracy": 0.14,
+          "syntax_rate": 0.2,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen25-1p5b/unconstrained.json",
+          "source_sha256": "cb40de985de71dac135d98183dbbf5d80199e826dc63421bd04376e063619ecc"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen25-1p5b/gcd.json",
+          "source_sha256": "d717e45fae7454421e0de8a56dd403603d6104dc68a31146ab0b8274f7632f07"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen25-1p5b/crane.json",
+          "source_sha256": "7fee387dcf929c094e0a98c4e395197ff4e9c73e837830778741955b9ce628e3"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen25-1p5b/itergen.json",
+          "source_sha256": "aed6e23f4c46758d5e6db378148618fab799147871bf33b4fba1e5d29ecda400"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 39,
+          "syntax_count": 49,
+          "num_examples": 50,
+          "accuracy": 0.78,
+          "syntax_rate": 0.98,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen25-1p5b/cars.json",
+          "source_sha256": "63818b94ca55d808bae0447c753b07a6a25846eb29dd24867259daf8c078f8e9"
+        }
+      ],
+      "max_accuracy_count": 39,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 49,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.8,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "smiles-isocyanates-qwen25-7b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+      "split_name": "train",
+      "smiles_class": "isocyanates",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 2,
+          "syntax_count": 9,
+          "num_examples": 50,
+          "accuracy": 0.04,
+          "syntax_rate": 0.18,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen25-7b/unconstrained.json",
+          "source_sha256": "078ca39ca9fd8513b3bbdc5559e073dc24ce408678756458a2ad5429160f01d5"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen25-7b/gcd.json",
+          "source_sha256": "0f0fa039d6a62f3fac90a69caf63822f555d1056d39a20051b125335343cab18"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen25-7b/crane.json",
+          "source_sha256": "9a3f5b0b443ea21ab89ca4a9af8517d4aa272c22e47a0f05c1ad58e2a6c96723"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen25-7b/itergen.json",
+          "source_sha256": "4cd6c154e8fe021329b0aab293755d0854a839a524903e7d4b724f281474f5dc"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 48,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 0.96,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen25-7b/cars.json",
+          "source_sha256": "f05abbac443e6201a3ac02ade1dc10d0f812c13f3116766559d6846917ff2073"
+        }
+      ],
+      "max_accuracy_count": 48,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 50,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.98,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "smiles-isocyanates-qwen35-2b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-2B",
+      "split_name": "train",
+      "smiles_class": "isocyanates",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 5,
+          "syntax_count": 7,
+          "num_examples": 50,
+          "accuracy": 0.1,
+          "syntax_rate": 0.14,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen35-2b/unconstrained.json",
+          "source_sha256": "a5d2828d6ba01f0ca1002dc983d9b3ed3cfef7fa936145c00b4a8d344c5078e6"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen35-2b/gcd.json",
+          "source_sha256": "9a7b6a671d810e9576fdd6b29a186ebe884fef3bf22a26263cb4c69f65a638ba"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen35-2b/crane.json",
+          "source_sha256": "6e94fdc80980f62a4104f2fa8677cf8f73bbc62ec617a6b109d49a68b3a769ab"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen35-2b/itergen.json",
+          "source_sha256": "64684ec9afe50607eca2d4988d38b046ee93cfe96c8299548db9639965d6fe90"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 43,
+          "syntax_count": 48,
+          "num_examples": 50,
+          "accuracy": 0.86,
+          "syntax_rate": 0.96,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen35-2b/cars.json",
+          "source_sha256": "bdc97c5992908bd557bd63b58fc69a377b10fba5c0b3c2cf1e241db6ac6cd7d5"
+        }
+      ],
+      "max_accuracy_count": 43,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 48,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.88,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    },
+    "smiles-isocyanates-qwen35-4b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "smiles_class": "isocyanates",
+      "num_examples": 50,
+      "baselines": [
+        {
+          "strategy": "unconstrained",
+          "num_correct": 9,
+          "syntax_count": 19,
+          "num_examples": 50,
+          "accuracy": 0.18,
+          "syntax_rate": 0.38,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen35-4b/unconstrained.json",
+          "source_sha256": "efa1b087fae9b48cb09608d786c024a8ef2007196350d663aeab24213c760b35"
+        },
+        {
+          "strategy": "gcd",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen35-4b/gcd.json",
+          "source_sha256": "18eec6551ee2253d610c8b297f9f7d02bea9ef9b3bdf935a27d8a80fb8cb9447"
+        },
+        {
+          "strategy": "crane",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen35-4b/crane.json",
+          "source_sha256": "7005724bc015dcc1776345309d5837e2d03378f838bd3a423ae2f0e437e4c941"
+        },
+        {
+          "strategy": "itergen",
+          "num_correct": 0,
+          "syntax_count": 0,
+          "num_examples": 50,
+          "accuracy": 0.0,
+          "syntax_rate": 0.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen35-4b/itergen.json",
+          "source_sha256": "62292e7440b446307a6eabfd021ff113882a50080351c61b2c569600a622e1c0"
+        },
+        {
+          "strategy": "cars",
+          "num_correct": 41,
+          "syntax_count": 50,
+          "num_examples": 50,
+          "accuracy": 0.82,
+          "syntax_rate": 1.0,
+          "source_artifact": "outputs/baselines/full_baseline_20260803/smiles-isocyanates/qwen35-4b/cars.json",
+          "source_sha256": "7475e8c8de2bf7b416226d1b0ce45857dfe96da6b5b8cc9ed006cdb0aeb60f98"
+        }
+      ],
+      "max_accuracy_count": 41,
+      "max_accuracy_strategies": [
+        "cars"
+      ],
+      "max_syntax_count": 50,
+      "max_syntax_strategies": [
+        "cars"
+      ],
+      "min_accuracy": 0.84,
+      "min_syntax_rate": 0.9,
+      "threshold_policy": "strict_plus_one"
+    }
+  }
+}

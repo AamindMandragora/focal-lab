@@ -207,8 +207,6 @@ def build_synthesis_command(
         str(job["train_sample_size"]),
         "--max-tokens",
         "32768",
-        "--restart-after-stuck-iters",
-        "0",
         "--vllm-gpu-memory-utilization",
         str(job["gpu_mem_util"]),
         "--vllm-max-model-len",

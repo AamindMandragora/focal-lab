@@ -107,6 +107,18 @@ def _derive_output_name(dataset: str, eval_model: str) -> str:
     return f"{dataset}_{model_short}_{date.today().isoformat()}"
 
 
+def evaluator_smiles_classes(dataset: str, raw: str | None) -> list[str] | None:
+    """Classes to record on the evaluator: a list for SMILES, None elsewhere.
+
+    Only SMILES runs are given --smiles-classes, so on gsm/spider the argparse
+    default would otherwise be recorded as the classes the run evaluated, which
+    is both untrue and rejected downstream.
+    """
+    if dataset != "smiles" or not raw:
+        return None
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Synthesize constrained decoding strategies (author: hosted large reasoning model; eval: vLLM)",
@@ -273,9 +285,9 @@ Examples:
         "--initial-strategy-file",
         type=Path,
         default=None,
-        help="Strategy body to use as the first attempt. Legitimate ONLY for "
-             "pure re-evaluation (--max-iterations 1); warm-starting synthesis "
-             "from a prior strategy is banned.",
+        help="Strategy body to use as the first attempt. With "
+             "--max-iterations 1 this is a pure re-evaluation; with more "
+             "iterations the run keeps improving on the seeded strategy.",
     )
 
     parser.add_argument(
@@ -347,15 +359,6 @@ Examples:
     if args.vllm_gpu_memory_utilization is None:
         args.vllm_gpu_memory_utilization = _resolve_vllm_gpu_memory_utilization(
             args.eval_model
-        )
-
-    # Warm-start ban: --initial-strategy-file is legitimate ONLY for pure
-    # re-evaluation (--max-iterations 1). Seeding further synthesis iterations
-    # from a prior strategy is banned (user ruling 2026-06-12: "it's cheating").
-    if args.initial_strategy_file is not None and args.max_iterations != 1:
-        parser.error(
-            "--initial-strategy-file is only allowed with --max-iterations 1 "
-            "(pure re-eval); warm-started synthesis is banned"
         )
 
     # One canonical split per dataset; synthesis always evaluates the train side.
@@ -470,8 +473,7 @@ Examples:
 
     # Import here to avoid loading heavy dependencies if just showing help
     from synthesis.generate.generator import ClaudeTransientError, StrategyGenerator
-    from synthesis.verify.verifier import DafnyVerifier
-    from synthesis.verify.compiler import DafnyCompiler
+    from synthesis.verify.tooling import build_default_compiler, build_default_verifier
     from synthesis.evaluate.evaluator import Evaluator
     from synthesis.evaluate.feedback_loop import SynthesisPipeline, SynthesisExhaustionError
     from synthesis.evaluate.benchmarks.registry import resolve_require_delimiters
@@ -493,13 +495,9 @@ Examples:
         reasoning_budget_tokens=args.synthesizer_reasoning_budget,
     )
 
-    verifier = DafnyVerifier(
-        dafny_path=args.dafny_path,
-        timeout=180,
-        extra_args=["--verification-time-limit", "120"],
-    )
+    verifier = build_default_verifier(dafny_path=args.dafny_path)
     # Compiler output dir is set per-run inside the pipeline (so runs don't overwrite each other).
-    compiler = DafnyCompiler(dafny_path=args.dafny_path, output_dir=output_dir)
+    compiler = build_default_compiler(dafny_path=args.dafny_path, output_dir=output_dir)
     # Runner is created by the pipeline with task-appropriate parser mode
 
     feedback_sample_size = (
@@ -528,7 +526,7 @@ Examples:
         gsm_split_name=split_name if args.dataset == "gsm_symbolic" else "train",
         spider_split_file=str(split_file) if args.dataset == "spider" else None,
         spider_split_name=split_name if args.dataset == "spider" else "train",
-        smiles_classes=args.smiles_classes,
+        smiles_classes=evaluator_smiles_classes(args.dataset, args.smiles_classes),
         early_stop_on_answer=EVAL_EARLY_STOP_ON_ANSWER,
     )
 

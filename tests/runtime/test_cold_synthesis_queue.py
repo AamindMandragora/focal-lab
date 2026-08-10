@@ -66,10 +66,11 @@ def _matching_run_configuration(job):
             )
         )
         split[f"{prefix}_split_name"] = "train"
+    pinned_commit = job.get("launch_commit") or job.get("git_commit") or ("c" * 40)
     return {
         "task_description": job["task"],
         "output_name": job["output_name"],
-        "git_commit": job.get("launch_commit", job["git_commit"]),
+        "git_commit": pinned_commit,
         "max_iterations": job["max_iterations"],
         "thresholds": {
             "min_accuracy": job["min_accuracy"],
@@ -719,6 +720,60 @@ def test_smiles_report_accepts_the_runtime_string_class_shape():
 
     assert queue.report_matches_job(report, job, require_exhausted=True)
 
+
+def test_report_matches_when_job_omits_launch_and_git_commit():
+    """Corrected-campaign jobs ship with null commits; success reports still pin HEAD."""
+    job = _job("smiles")
+    job.update(
+        {
+            "git_commit": None,
+            "launch_commit": None,
+            "smiles_class": "acrylates",
+            "task": queue.SMILES_TASK,
+            "max_iterations": 40,
+        }
+    )
+    report = {
+        "total_attempts": 3,
+        "run_configuration": _matching_run_configuration(
+            {**job, "git_commit": "d" * 40}
+        ),
+    }
+
+    assert queue.report_matches_job(report, job, require_exhausted=False)
+
+    job["launch_commit"] = "b" * 40
+    assert not queue.report_matches_job(report, job, require_exhausted=False)
+    report["run_configuration"]["git_commit"] = "b" * 40
+    assert queue.report_matches_job(report, job, require_exhausted=False)
+
+
+
+def test_stamp_job_commit_from_report_fills_null_commits(tmp_path):
+    output_name = "coldq_smiles-acrylates-qwen35-2b"
+    run_dir = tmp_path / "outputs" / "generated" / output_name / "run-1"
+    results = run_dir / "results"
+    results.mkdir(parents=True)
+    (tmp_path / "outputs" / "generated" / output_name / "latest_run.txt").write_text(
+        str(run_dir), encoding="utf-8"
+    )
+    commit = "e" * 40
+    (results / "success_report.json").write_text(
+        json.dumps({"run_configuration": {"git_commit": commit}}),
+        encoding="utf-8",
+    )
+    job = _job("smiles")
+    job.update(
+        {
+            "git_commit": None,
+            "launch_commit": None,
+            "smiles_class": "acrylates",
+            "output_name": output_name,
+        }
+    )
+    stamped = queue.stamp_job_commit_from_report(job, tmp_path, output_name)
+    assert stamped["git_commit"] == commit
+    assert job["git_commit"] is None
 
 def test_non_smiles_report_ignores_the_irrelevant_runtime_smiles_default():
     job = _job()

@@ -95,3 +95,15 @@ CLAUDE_MAX_RETRIES = 2
 CLAUDE_RETRY_DELAY_SECONDS = 30.0
 CLAUDE_TELEMETRY_DIR = _REPO_ROOT / ".context" / "claude_stream_telemetry"
 CLAUDE_AUTHOR_LOCK_FILE = _REPO_ROOT / ".context" / "claude_author.lock"
+
+# ---------------------------------------------------------------------------
+# Dafny verify + build (shared per-batch proof budget)
+# ---------------------------------------------------------------------------
+# Passed as `--verification-time-limit` to BOTH `dafny verify` and
+# `dafny build --target:py`. Build re-verifies by default; leaving compile
+# on Dafny's 30s default while verify used a higher cap caused
+# verify-pass / compile-timeout failures (e.g. gsm-qwen35-2b attempts).
+# Process wall clocks must be >= this batch limit.
+DAFNY_VERIFICATION_TIME_LIMIT_SECONDS = 600  # 10 minutes per assertion batch
+DAFNY_VERIFY_PROCESS_TIMEOUT_SECONDS = 900  # wall clock for `dafny verify`
+DAFNY_COMPILE_PROCESS_TIMEOUT_SECONDS = 900  # wall clock for `dafny build`

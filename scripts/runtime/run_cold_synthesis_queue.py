@@ -71,8 +71,8 @@ PINNED_CODE_PATHS = (
 )
 GSM_TASK = GSM_CRANE_COT_TASK
 SPIDER_TASK = (
-    "Generate a single valid SQL query as exactly `SQL: <<YOUR QUERY>>`, using only the "
-    "provided schema context."
+    "Generate a single valid SQL query using only the provided schema context. "
+    "Only output the SQL query."
 )
 SMILES_TASK = (
     "Generate valid SMILES strings that match the requested molecular class while "
@@ -760,6 +760,39 @@ def pinned_heldout_csd(job: dict[str, Any], repo: Path) -> Path:
     return path
 
 
+def expected_job_commit(job: dict[str, Any]) -> str | None:
+    for key in ("launch_commit", "git_commit"):
+        value = job.get(key)
+        if value:
+            return str(value)
+    return None
+
+
+
+def stamp_job_commit_from_report(
+    job: dict[str, Any], repo: Path, output_name: str
+) -> dict[str, Any]:
+    """Fill a missing job commit from the run report so heldout provenance can match."""
+    if expected_job_commit(job) is not None:
+        return job
+    run_dir = current_run_dir(repo, output_name)
+    if run_dir is None:
+        return job
+    for name in ("success_report.json", "failure_report.json"):
+        report_path = run_dir / "results" / name
+        if not report_path.is_file():
+            continue
+        try:
+            payload = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        commit = (payload.get("run_configuration") or {}).get("git_commit")
+        if commit:
+            stamped = dict(job)
+            stamped["git_commit"] = str(commit)
+            return stamped
+    return job
+
 def report_matches_job(
     report: dict[str, Any], job: dict[str, Any], *, require_exhausted: bool
 ) -> bool:
@@ -781,11 +814,15 @@ def report_matches_job(
         return False
     if require_exhausted and total_attempts != expected_total_attempts:
         return False
+    expected_commit = expected_job_commit(job)
     try:
         exact = (
             config.get("task_description") == job["task"]
             and config.get("output_name") == job["output_name"]
-            and config.get("git_commit") == job.get("launch_commit", job["git_commit"])
+            and (
+                expected_commit is None
+                or config.get("git_commit") == expected_commit
+            )
             and int(config.get("max_iterations") or -1) == max_iterations
             and author.get("backend") == "claude"
             and author.get("model") == AUTHOR_MODEL
@@ -960,9 +997,14 @@ def heldout_is_complete(path: Path, job: dict[str, Any]) -> bool:
     except OSError:
         return False
     try:
+        allowed_commits = {
+            str(value)
+            for key in ("git_commit", "launch_commit")
+            if (value := job.get(key))
+        }
         provenance_matches = (
             provenance.get("cell_id") == job["cell_id"]
-            and provenance.get("manifest_commit") == job["git_commit"]
+            and str(provenance.get("manifest_commit") or "") in allowed_commits
             and provenance.get("dataset") == job["dataset"]
             and provenance.get("eval_model") == job["eval_model"]
             and provenance.get("compiled_csd_sha256") == compiled_hash
@@ -1017,7 +1059,7 @@ def heldout_command(job: dict[str, Any], python: Path, csd: Path) -> list[str]:
         "--provenance-cell-id",
         str(job["cell_id"]),
         "--provenance-manifest-commit",
-        str(job["git_commit"]),
+        str(expected_job_commit(job) or ""),
     ]
     split_file = str(job.get("heldout_split_file", "")).strip()
     if job["dataset"] == "gsm_symbolic":
@@ -1405,6 +1447,7 @@ def run_job(
             logger.warning(
                 "[coldq] using best exhausted attempt cell=%s csd=%s", cell, csd
             )
+        job = stamp_job_commit_from_report(job, repo, output_name)
         heldout_path.parent.mkdir(parents=True, exist_ok=True)
         logger.warning(
             "[coldq] heldout start cell=%s gpu=%d csd=%s",

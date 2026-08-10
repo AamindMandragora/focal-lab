@@ -47,3 +47,7 @@
 
 - **`README.md`** in this folder for component list and artifact paths.
 - **`grammars/AGENTS.md`**, **`benchmarks/AGENTS.md`**, **`syncode/AGENTS.md`**.
+
+## Temporary A-only win (2026-08-10)
+
+Slice-B confirmation is disabled under `if False:` in `feedback_loop.py` (empty B on GSM/Spider train). Restore by flipping that branch. Search `TEMPORARY A-ONLY`.

@@ -64,7 +64,7 @@ def _rewrite_to_generated_csd(source_text: str) -> str:
 
 def _compile_reference(strategy: str, output_dir: Path) -> Path:
     """Compile a reference .dfy to Python under output_dir, return GeneratedCSD.py path."""
-    from synthesis.verify.compiler import DafnyCompiler
+    from synthesis.verify.tooling import build_default_compiler
 
     dfy_name = STRATEGY_DFY[strategy]
     source_path = REFERENCE_DIR / dfy_name
@@ -74,7 +74,7 @@ def _compile_reference(strategy: str, output_dir: Path) -> Path:
     source_text = source_path.read_text()
     source_text = _rewrite_to_generated_csd(source_text)
 
-    compiler = DafnyCompiler(output_dir=output_dir)
+    compiler = build_default_compiler(output_dir=output_dir)
     result = compiler.compile(source_text, output_name=f"ref_{strategy}")
     if not result.success:
         errors = "; ".join(e.message for e in result.errors[:5])
