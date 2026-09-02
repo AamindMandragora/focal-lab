@@ -11,7 +11,7 @@ The project is organized so the core workflow is explicit:
 
 ## Repository Layout
 
-- Non-hidden project directories are intentionally limited to `synthesis/`, `environment/`, `cache/`, and `outputs/`.
+- Project directories: `synthesis/` (pipeline), `environment/` (setup + benchmark splits), `scripts/` (runtime queue/monitor tooling), `tests/`, `baselines_qwen35/` (baseline launch scripts), `deploy/` (focal systemd units), `saved-results/`, `planning/`, `docs/`, plus local-only `cache/` and `outputs/`.
 - `synthesis/`: core pipeline package. First-party subfolders include paired **`README.md`** and **`AGENTS.md`** for docs and agent rules (`synthesis/README.md` summarizes).
 - `synthesis/generate/`: generation prompts, rationale extraction, and generator logic.
 - `synthesis/verify/`: Dafny verification/compilation wrappers.
