@@ -1,7 +1,7 @@
 # Legacy baseline codebases (local only)
 
 These directories are **not** committed: they are large upstream snapshots used by
-`python3 -m synthesis.evaluate.run_legacy_fixed_strategy` for CRANE / IterGen /
+`python -m synthesis.evaluate.run_legacy_fixed_strategy` for CRANE / IterGen /
 CARS baselines (GCD uses vendored SynCode under `synthesis/evaluate/syncode/`).
 
 ## Install
@@ -13,7 +13,7 @@ bash environment/clone_legacy_csds.sh
 ```
 
 Override upstream URLs or refs with environment variables (see
-`environment/legacy/repos.json` and the clone script header).
+`environment/clone_legacy/repos.json` and the clone script header).
 
 ## Expected layout
 
@@ -28,8 +28,18 @@ Override upstream URLs or refs with environment variables (see
 See **`environment/legacy/DIFFERENCES.md`** for harness-side behavior (cache
 paths, vendored SynCode, grammar tightening, GSM normalization).
 
+To produce a **file-level** summary against freshly cloned upstream trees:
+
+```bash
+python synthesis/scripts/report_legacy_upstream_diff.py --fetch-upstream
+```
+
+Or compare against your own mirror directory:
+
+```bash
+python synthesis/scripts/report_legacy_upstream_diff.py --upstream-base /path/with/CRANE_itergen_cars
+```
+
 Optional unified patches applied after clone live under **`environment/legacy_patches/`**
 (see that folder’s README). **Policy:** any manual change under **`legacy/*`** must be
 mirrored there — see **`environment/legacy/AGENTS.md`**.
-
-To verify patches apply cleanly, remove a tree and re-run **`bash environment/clone_legacy_csds.sh`**.

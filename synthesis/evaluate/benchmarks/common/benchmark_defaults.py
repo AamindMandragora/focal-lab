@@ -9,6 +9,14 @@ def uses_hidden_chunks() -> bool:
     return False
 
 
+def starts_inside_constrained() -> bool:
+    """Whether this benchmark's evaluation generation starts already inside
+    the constrained region (EnterObservedConstrainedSpan surface) rather than
+    outside it (OpenConstrainedSpan surface, which emits a visible "<<").
+    Told to the strategy author so its prompt states the right surface."""
+    return False
+
+
 def example_syntax_pass_from_segments(
     all_valid_syntax: bool,
     segments: list[tuple[str, bool]],

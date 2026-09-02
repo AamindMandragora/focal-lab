@@ -41,22 +41,22 @@ def _ensure_syncode_import_path() -> None:
     ``from syncode.parsers.grammars import Grammar`` work — and the vendored
     package's internal unqualified imports resolve relative to that.
     """
-    syncode_parent = Path(__file__).parent.parent.parent           # csd-generation/
-    syncode_parent_str = str(syncode_parent)
-    if syncode_parent_str not in sys.path:
-        sys.path.insert(0, syncode_parent_str)
+    repo_root = Path(__file__).parent.parent.parent           # csd-generation/
+    repo_root_str = str(repo_root)
+    if repo_root_str not in sys.path:
+        sys.path.insert(0, repo_root_str)
 
 
 def _load_spider_evaluate():
     """Load the vendored Spider evaluator without relying on `syncode` package resolution."""
-    syncode_parent = Path(__file__).parent.parent.parent
+    repo_root = Path(__file__).parent.parent.parent
     eval_override = os.environ.get("SPIDER_EVAL_PY")
     eval_override_dir = os.environ.get("SPIDER_EVAL_DIR")
     candidates = [
         Path(eval_override).expanduser() if eval_override else None,
         (Path(eval_override_dir).expanduser() / "evaluation.py") if eval_override_dir else None,
         _vendored_spider_eval_dir() / "evaluation.py",
-        syncode_parent / "syncode" / "syncode" / "utils" / "sql_spider_eval" / "evaluation.py",
+        repo_root / "syncode" / "syncode" / "utils" / "sql_spider_eval" / "evaluation.py",
         Path.home() / "CRANE" / "src" / "crane" / "iter_syncode" / "utils" / "sql_spider_eval" / "evaluation.py",
     ]
     eval_path = next((path for path in candidates if path is not None and path.exists()), None)

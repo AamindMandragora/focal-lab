@@ -293,13 +293,24 @@ class UnconstrainedMode:
 class ConstrainedMode:
     pass
 
+
+def _adaptive_initial_state(start_inside_constrained, token_ids, grammar_decoder):
+    last_constrained_end = len(token_ids[0]) - 1
+    current_state = ConstrainedMode if start_inside_constrained else UnconstrainedMode
+    start_constrained_from = None
+    if start_inside_constrained:
+        start_constrained_from = len(token_ids[0])
+        grammar_decoder.reset_adaptive(start_constrained_from)
+    return last_constrained_end, current_state, start_constrained_from
+
 class AdaptiveGrammarDecoder(HuggingFaceModel):
-    def __init__(self, model, grammar, tokenizer=None, prompt_template = '', best_of = 1, before_prediction_hook=lambda : None, device='cuda', grammar_decoder=None, mode = 'original', opp = True, start_symbol = "<<", start_in_grammar = True, end_symbol = ">>", end_in_grammar = True, **kwargs):
+    def __init__(self, model, grammar, tokenizer=None, prompt_template = '', best_of = 1, before_prediction_hook=lambda : None, device='cuda', grammar_decoder=None, mode = 'original', opp = True, start_symbol = "<<", start_in_grammar = True, end_symbol = ">>", end_in_grammar = True, start_inside_constrained = False, **kwargs):
         super().__init__(model, grammar, tokenizer, prompt_template, best_of, before_prediction_hook, device, grammar_decoder, mode, opp, **kwargs)
         self.start_symbol = start_symbol
         self.start_in_grammar = start_in_grammar
         self.end_symbol = end_symbol
         self.end_in_grammar = end_in_grammar
+        self.start_inside_constrained = start_inside_constrained
     
     @torch.inference_mode()
     def _generate(
@@ -317,8 +328,13 @@ class AdaptiveGrammarDecoder(HuggingFaceModel):
 
         token_ids, attention_mask, past_key_values = inputs['input_ids'], inputs['attention_mask'], None
         
-        last_constrained_end = len(token_ids[0]) - 1
-        current_state = UnconstrainedMode
+        last_constrained_end, current_state, start_constrained_from = (
+            _adaptive_initial_state(
+                self.start_inside_constrained,
+                token_ids,
+                self.grammar_decoder,
+            )
+        )
         
         # This does not include grammar decoder
         self.model._prepare_special_tokens(gen_config, False, device=self.device)

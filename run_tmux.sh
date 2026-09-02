@@ -5,8 +5,8 @@
 #   ./run_tmux.sh shell                 # interactive shell (default)
 #   ./run_tmux.sh -d matrix -- [args]   # start detached (no attach)
 #   ./run_tmux.sh run -- <command...>   # run command in tmux (logs to logs/tmux/)
-#   ./run_tmux.sh matrix [-- args]      # python3 run_all_tests.py ...
-#   ./run_tmux.sh synthesis [-- args]   # python3 -m synthesis.run_synthesis ...
+#   ./run_tmux.sh matrix [-- args]      # python run_all_tests.py ...
+#   ./run_tmux.sh synthesis [-- args]   # python -m synthesis.run_synthesis ...
 #   ./run_tmux.sh attach [session]      # attach to existing session
 #   ./run_tmux.sh kill [session]        # kill session
 #
@@ -16,9 +16,8 @@
 #
 # Environment:
 #   METADECODE_TMUX_SESSION     session name (default: metadecode)
-#   METADECODE_CONDA_ENV        Python environment prefix (default: active environment)
-#   VAS_CONDA_ENV               shared fallback environment prefix
-#   CUDA_VISIBLE_DEVICES optional caller-selected GPU list (unset by default)
+#   METADECODE_CONDA_ENV        conda prefix (default: /apps/conda/advayth2/envs/advayth2)
+#   CUDA_VISIBLE_DEVICES GPU for local runs (default: 2; set VAS_MAX_CUDA_DEVICES>1 to allow more)
 
 set -euo pipefail
 
@@ -26,18 +25,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SESSION="${METADECODE_TMUX_SESSION:-metadecode}"
 DETACHED=0
 FRESH=0
-CONDA_ENV="${METADECODE_CONDA_ENV:-${VAS_CONDA_ENV:-${METADECODE_RDKIT_CONDA_ENV:-${VAS_RDKIT_CONDA_ENV:-${CONDA_PREFIX:-}}}}}"
-if [[ -n "$CONDA_ENV" ]]; then
-  PYTHON="${CONDA_ENV}/bin/python"
-  if [[ ! -x "$PYTHON" && -x "${CONDA_ENV}/bin/python3" ]]; then
-    PYTHON="${CONDA_ENV}/bin/python3"
-  fi
-else
-  PYTHON="$(command -v python3 || command -v python || true)"
-  if [[ -n "$PYTHON" ]]; then
-    CONDA_ENV="$(cd "$(dirname "$PYTHON")/.." && pwd)"
-  fi
-fi
+CONDA_ENV="${METADECODE_CONDA_ENV:-${METADECODE_RDKIT_CONDA_ENV:-/apps/conda/advayth2/envs/advayth2}}"
+PYTHON="${CONDA_ENV}/bin/python"
 
 usage() {
   sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
@@ -53,8 +42,8 @@ require_tmux() {
 
 require_python_env() {
   if [[ ! -x "$PYTHON" ]]; then
-    echo "Python environment executable not found: ${PYTHON:-<unset>}" >&2
-    echo "Activate an environment or set METADECODE_CONDA_ENV/VAS_CONDA_ENV." >&2
+    echo "conda python not found: $PYTHON" >&2
+    echo "Set METADECODE_CONDA_ENV to your env prefix." >&2
     exit 1
   fi
 }
@@ -76,6 +65,7 @@ if [[ -d "$CONDA_ENV/lib" ]]; then
   export LD_LIBRARY_PATH="$CONDA_ENV/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 fi
 export PYTHONUNBUFFERED=1
+export CUDA_VISIBLE_DEVICES="\${CUDA_VISIBLE_DEVICES:-2}"
 export VAS_MAX_CUDA_DEVICES="\${VAS_MAX_CUDA_DEVICES:-1}"
 export VAS_VLLM_GPU_MEMORY_UTILIZATION="\${VAS_VLLM_GPU_MEMORY_UTILIZATION:-0.80}"
 EOF

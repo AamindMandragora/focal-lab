@@ -1,0 +1,42 @@
+{
+  "campaign": "full-baseline-20260803",
+  "created_at": "2026-08-04T22:41:55Z",
+  "source_manifest_sha256": "178cda9f19eca32632bdc1097c969e02bd003489fe5e86e92e3531ec26baac0d",
+  "supersessions": [
+    {
+      "label": "smiles-acrylates-qwen25-1p5b-gcd",
+      "quarantined_artifact": "outputs/baselines/exact-zero-repair-20260804/smiles-acrylates/qwen25-1p5b/gcd.json",
+      "quarantined_sha256": "f0f378de0e02c6d4120154b92531e9fec70d0b6f2d94d88ff8a71f835a0ab587",
+      "quarantine_reason": "50 nonblank outputs collapsed to one repeated malformed answer",
+      "repair_commit": "951ef778f57524b8896a2920264b00e23388de97",
+      "repair_summary": "Enable temperature 0.7 sampling only for SMILES GCD while GSM and Spider remain greedy",
+      "replacement_root": "outputs/baselines/exact-zero-repair-20260804-gcd-sampling-v2",
+      "replacement_artifact": "outputs/baselines/exact-zero-repair-20260804-gcd-sampling-v2/smiles-acrylates/qwen25-1p5b/gcd.json",
+      "replacement_log": "logs/exact-zero-repair-20260804-gcd-sampling-v2/smiles-acrylates-qwen25-1p5b-gcd.log",
+      "pool_log": "logs/exact-zero-repair-20260804-gcd-sampling-v2-pool.log",
+      "pool_pid": 594872,
+      "worker_pid_at_launch": 594893,
+      "gpu": 3,
+      "launched_at": "2026-08-04T22:41:55Z",
+      "completed_at": "2026-08-04T22:58:15Z",
+      "exit_code": 0,
+      "replacement_sha256": "5287e4c61cba6e09bc2836557b17d0a4ffb64b444040d16a38aa22d0c6c6d256",
+      "metrics": {
+        "accuracy": 0.0,
+        "syntax_rate": 0.0,
+        "rows": 50,
+        "nonblank_outputs": 50,
+        "distinct_outputs": 18,
+        "outputs_at_400_token_cap": 49
+      },
+      "status": "accepted_genuine_zero",
+      "acceptance_reason": "Sampling produced 18 materially distinct nonblank outputs across 50 complete rows; 49 outputs reached the token cap, showing severe model decoding failure but not a frozen or fixed-output harness",
+      "independent_review": {
+        "reviewed_at": "2026-08-04T23:11:53Z",
+        "model": "gpt-5.6-sol",
+        "verdict": "PASS"
+      },
+      "preserve_quarantined_artifact": true
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+Structured verification analysis:
+1. Precondition failure at F.dfy:12
+   Message: msg
+   Related call: Foo(...)
+   Remediation: before calling Foo, its precondition must hold on every path that reaches the call. The required clause is shown in the contract excerpt above. Add a guard so the call is only reached in states where that clause holds, or compute and bind the value that establishes it first.
+2. Decreases failure at F.dfy:20
+   Message: msg
+   Remediation: the decreases clause requires the loop measure to strictly decrease each iteration — the step counter must strictly increase on every loop path. A path that does not increment it breaks termination; ensure every loop path either increments the counter or exits.

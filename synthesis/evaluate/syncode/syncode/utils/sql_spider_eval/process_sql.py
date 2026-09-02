@@ -27,6 +27,23 @@
 import json
 import sqlite3
 from nltk import word_tokenize
+import nltk
+
+
+def _ensure_nltk_data():
+    for resource, package in (
+        ("tokenizers/punkt", "punkt"),
+        ("tokenizers/punkt_tab/english", "punkt_tab"),
+        ("corpora/stopwords", "stopwords"),
+    ):
+        try:
+            nltk.data.find(resource)
+        except LookupError:
+            nltk.download(package, quiet=True)
+
+
+_ensure_nltk_data()
+# nltk.download('corpus')
 
 CLAUSE_KEYWORDS = ('select', 'from', 'where', 'group', 'order', 'limit', 'intersect', 'union', 'except')
 JOIN_KEYWORDS = ('join', 'on', 'as')

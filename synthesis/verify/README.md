@@ -29,6 +29,12 @@ Compilation is intentionally grouped here because:
 - It depends on the same source assembly process and include paths.
 - Verification/compile failures are part of one Dafny-centric refinement loop.
 
+`dafny build` re-verifies by default. Synthesis therefore passes the same
+`--verification-time-limit` (see `run_constants.DAFNY_VERIFICATION_TIME_LIMIT_SECONDS`,
+currently 600s / 10 minutes) to both `dafny verify` and `dafny build`, via
+`synthesis.verify.tooling`. Process wall clocks for both tools are also raised
+above that batch limit (`DAFNY_*_PROCESS_TIMEOUT_SECONDS`).
+
 ## Output Expectations
 
 Compiled outputs are staged by the pipeline under each run directory in:

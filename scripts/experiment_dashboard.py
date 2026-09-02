@@ -24,7 +24,6 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 QUEUE_PATH = ROOT_DIR / "outputs" / "gpu3_retry_queue.jsonl"
 STATE_PATH = ROOT_DIR / "outputs" / "gpu3_retry_queue.jsonl.state.json"
 LOG_DIR = ROOT_DIR / "logs"
-RESEARCH_TRACKER_PATH = ROOT_DIR / "saved-results" / "research_tracker_status.json"
 REPORT_GLOBS = ("success_report.json", "failure_report.json")
 RUN_PATTERNS = (
     "run_all_tests.py",
@@ -126,33 +125,15 @@ def parse_gpu_processes() -> list[dict]:
     return rows
 
 
-def parse_etime_seconds(etime: str) -> int:
-    """Convert a `ps` ELAPSED field ([[DD-]hh:]mm:ss) into seconds.
-
-    Cross-platform: Linux `etimes` gives integer seconds directly, but macOS `ps`
-    has no `etimes` keyword, so we read the formatted `etime` field instead.
-    """
-    etime = etime.strip()
-    days = 0
-    if "-" in etime:
-        day_part, etime = etime.split("-", 1)
-        days = int(day_part)
-    parts = [int(part) for part in etime.split(":")]
-    while len(parts) < 3:
-        parts.insert(0, 0)
-    hours, minutes, seconds = parts[-3:]
-    return days * 86400 + hours * 3600 + minutes * 60 + seconds
-
-
 def parse_process_table() -> list[dict]:
-    output = run_command(["ps", "-eo", "pid,ppid,etime,command"])
+    output = run_command(["ps", "-eo", "pid,ppid,etimes,cmd"])
     rows: list[dict] = []
     for line in output.splitlines()[1:]:
-        match = re.match(r"\s*(\d+)\s+(\d+)\s+(\S+)\s+(.*)", line)
+        match = re.match(r"\s*(\d+)\s+(\d+)\s+(\d+)\s+(.*)", line)
         if not match:
             continue
-        pid, ppid, etime, cmd = match.groups()
-        rows.append({"pid": pid, "ppid": ppid, "elapsed_seconds": parse_etime_seconds(etime), "cmd": cmd})
+        pid, ppid, etimes, cmd = match.groups()
+        rows.append({"pid": pid, "ppid": ppid, "elapsed_seconds": int(etimes), "cmd": cmd})
     return rows
 
 
@@ -593,21 +574,6 @@ def collect_runtime_alerts(logs: list[dict], *, limit: int = 20) -> list[dict]:
     return alerts[:limit]
 
 
-def research_tracker_status() -> dict:
-    # Resolve from ROOT_DIR at call time (not the import-time constant) so tests can
-    # redirect ROOT_DIR to a fixture; in production ROOT_DIR is the real project dir.
-    payload = load_json(ROOT_DIR / "saved-results" / "research_tracker_status.json")
-    if not isinstance(payload, dict):
-        return {"updated_at": None, "items": []}
-    items = payload.get("items")
-    if not isinstance(items, list):
-        items = []
-    return {
-        "updated_at": payload.get("updated_at"),
-        "items": [item for item in items if isinstance(item, dict)],
-    }
-
-
 def process_tree_owner(pid: str, process_by_pid: dict[str, dict]) -> dict | None:
     current = process_by_pid.get(str(pid))
     seen: set[str] = set()
@@ -724,7 +690,6 @@ def collect_status() -> dict:
         "gpu_slots": gpu_slots(gpus, gpu_processes, processes, queue, queue_state, logs, reports),
         "logs": logs[:10],
         "runtime_alerts": collect_runtime_alerts(logs),
-        "research_tracker": research_tracker_status(),
         "reports": reports,
     }
 
@@ -836,7 +801,7 @@ HTML = r"""<!doctype html>
     summary { cursor: pointer; font-weight: 600; }
     details[open] summary { margin-bottom: 10px; }
     .detail-grid { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(240px, 1fr); gap: 14px; margin-bottom: 10px; }
-    .alert-list, .tracker-list { display: grid; gap: 8px; }
+    .alert-list { display: grid; gap: 8px; }
     .alert {
       border-left: 3px solid var(--red);
       padding: 8px 10px;
@@ -844,15 +809,6 @@ HTML = r"""<!doctype html>
     }
     .alert .kind { color: var(--red); font-weight: 700; }
     .snippet-title { margin-top: 10px; color: var(--muted); font-size: 12px; font-weight: 650; }
-    .tracker-card {
-      display: grid;
-      gap: 6px;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      background: #14161a;
-    }
-    .tracker-title { font-weight: 700; }
-    .tracker-meta { display: flex; flex-wrap: wrap; gap: 8px; }
     ul { margin: 6px 0 10px 18px; padding: 0; }
     li { margin: 3px 0; }
   </style>
@@ -867,7 +823,6 @@ HTML = r"""<!doctype html>
   </header>
   <main>
     <section><h2>GPU Run Slots</h2><div class="content" id="gpu-slots"></div></section>
-    <section><h2>Research Collection State</h2><div class="content" id="research-tracker"></div></section>
     <section><h2>Runtime Alerts</h2><div class="content" id="runtime-alerts"></div></section>
     <section><h2>Recent Reports</h2><div class="content" id="reports"></div></section>
     <section><h2>Latest Log Tail</h2><pre id="tail"></pre></section>
@@ -968,24 +923,6 @@ HTML = r"""<!doctype html>
       const rows = (data.runtime_alerts || []).map(a => `<div class="alert"><span class="kind">${esc(a.kind)}</span> <span class="muted">${esc(timeText(a.mtime))} · ${esc(a.path || '')} · line ${esc(a.line ?? '')}</span><div class="mono">${esc(a.message)}</div></div>`);
       document.getElementById('runtime-alerts').innerHTML = rows.length ? `<div class="alert-list">${rows.join('')}</div>` : '<div class="empty">No runtime alerts in recent logs.</div>';
     }
-    function renderResearchTracker(data) {
-      const tracker = data.research_tracker || {};
-      const rows = (tracker.items || []).map(item => `
-        <div class="tracker-card">
-          <div class="tracker-meta">
-            <span class="pill">${esc(item.state || 'not set')}</span>
-            <span class="pill">${esc(item.dataset || 'all datasets')}</span>
-          </div>
-          <div class="tracker-title">${esc(item.title || 'Untitled update')}</div>
-          <div>${esc(item.summary || '')}</div>
-          ${item.next ? `<div class="muted"><b>Next:</b> ${esc(item.next)}</div>` : ''}
-          ${item.evidence ? `<div class="muted mono">${esc(item.evidence)}</div>` : ''}
-        </div>`).join('');
-      const updated = tracker.updated_at ? `<div class="muted">Updated ${esc(tracker.updated_at)}</div>` : '';
-      document.getElementById('research-tracker').innerHTML = rows
-        ? `${updated}<div class="tracker-list">${rows}</div>`
-        : '<div class="empty">No research tracker notes found.</div>';
-    }
     function renderReports(data) {
       const rows = data.reports.map(r => {
         const klass = r.kind === 'failure' ? 'bad' : (r.kind === 'success' ? 'ok' : 'warn');
@@ -1004,7 +941,6 @@ HTML = r"""<!doctype html>
         const data = await res.json();
         document.getElementById('updated').textContent = `Updated ${data.generated_at}`;
         renderGpuSlots(data);
-        renderResearchTracker(data);
         renderRuntimeAlerts(data);
         renderLogs(data);
         renderReports(data);

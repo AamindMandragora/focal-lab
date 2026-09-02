@@ -1,0 +1,135 @@
+{
+  "success": true,
+  "accuracy": 0.0,
+  "contains_delimiters": false,
+  "syntax_rate": 1.0,
+  "num_examples": 1,
+  "num_correct": 0,
+  "total_time_seconds": 18.312892198562622,
+  "accuracy_denominator": 1,
+  "max_sample_time_seconds": 18.312892198562622,
+  "task_guidance": [],
+  "sample_outputs": [
+    {
+      "question": "acrylates",
+      "question_full": "acrylates",
+      "expected": "acrylates",
+      "actual": "C",
+      "full_output": "<<C",
+      "scored_output": "<<C",
+      "answer_source": "smiles_eval",
+      "has_extracted_answer": true,
+      "is_correct": false,
+      "accuracy_applicable": true,
+      "contains_delimiters": false,
+      "visible_delimiters": false,
+      "used_constrained_chunk": true,
+      "uses_hidden_chunks": false,
+      "is_syntax_valid": true,
+      "syntax_rate": 1.0,
+      "num_visible_spans": 1,
+      "num_valid_visible_spans": 1,
+      "visible_span_token_lengths": [
+        1
+      ],
+      "valid_visible_span_token_lengths": [
+        1
+      ],
+      "token_count": 2,
+      "hit_max_steps": true,
+      "time_seconds": 18.312892198562622,
+      "runtime_budget_exceeded": false,
+      "helper_trace": [
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 0,
+          "detail": "forward_pass, prefix_len=0"
+        },
+        {
+          "helper": "ChooseNextTokenUnconstrained",
+          "cost_before": null,
+          "cost_after": null,
+          "token": "<<",
+          "detail": "sampled token=<<"
+        },
+        {
+          "helper": "UnconstrainedStep",
+          "cost_before": 0,
+          "cost_after": 1,
+          "token": "<<",
+          "detail": "token=<<"
+        },
+        {
+          "helper": "GenerateLogits",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 0,
+          "detail": "forward_pass, prefix_len=0"
+        },
+        {
+          "helper": "MaskValidNextAndEos",
+          "cost_before": null,
+          "cost_after": null,
+          "prefix_len": 0,
+          "detail": "mask_to_valid, prefix_len=0"
+        },
+        {
+          "helper": "ConstrainedStep",
+          "cost_before": 1,
+          "cost_after": 2,
+          "token": "<redacted>",
+          "detail": "token=<redacted>"
+        },
+        {
+          "helper": "AppendConstrainedToken",
+          "cost_before": 2,
+          "cost_after": 2,
+          "token": "<redacted>",
+          "current_len": 1,
+          "detail": "append <redacted>, current_len=1"
+        }
+      ],
+      "task_guidance": null,
+      "smiles_eval": {
+        "smiles": "C",
+        "grammar_valid": true,
+        "rdkit_available": true,
+        "rdkit_valid": true,
+        "syntax_valid": true,
+        "class_membership": false,
+        "valid_class_membership": false,
+        "accuracy_applicable": true,
+        "is_prompt_exemplar": false,
+        "unique_valid_candidate": false
+      },
+      "provenance_tags": [
+        "free_lm_generation",
+        "hard_token_constrained"
+      ],
+      "answer_provenance": "no_scored_answer",
+      "failure_location": "token_budget_exhausted"
+    }
+  ],
+  "aux_metrics": {
+    "smiles_paper_trial": {
+      "validity_rdkit": 1.0,
+      "diversity_tanimoto": null,
+      "retro_score": null,
+      "membership": 0.0,
+      "samples_to_target_unique_valid": 1000,
+      "unique_valid_count": 0,
+      "sample_count": 1,
+      "retro_scored_count": 0,
+      "retro_available": false
+    },
+    "anti_degeneracy": {
+      "delimiter_churn_ratio": 0.0,
+      "tiny_span_rate": 1.0,
+      "max_steps_hit_rate": 1.0,
+      "penalty": 0.6,
+      "adjusted_membership_score": 0.0
+    }
+  }
+}

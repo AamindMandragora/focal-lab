@@ -1,0 +1,38 @@
+Your method body passed Dafny verification but failed at runtime.
+
+Verification proves your contracts hold on every path through the code as
+written; it does not run the strategy. A runtime failure means the compiled
+method actually executed against a real example and hit an error the proof
+did not (and could not) rule out — for example, a helper's precondition was
+technically provable but the concrete values at that point still triggered a
+failure, or an assumption about how your state evolves across steps did not
+hold for this particular input.
+
+## Task
+
+{{ task_description }}
+{{ allowed_helpers_block }}{{ tool_reference_block }}
+
+{{ search_memory_block }}
+## Previous attempt
+
+```dafny
+{{ previous_strategy }}
+```
+
+## Runtime error
+
+```
+{{ error_traceback }}
+```
+
+## How to revise
+
+Fix the runtime error. Trace the failure back to the specific helper call or
+state update named in the traceback, and check whether the state you were
+tracking at that point (mode, span contents, counters) actually matched what
+the strategy assumed there. If the loop's overall control flow is the
+problem rather than one call site, rewrite the method body instead of making
+only local edits.
+Return exactly the corrected method body: rationale block, proof sketch block, then body statements.
+Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.

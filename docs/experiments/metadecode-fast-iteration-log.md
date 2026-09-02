@@ -399,3 +399,512 @@ Prediction: if H92 is useful, H93 logs or generated strategies should show `Pref
 H93 launch-readiness record before paid start: dry-run launcher `outputs/generated/h93_smiles_qwen35_9b_isocyanates_h92helper_train100_materialization_20260630/launch_h93_smiles_qwen35_9b_isocyanates_h92helper_train100.sh` passed `bash -n` and wrote `h93_dry_run.json` with **0** model calls, **0** GPU calls, **0** billed API calls, `uses_initial_strategy_file=false`, train sample size **100**, held-out sample size **100**, train UV/accuracy bar **0.92**, syntax floor **0.50**, planned generated root `outputs/generated/smiles_qwen35_9b_isocyanates_uv_qwen35_h93_h92helper_20260630`, and held-out target `outputs/controlled_comparison/smiles_qwen35_9b/isocyanates/metadecode_uv.json`. Live safety check found H65 PID **464438** not alive, H86 PID **2873849** not alive, no H93 PID yet, GPU0 and GPU1 clean/free at **40432 MiB** each, and GPU2/GPU3 occupied by existing VLLM compute processes. AWS CLI was not installed on focal, so live account identity could not be independently reverified in this check; per the active campaign authorization, the launch uses the recorded approved AWS account **887730490125** and the explicit `CONFIRM_BEDROCK_ACCOUNT_887730490125=yes` gate. Planned real launch: `DRY_RUN=0 SAFE_GPU_ID=0 CONFIRM_BEDROCK_ACCOUNT_887730490125=yes`.
 
 H93 paid launch record: launched at **2026-06-30T21:30Z** with `DRY_RUN=0 SAFE_GPU_ID=0 CONFIRM_BEDROCK_ACCOUNT_887730490125=yes`. PID **756754**, PID file `/tmp/csd_h93_logs/h93_smiles_qwen35_9b_isocyanates_h92helper_train100_20260630.pid`, log `/tmp/csd_h93_logs/h93_smiles_qwen35_9b_isocyanates_h92helper_train100_20260630.log`, provenance dir `outputs/generated/h93_smiles_qwen35_9b_isocyanates_h92helper_train100_materialization_20260630/provenance_20260630T213012Z`, generated root `outputs/generated/smiles_qwen35_9b_isocyanates_uv_qwen35_h93_h92helper_20260630`, latest run `outputs/generated/smiles_qwen35_9b_isocyanates_uv_qwen35_h93_h92helper_20260630/smiles_qwen35_9b_isocyanates_uv_qwen35_h93_h92helper_20260630_20260630_213016_1f5bdd`, held-out target `outputs/controlled_comparison/smiles_qwen35_9b/isocyanates/metadecode_uv.json`. Immediate health check showed the wrapper alive and latest run directory created; no new GPU process had started yet while the first Bedrock strategy generation was underway. Leave H93 running and monitor this PID/log/root.
+
+### H94 preregistration — 2026-07-11T21:02Z
+
+H94 hypothesis: the three active Spider synthesis cells can survive the current Bedrock daily-token quota without exhausting short exponential retries if they are warm-restarted from their latest fully evaluated strategies with the already-tested indefinite hourly retry policy. This is an explicit user-approved one-time override of the standing cold-start rule for these interrupted cells only.
+
+Single variable: replace the current `20, 40, 80, ...` ten-retry policy with indefinite retries centered on 3600 seconds. Recover and replay Spider Qwen3.5-4B attempt 39, Spider Qwen3.5-9B attempt 37, and archived Spider Qwen2.5-7B attempt 7, then continue only through the original attempt-40 cap. Keep every model, split, sample size, target, helper policy, beam size, evaluator setting, and output name unchanged. Do not modify the grammar, scorer, dataset, or baselines.
+
+Prior: **95%** that the hourly policy prevents these cells from terminating solely because ten short retries were exhausted. Risk: Bedrock's daily quota may remain unavailable for many hours, or a relaunch may encounter GPU-memory contention.
+
+Prediction: each restarted process will log `daily token quota; retry indefinitely` with a delay near 3600 seconds instead of `retry N/10`; once Bedrock accepts a request, the run will replay its recovered strategy and continue toward attempt 40. Approved billed account: UIUC lab AWS **887730490125**, `us-east-1`, explicitly confirmed by the user on 2026-07-12 IST. Conservative remaining-author-call cost estimate: under **$10-30** total.
+
+H94 launch record: dry-run recovery succeeded for all three authorized strategies: 4B attempt 39 (**15,904 chars**), 9B attempt 37 (**7,977 chars**), and 7B attempt 7 (**11,282 chars**). The old Spider synthesis parents were terminated and replaced at **2026-07-11T21:05Z** by synthesis PIDs **4117134** (4B), **4117130** (9B), and **4117126** (7B). Live command inspection confirmed replay offsets **38/36/6** and remaining iteration counts **2/4/34**, which replay the approved strategy and preserve the attempt-40 cap. All three process environments contain `CSD_DAILY_QUOTA_RETRY_SECONDS=3600` and `CSD_DAILY_QUOTA_RETRY_JITTER_SECONDS=300`; focal runtime source `synthesis/generate/generator.py` reads these variables and emits the indefinite daily-quota retry path. Each process reached replay evaluation, and no orphaned vLLM engine remained.
+
+H94 deferred-GSM controller addendum: the user explicitly approved warm continuation for GSM Qwen3.5-9B from completed attempt **5** and GSM Qwen2.5-14B from completed attempt **33**, with the requirement that prior evaluation-failure context be reconstructed. Both continuations therefore replay the recovered strategy through the unchanged evaluator before any new author call. A dedicated controller waits for Spider 9B to release GPU 1 before launching GSM 9B, and for SMILES 9B to release GPU 2 before launching GSM 14B. GPU gates are at most **14,000 MiB used** for GSM 9B (`util=0.60`) and **6,000 MiB used** for GSM 14B (`util=0.81`). The controller fixes the exact source logs and attempts, preserves the attempt-40 cap, and inherits the approved hourly indefinite retry policy and AWS lab account **887730490125**.
+
+Prior-history fidelity correction: before either deferred job launched, independent review identified that replaying only the latest strategy would reconstruct its immediate evaluation feedback but reset earlier anchor/helper history. The recovery path was therefore extended with `--initial-attempt-history-file`. GSM 9B restores **4 evaluated attempts (1-4)** before replaying attempt 5, including the original logged anchor attempt **3 at 26.5% accuracy / 77.6% syntax**. GSM 14B restores **30 evaluated attempts from the 1-32 range** before replaying attempt 33, including the original logged anchor attempt **12 at 42.9% / 87.8%**. Focused focal tests passed **2/2** for history loading and log parsing; local runtime tests passed **5/5** including orphan cleanup. The rebuilt controller PID is **349064**, with waiter PIDs **349074/349075**. All six pre-existing synthesis workers remained active and orphan count stayed zero.
+
+Held-out handoff addendum: after an accepted deferred GSM synthesis exits successfully, the same controller resolves `GeneratedCSD.py` from the latest success report and runs the fixed held-out GSM eval split before releasing its waiter. GSM 9B writes `outputs/controlled_comparison/post14b_rebar/gsm-qwen35-9b.json`; GSM 14B writes `outputs/controlled_comparison/gsm_14B/metadecode_paid0708_infraretry_kvfix_0711.json`. A synthesis that exhausts without a win skips held-out evaluation and records that decision in the controller log/state.
+
+### H95 preregistration — 2026-07-15T09:20Z
+
+H95 hypothesis: the six retained Qwen2.5 SMILES MetaDecode strategies were measured with the older visible-delimiter output contract. Re-evaluating the unchanged stored strategies with the current bare `Molecule:` output contract may materially change their unique-valid rates, so the older numbers should not be used in the main paper table until this direct re-evaluation is complete.
+
+Single variable: change only the evaluation prompt/output contract from the older visible `<< >>` presentation to the current bare-output evaluator. Purely re-evaluate the final retained, cold-discovered, mask-on strategies for Qwen2.5-1.5B and Qwen2.5-7B on acrylates, chain extenders, and isocyanates at N=100. Rerun the six matching CARS baseline cells through the same current evaluator. Keep models, class definitions, grammar, scorer, rolling-prompt behavior, sample count, max steps, token budget, and stored strategy bodies unchanged. Do not synthesize, do not use `--initial-strategy-file` for further synthesis, and remove all Bedrock/OpenAI/Anthropic/AWS credential variables from the evaluation processes.
+
+Prior: **60%** that at least four of the six MetaDecode cells remain within five percentage points of their older unique-valid rates. The strategies may still work because the current evaluator accepts hidden parser-guided chunks and normalizes older delimiters, but their prompt-facing generation behavior can change when the visible delimiter request is removed.
+
+Prediction: if the older results are robust to the output-contract correction, at least four cells will have absolute unique-valid-rate change no larger than **0.05**, and all twelve MetaDecode/CARS outputs will complete at N=100. If false, at least three MetaDecode cells will shift by more than **0.05** or fail to produce complete N=100 artifacts; the paper must then use the refreshed bare-output numbers rather than the older headline. Expected cost: local focal GPU time only, **0** author-model calls, **0** billed API calls, and **0** paid-provider credential values in the launch environment.
+
+H95 protocol correction before the retained MetaDecode runs: the accepted Qwen2.5 SMILES launchers explicitly set `CSD_CONSTRAINED_TEMPERATURE=0.7`, while the current evaluator defaults that variable to `0.0`. The first compatibility/full-start commands omitted the variable; process-environment inspection confirmed that only `CSD_SMILES_ROLLING_PROMPT=1` was present. Those incomplete zero-temperature MetaDecode runs were stopped before producing any final N=100 JSON and are excluded. The retained MetaDecode re-evaluations must explicitly set both `CSD_SMILES_ROLLING_PROMPT=1` and `CSD_CONSTRAINED_TEMPERATURE=0.7`. CARS does not use this MetaDecode constrained-token sampler and continues unchanged.
+
+H95 result: **the robustness prediction was false, but all twelve required evaluations completed.** The retained MetaDecode unique-valid rates changed from old to current as follows: 1.5B acrylates **0.10 to 0.08** (-0.02), 1.5B chain extenders **0.58 to 0.44** (-0.14), 1.5B isocyanates **0.23 to 0.12** (-0.11), 7B acrylates **0.14 to 0.12** (-0.02), 7B chain extenders **0.56 to 0.73** (+0.17), and 7B isocyanates **0.19 to 0.15** (-0.04). Only **3/6**, not the predicted at least 4/6, stayed within 0.05. The matching current CARS unique-valid rates are **0.04, 0.03, 0.06, 0.03, 0.07, and 0.04**, respectively, so the current paired MetaDecode-minus-CARS primary-metric gaps are **+0.04, +0.41, +0.06, +0.09, +0.66, and +0.11**. MetaDecode beats CARS on unique-valid rate in all six current pairs, but has lower validity in five pairs and lower Tanimoto diversity in five pairs; this is a primary-metric result, not an all-axis claim.
+
+H95 verification: all twelve final artifacts contain exactly **100** answers. An independent pass re-ran `evaluate_smiles_output(..., require_rdkit=True)` and `smiles_trial_metrics` from the **1,200 raw generated strings**, excluded the three N=3 smoke files and one four-answer partial file, and returned `errors: []`. It also reproduced every stored MetaDecode accuracy, validity, diversity, membership, unique-valid count, and sample count. The current evaluator source hash is `80b0d1af04617a2b8e0dcec7db914c8137a31887ced2c7fc683e0a7eb90100e2`, and its bare-output markers were present. Evidence root: `outputs/controlled_comparison_bare_smiles_qwen25_20260715/`; independent artifact: `independent_recompute.json`. The retained runs made **0 author-model calls, 0 synthesis attempts, and 0 billed API calls**. Paid-provider environment variables were removed from the evaluation processes.
+
+### H96 preregistration — 2026-07-15T12:35Z
+
+H96 hypothesis: the remaining user-approved helper-recovery rows can continue
+from their latest clean evaluation context through the dedicated Claude Code Max
+provider without the Bedrock daily-token HTTP 429 blocker and without changing
+their scientific settings. This is an operational provider migration, not a new
+claim that the provider is scientifically equivalent to Bedrock.
+
+Single variable: switch strategy authoring from Bedrock Sonnet 4.6 to the
+first-party Claude Code Max `claude-sonnet-4-6` provider on the isolated config
+`/home/aadivyar/.claude-csd-synthesis`, requiring account
+`aadivya@fermi.ai`. Keep every row's evaluator model, task, split, sample count,
+bars, max steps, token budget, helper policy, beam size, prior evaluated-attempt
+history, latest clean strategy, and attempt cap unchanged. Apply the independently
+approved helper-menu/rendered-delimiter patch before new author calls. Do not
+use Bedrock or any API fallback. The user explicitly approved this subscription
+account and the existing warm-recovery exception for these contaminated rows.
+
+Prior: **95%** that Claude Code Max removes the observed Bedrock daily-token
+blocker while preserving exact row recovery. Main risks are process interruption
+between evaluation and authoring, duplicate queue claims, or an old Python worker
+retaining the pre-patch helper prompt in memory.
+
+Prediction: live author commands contain `--generation-backend claude`,
+`--generation-model claude-sonnet-4-6`, and
+`--claude-expected-account aadivya@fermi.ai`; contain no Bedrock backend or API
+fallback; reconstruct unique increasing evaluated-attempt histories ending
+immediately before the replayed strategy; and never run more than one synthesis
+worker per row. A synthesis win automatically triggers the frozen held-out
+evaluation, while an exhausted train run becomes a terminal failure. Expected
+incremental cash charge is **$0 per call under the approved Claude Max
+subscription allowance**; usage is subject to that account's subscription
+limits rather than AWS token billing.
+
+H96 launch record: the Claude-only recovery deployment started successfully on
+focal. `csd-gsm14b-claude-helper-resume.service` owns GSM Qwen2.5-14B, while
+`csd-claude-recovery-queue.service` owns the six-row queue. At
+**2026-07-15T13:04Z**, both services were active with **0 restarts**; five rows
+were live across GPUs 0-3 and GSM Qwen3.5-9B plus SMILES Qwen3.5-9B
+isocyanates were queued for the next safe memory openings. Live commands
+required `claude-sonnet-4-6`, the isolated config, and account
+`aadivya@fermi.ai`; no Bedrock author process was present. Focused focal tests
+passed **18/18**, the wider provider/synthesis suite passed **117/117**, and
+grounding/helper tests passed **20/20**. The existing combined-log follower
+copied tagged output from the new `paid_synth_warmfix_*_0714_r2.log` files.
+This is a launch record, not a benchmark result; final train and held-out
+results remain pending.
+
+H96 final parser check: a repository-wide same-bug search found that the
+one-time GSM checkpoint builder still preferred an incomplete later duplicate
+attempt over an earlier complete block. The targeted test first failed **1/1**
+with `attempt 46 has no complete evaluation summary`. After the shared
+completed-block selection rule was applied, the final focal
+recovery/provider/default suite passed **71/71** with three unrelated warnings.
+The running workers do not import this builder, so this fix did not restart or
+change any active experiment.
+
+H96 final independent deployment verdict: **PASS**. The judge verified that the
+final queue source was deployed at **13:00:12Z** before its workers started at
+**13:00:50-55Z**, that the earlier service starts were sequential controlled
+deployment restarts, and that every final active output had exactly one worker.
+It also verified the two GSM14B attempt-55 blocks are separately claimed stages:
+the provider handoff and the one-time helper-refresh replay. Both final services
+had zero restarts, all active author commands used Claude Code Max account
+`aadivya@fermi.ai`, and no Bedrock author process was active.
+
+### H97 preregistration — 2026-07-19T06:55Z
+
+Hypothesis: the cold queue restart loop is caused by one monitor policy: after
+the monitor stops the paid queue, any repair result that is missing, invalid,
+rejected, fails verification, fails deployment, or fails attestation still calls
+`systemctl start` on the original service. A repair that is not independently
+verified safe must leave the paid queue stopped; only the fully verified success
+path may relaunch it.
+
+Single variable / tweak: remove automatic service restarts from every blocked or
+exceptional repair path while preserving the existing successful verified repair
+relaunch. Do not change incident detection, repair permissions, experiment
+settings, model choices, bars, grammars, graders, splits, or cold-run policy.
+
+Prior: **99%**. The live monitor log records an invalid repair result followed
+immediately by `systemctl --user start csd-cold-synthesis-queue.service` four
+times, and the source contains matching restart calls on blocked exits.
+
+Falsifiable prediction: the changed rejection test fails on the current code
+because it observes a `systemctl start`; after the smallest policy fix, that test
+and the full incident-monitor suite pass, a fake invalid repair records the stop
+but no start, and the existing successful-repair test still records exactly one
+verified relaunch. No synthesis, GPU evaluation, Bedrock call, or other paid call
+is part of this focused experiment.
+
+H97 result: **confirmed, with three same-bug edges found and covered before
+deployment.** The first changed test was red **1/1**: an invalid `not-json`
+repair result still produced `systemctl start csd-warm-recovery.service`. After
+removing blocked-path restarts, the rejection and verified-success tests passed.
+A two-service relaunch test then failed **1/1** because the first service stayed
+started when the second service failed; the cleanup now re-stops all configured
+services. A final exception-path test failed **1/1** because an exception from
+the post-start `is-active` check left the live file as `REPAIRED = True`; the
+relaunch block now stops all services, rolls back deployed files, restores the
+previous attestation, returns failure, and leaves the incident retryable.
+The same red result occurred when the post-deployment live verifier raised; that
+path now uses the same stop-first rollback and attestation cleanup.
+
+Final local evidence before deployment: the five focused rejection, partial
+relaunch, relaunch-exception, live-verifier-exception, and verified-success tests
+passed **5/5**; the full incident-monitor file passed **31/31**; the monitor's
+wider verifier command passed **130/130** with three unrelated
+deprecation/future warnings; and `py_compile` passed. The independent judge also
+re-ran **31/31** and **130/130** (one warning in its environment). A source search
+found one remaining `systemctl start`, only inside the fully verified relaunch
+block. No synthesis, evaluation, GPU job, or paid provider call was made by
+H97's focused tests.
+
+### H98 preregistration — 2026-07-19T07:31Z
+
+Hypothesis: the queue's per-run `CUDA_VISIBLE_DEVICES` assignment is ignored by
+the persistent GSM/Spider evaluation pool because its shared GPU-slot detector
+reads every physical GPU from `nvidia-smi`. Four simultaneous cold runs
+therefore start workers on the same physical GPUs, causing the observed 14B OOM.
+
+Single variable / tweak: make the shared slot detector filter physical GPU
+indices through the process's existing `CUDA_VISIBLE_DEVICES`, and make the
+pool's no-idle-slot fallback use the first assigned visible GPU instead of
+physical GPU 0. Do not change worker count policy, evaluator settings, model
+memory settings, examples, splits, bars, grammars, graders, author prompts, or
+synthesis strategy behavior.
+
+Prior: **99%**. Each of the four interrupted run logs says `pool startup: 3
+worker(s) on GPU(s) [0, 1, 2]` even though the queue gave each process one
+different `CUDA_VISIBLE_DEVICES` value. The 14B log then reports only 375 MiB
+free on GPU 0 while the 7B and another process already hold memory there.
+
+Falsifiable prediction: on current code, a mocked four-idle-GPU detector with
+`CUDA_VISIBLE_DEVICES=3` returns `[0, 1, 2, 3]` instead of `[3]`, and an empty
+slot result with `CUDA_VISIBLE_DEVICES=2` falls back to GPU 0 instead of GPU 2.
+After the fix both tests pass, existing queue/evaluator tests remain green, and
+a no-model targeted probe for four queue assignments reports one distinct pool
+GPU per assignment. No synthesis, evaluation model load, Bedrock call, or paid
+provider call is part of the focused experiment.
+
+H98 result: **confirmed.** Before implementation, the two focused tests failed
+**2/2**: visibility `3` returned `[0, 1, 2, 3]`, and the empty-slot fallback
+created worker `(0, 0)` instead of `(0, 2)`. After filtering the detector by the
+process-visible physical GPU ids and using that same list for fallback, the
+focused file passed **2/2**. A no-model probe mocked four idle physical GPUs and
+reported `GPU_ASSIGNMENT_PROBE_OK {0: [0], 1: [1], 2: [2], 3: [3]}`. The wider
+runtime verifier passed **133/133** with three unrelated warnings, and
+`py_compile` passed for both changed runtime modules. A repository search found
+no second caller of `detect_gpu_slots` outside the persistent pool and the
+standalone sharded re-evaluator; both now respect the caller's existing GPU
+visibility. No model was loaded and no Bedrock or other paid call was made.
+
+### H99 preregistration — 2026-07-19T08:00Z
+
+Hypothesis: the isolated Qwen2.5-14B evaluator fails because synthesis still
+uses the shared vLLM memory fraction `0.80`, while this campaign's reviewed 14B
+runtime record already requires `0.81`. At `0.80`, the live engine loaded 27.57
+GiB of weights but had only 2.96 GiB of KV cache for a 16,384-token context that
+requires 3.0 GiB. Raising only the shared synthesis memory fraction to `0.81`
+will supply enough KV cache without changing examples, splits, prompts, model,
+context length, bars, grammar, grader, decoding, or scoring.
+
+Single variable / tweak: change `VLLM_GPU_MEMORY_UTILIZATION` from `0.80` to
+`0.81`. Keep the 16,384-token context length and every scientific setting
+unchanged. The four author calls completed before the safety monitor stopped the
+queue will be recorded as interrupted calls before any new cold launch.
+
+Prior: **99%**. The error reports a shortfall of only 0.04 GiB, while one
+percentage point of this 40 GiB GPU is about 0.40 GiB. The model was isolated on
+GPU 1, so no competing queue worker caused this shortfall.
+
+Falsifiable prediction: a focused constant test fails on current code at
+`0.80`; after the one-line change it passes. A disposable one-example 14B
+re-evaluation on one idle GPU with otherwise identical vLLM settings initializes
+at `0.81` and writes a valid result, and the existing runtime verifier remains
+green. The focused probe loads only the evaluation model; it makes no Bedrock,
+author-model, or other paid provider call.
+
+H99 result: **confirmed.** The focused test was red **1/1** on the original
+constant (`0.8 == 0.81` failed) and green **1/1** after the one-line change. The
+wider runtime verifier passed **134/134** with three unrelated warnings, and
+`py_compile` passed for the constants and synthesis entry point.
+
+The targeted one-example Qwen2.5-14B probe ran on isolated physical GPU 1 with
+the unchanged 16,384-token context. At `0.81`, vLLM loaded the same 27.57 GiB of
+weights, reported **3.35 GiB** available KV cache and an 18,304-token cache, then
+completed with exit code 0 and wrote one answer. The strategy's disposable
+one-example score was 0.0 accuracy and 0.0 syntax; score quality was not the
+probe variable. Two earlier probe commands stopped before model load because
+the first named a compiled directory instead of `module_.py` and the second
+named the split at repo root instead of its manifest-recorded path; neither
+allocated a GPU or called a provider. No Bedrock, author-model, or other paid
+provider call was made by H99.
+
+### H100 preregistration — 2026-07-19T10:45Z
+
+Hypothesis: rationale summarization returns HTTP 401 because the configured
+Vertex path sends `GEMINI_API_KEY` to the project-scoped Vertex OAuth endpoint.
+Replacing only the rationale-summary transport with the authenticated FOCAL
+Codex CLI and `gpt-5.6-luna` will return the same one-sentence claim without a
+Google request, while leaving the Claude author transport and synthesis behavior
+unchanged.
+
+Single variable / tweak: change the rationale-summary backend from `vertex` to
+an isolated `codex` backend fixed to `gpt-5.6-luna`. Do not change the author
+model/backend, rationale prompt, synthesis strategy, helper policy, evaluation
+model, examples, bars, grammars, graders, splits, or queue state.
+
+Prior: **99%**. Four unique live summary attempts returned Google's HTTP 401.
+FOCAL's code selects `GEMINI_API_KEY` before `VERTEX_AI_ACCESS_TOKEN` for the
+project-scoped Vertex URL. FOCAL now has Codex CLI `0.144.1` authenticated as the
+user-approved ChatGPT Pro account `aadivya@fermi.ai`, and the CLI exposes
+non-interactive `codex exec -m gpt-5.6-luna`.
+
+Falsifiable prediction: a fake-executable transport test fails before the new
+backend exists; after the smallest implementation it passes and proves the
+exact rationale reaches Codex stdin from a clean temporary directory with an
+ephemeral, read-only, low-effort Luna invocation. One approved live call through
+`StrategyGenerator.summarize_rationale_claim` returns a non-empty sentence,
+records no `HTTP 401`, and makes no Google, AWS, Anthropic API, or OpenAI API-key
+request. The call uses the approved `aadivya@fermi.ai` Codex subscription
+allowance; no synthesis queue or GPU evaluation is launched.
+
+H100 result: **confirmed.** The tightened transport test was red **4/4** before
+the backend existed. The focused summary and process-cleanup checks were green
+**14/14** after the change. The added fourteenth check first failed **1/1** and
+then passed after removing the account-check cache, proving every launch
+re-reads the saved login. One approved call through the live FOCAL
+`StrategyGenerator` finished in 4.445 seconds and returned a non-empty 14-word
+summary without using the full-rationale fallback. Its log contains no match for
+`HTTP 401`, Vertex, Gemini, Anthropic, Bedrock, or provider API-key names. The
+live account guard verified `aadivya@fermi.ai` and the request log names
+`gpt-5.6-luna`. No synthesis or `run_cold` worker was launched; only pre-existing
+log-monitor processes were present after validation.
+
+### H101 preregistration — 2026-07-19T12:10Z
+
+H101 hypothesis: the exhaustive cold queue can combine cell-level and vLLM
+worker-level parallelism safely by making the queue the sole owner of physical
+GPU assignment. Two concurrent GSM/Spider cells should each receive one
+disjoint two-GPU bundle, and each persistent evaluation pool should create
+workers only on its assigned bundle. SMILES should retain its stateful
+single-GPU path.
+
+Single variable: replace the cold queue's scalar GPU reservation with an
+explicit dataset-aware GPU bundle and pass that same bundle to the persistent
+evaluation pool. GSM and Spider request two GPUs; SMILES requests one. Do not
+change prompts, grammars, graders, datasets, splits, evaluation examples,
+thresholds, model settings, author settings, iteration caps, or warm-start
+policy. Do not launch the paid queue as part of this implementation check.
+
+Prior: **90%** that explicit bundles remove the collision risk without changing
+evaluation results. The queue already owns memory reservations, and the worker
+pool already supports one process per GPU; the missing contract is an exact
+list of physical GPU IDs shared by both components. The main risk is mishandling
+physical versus CUDA-local numbering when a parent process sees multiple GPUs.
+
+Prediction: before implementation, focused tests will fail because queue jobs
+receive only one GPU and the worker pool independently scans all globally idle
+GPUs. After implementation, a four-GPU simulation will start exactly two
+GSM/Spider cells concurrently with two disjoint GPU IDs each, delay the next
+poolable cell until a full bundle is released, and preserve one-GPU SMILES
+execution. Worker-pool tests will prove that explicit physical IDs are consumed
+in queue order without global detection. Expected validation cost: **0** model
+calls, **0** GPU model launches, and **0** billed API calls.
+
+H101 implementation result: **confirmed in the isolated worktree; not launched.**
+The first focused run was red **3/3**: the scalar environment rendered `(3, 1)`
+instead of `3,1`, no bundle allocator existed, and the worker pool still called
+global GPU detection. A separate source-of-truth test was red **1/1** because
+the queue reserved `0.80` while the live evaluator uses `0.81` vLLM memory.
+
+After implementation, the focused queue/pool suite passed **28/28**, and the
+broader queue/pool/recovery regression set passed **66/66**. A no-model four-GPU
+simulation started two GSM cells concurrently on disjoint bundles `(0, 1)` and
+`(2, 3)`, never exceeded two poolable cells, and reported zero overlap. The
+same simulation ran four synthetic SMILES cells on four one-GPU bundles with
+zero overlap. Queue dispatch/release logs now record exact GPU lists and worker
+counts. Validation used **0** model calls, **0** GPU model launches, and **0**
+billed API calls; the paid service remained stopped.
+
+### H102 preregistration — 2026-07-19T13:28Z
+
+H102 hypothesis: H101 coordinates GPU ownership correctly, but its persistent
+pool still evaluates worker shards serially because `_dispatch` calls the
+blocking `worker.evaluate` inside a plain loop. Sending the already-independent
+shards concurrently will activate both queue-owned vLLM workers per cell and
+turn the live configuration from two cells by one active worker into the
+requested two cells by two active workers.
+
+Single variable: execute each non-empty worker shard concurrently inside
+`EvalWorkerPool._dispatch`, then merge results and preserve the existing
+dead-worker retry behavior. Do not change prompts, grammars, graders, datasets,
+splits, examples, model settings, queue bundle sizes, thresholds, author
+settings, iteration caps, or warm-start policy.
+
+Prior: **99%**. The first live H101 launch created four correctly pinned worker
+processes, but only two `VLLM::EngineCore` processes. GPUs 3 and 1 held about
+33 GiB each while the paired GPUs 0 and 2 stayed at 10 MiB. Source inspection
+shows `_dispatch` waiting synchronously for one worker before invoking the next.
+The paid queue was stopped after the first two author calls and before either
+49-example attempt produced a score.
+
+Falsifiable prediction: a focused timing/coordination test on current code will
+show worker 2 does not enter `evaluate` until worker 1 is released. After the
+fix, both workers enter before either is released, results remain in original
+example order, and a failing shard is still retried on a surviving worker. The
+existing pool and queue tests remain green. A restarted live run must show four
+simultaneous EngineCore processes and nontrivial memory allocation on all four
+assigned GPUs before its first score. The focused test itself uses **0** model
+loads and **0** paid provider calls.
+
+H102 result: **confirmed live.** The concurrency test was red **1/1** on the
+serial loop: worker 2 did not start within 0.5 seconds while worker 1 was
+blocked. After submitting non-empty shards through a thread pool, the focused
+worker-pool file passed **4/4** and the broader queue/pool/recovery set passed
+**67/67** with two unrelated warnings.
+
+The first paid H101 launch was stopped before either 49-example evaluation
+produced a score. Its two author calls were recorded by raising the campaign
+accounting from 480 to 482 calls without reducing any useful cold-run iteration
+cap. The two partial output trees and logs were preserved under
+`outputs/invalidated/2026-07-19-h101-serial-worker-launch` and were not reused.
+
+The cold queue restarted at **2026-07-19T13:37:22Z**. Live logs for both initial
+cells report `parallel dispatch: 2 worker shard(s) started`. Four simultaneous
+`VLLM::EngineCore` processes were present, and physical GPUs 0, 1, 2, and 3
+held approximately 33.9, 16.4, 16.4, and 33.9 GiB respectively. This confirms
+two concurrent cells with two active, disjoint vLLM workers each. The service
+remained active after the check.
+
+### H124 preregistration — 2026-08-28T16:55Z
+
+H124 hypothesis: the requested missing fixed-strategy held-out cells can be
+measured on the corrected evaluator contract without another prompt, grammar,
+scorer, split, or strategy change. The live artifact gaps are measurements to
+complete, not evidence that the adapters need another semantic fix.
+
+Single variable: fixed strategy identity within each preregistered row. Run
+Unconstrained, GCD, and IterGen for GSM Qwen3.5-2B/4B; CARS for Spider
+Qwen3.5-2B/4B; and exactly the 30 blank SMILES method/model/class cells. Keep
+the current token-0 Spider contract, canonical held-out splits, sample counts,
+model rendering, scoring, temperatures, and generation budgets fixed. Do not
+replace the 18 already-filled Qwen3.5 SMILES baseline cells.
+
+Prior: **85%** that every adapter now emits a complete, recomputable artifact;
+the main risk is runtime length or an old baseline-specific integration gap.
+
+Falsifiable prediction: a one-example real-adapter pilot for each benchmark
+family writes nonblank row evidence with the intended source index, parser
+result, primary score, and syntax/validity field. Full runs then produce the
+exact requested sample counts without mixed provenance. A blank/repeated exact
+0/0 batch, wrong split, missing row evidence, or evaluator-contract error
+refutes H124 and stops that adapter family before paper entry.
+
+### H125 preregistration — 2026-08-28T16:55Z
+
+H125 hypothesis: changing only the synthesis author among GPT-5.6 Sol through
+Codex, Gemini 3.7 Flash through the direct Gemini API, and the live normal Opus route
+will yield a fair Table 5 comparison under one common Qwen3.5-2B evaluation
+setup.
+
+Single variable: author model/route. Hold task, evaluator Qwen/Qwen3.5-2B,
+train and held-out data, cold-start policy, 40-attempt cap, adaptive helper
+mask, bandit policy, beam size, token budget, verification, and all thresholds
+fixed. The SMILES paper value is the sample-count-weighted mean of acrylates,
+chain extenders, and isocyanates. GPT-5.6 Sol must run through `codex exec`;
+Gemini must use direct AI Studio model `gemini-3.7-flash` with the approved API
+key; Opus must use the exact live verified normal profile and model.
+
+Amendment — 2026-08-30T05:35Z, before any Table 5--8 campaign launch: the user
+replaced the planned Gemini 3.1 Pro Vertex author with Gemini 3.7 Flash through
+the direct Gemini API after a successful authenticated model-list and minimal
+generation check. No Table 5--8 result was collected under the superseded
+Gemini route. The author model/route remains the only changed variable.
+
+Amendment — 2026-08-30, before any Table 5--8 provider pilot or full campaign
+launch: the user required the GPT-5.6 Sol arm to measure the model without the
+Codex CLI's built-in agent instructions. The single route change is to use the
+pinned Pi provider layer with the same ChatGPT/Codex OAuth payer, while bypassing
+Pi's agent session. The request contains the campaign system instructions and
+one user message, reasoning `high`, no tools, and no prior conversation. The
+prior is **90%** that this removes the harness instructions without changing the
+model or payer. The falsifiable prediction is that a sealed provider pilot binds
+`gpt-5.6-sol`, the reviewed Pi package and install bytes, the OAuth account hash,
+and the no-tools request shape, and returns a plain-text author response without
+an API key, Codex CLI process, tool call, or leaked prompt/token text. A mismatch
+blocks every GPT-5.6 Sol campaign row.
+
+Prior: **70%** that all three provider routes pass a real one-attempt pilot and
+produce provenance-bound terminal artifacts; provider auth/model drift is the
+main risk.
+
+Falsifiable prediction: each pilot records the exact requested provider/model,
+returns one parseable synthesis-author response through the existing verifier,
+and reaches normal evaluation or a normal strategy-rejection outcome without
+an auth, unsupported-model, output-extraction, or secret-logging failure. Any
+route that cannot do so is repaired and repiloted before its five full runs.
+
+### H126 preregistration — 2026-08-28T16:55Z
+
+H126 hypothesis: with Qwen3.5-2B and the normal Opus author fixed, symbol-level
+per-step budgets `b=2` or `b=4` will reduce constrained work relative to token
+level `b=1` while preserving or improving held-out accuracy on GSM and Spider.
+
+Single variable: per-step token budget `b` in `{1,2,4}`. Hold beam size 2,
+adaptive masking on, bandit selection, author, evaluator, splits, cold start,
+40-attempt synthesis cap, prompts, verifier, and scoring fixed.
+
+Prior: **60%**. Larger steps should need fewer constrained decisions, but may
+reduce fine-grained correction and therefore hurt accuracy.
+
+Falsifiable prediction: at least one of `b=2` or `b=4` has lower constrained
+work than `b=1` on both tasks and does not reduce accuracy on both tasks. If
+both larger budgets fail that condition, H126 is refuted; report the measured
+tradeoff without changing another setting.
+
+### H127 preregistration — 2026-08-28T16:55Z
+
+H127 hypothesis: beam refinement `B=2` or `B=4` improves held-out accuracy over
+`B=1` on at least one of GSM or Spider, with the expected increase in
+constrained work.
+
+Single variable: refinement beam size `B` in `{1,2,4}`. Hold Qwen3.5-2B,
+normal Opus author, adaptive masking on, bandit selection, token budget, splits,
+cold start, 40 attempts, prompts, verifier, and scoring fixed.
+
+Prior: **70%** that a wider beam recovers at least one accuracy gain; the risk
+is that the synthesized strategy dominates and extra refinement only adds work.
+
+Falsifiable prediction: `B=2` or `B=4` strictly exceeds `B=1` accuracy on at
+least one task, and mean constrained work is nondecreasing for at least one
+wider-beam comparison. Otherwise H127 is refuted.
+
+### H128 preregistration — 2026-08-28T16:55Z
+
+H128 hypothesis: adaptive helper masking reduces constrained work without
+lowering held-out accuracy on both GSM and Spider under the fixed `B=2`,
+bandit, Qwen3.5-2B, and normal Opus setup.
+
+Single variable: adaptive helper mask off versus on. Hold beam size 2, bandit
+selection, token budget, author, evaluator, splits, cold start, 40 attempts,
+prompts, verifier, and scoring fixed.
+
+Prior: **75%** because empirical masking should remove low-value helper choices;
+the risk is masking a useful helper early in search.
+
+Falsifiable prediction: mask-on has lower constrained work on at least one task
+and is not less accurate on both tasks. If it is less accurate on both or never
+reduces constrained work, H128 is refuted.
+
+### H129 preregistration — 2026-08-28T16:55Z
+
+H129 hypothesis: a durable comparison controller can implement the user's
+post-baseline policy without duplicate or unbounded synthesis: when a newly
+measured baseline strictly exceeds same-row metaDecode accuracy or syntax on
+GSM/Spider, or unique-valid rate on SMILES, it claims exactly one new cold
+40-attempt metaDecode cycle for that row.
+
+Single variable: comparison outcome relative to the frozen same-row metaDecode
+artifact. Ties do not trigger. Keep author/evaluator/split settings from the
+manifest, ban synthesis warm starts, and allow at most one durable claim even
+after interruption or restart.
+
+Prior: **95%** because the existing post-14B runner already has atomic one-claim
+semantics, but it does not yet consume these new held-out artifacts or the
+accuracy-or-syntax trigger.
+
+Falsifiable prediction: tests first fail on the missing campaign comparison
+path, then pass for strict accuracy wins, strict syntax wins, SMILES UV wins,
+ties, malformed/mixed artifacts, restarts, concurrent claims, and a hard second
+cycle rejection. A paid-call-free dry run prints only the exact eligible rows
+and never prints a warm-start synthesis command.

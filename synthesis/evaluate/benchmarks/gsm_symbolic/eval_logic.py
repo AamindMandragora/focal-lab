@@ -9,8 +9,10 @@ from typing import Any
 
 from synthesis.evaluate.benchmarks.common import benchmark_defaults as defaults
 from synthesis.evaluate.benchmarks.common.delimited_output import extract_last_delimited_span
+from synthesis.evaluate.benchmarks.common.ungradable import UngradableExample
 
 uses_hidden_chunks = defaults.uses_hidden_chunks
+starts_inside_constrained = defaults.starts_inside_constrained
 example_syntax_pass = defaults.example_syntax_pass_from_segments
 accuracy_applicable = defaults.accuracy_applicable_always
 accuracy_upper_bound = defaults.accuracy_upper_bound_with_remaining
@@ -18,8 +20,47 @@ final_accuracy_denominator = defaults.final_accuracy_denominator_all_examples
 invalid_outputs_excluded = defaults.invalid_outputs_excluded_none
 accuracy_definition = defaults.accuracy_definition_standard
 
+_MAX_GSM_SCORING_EXPRESSION_CHARS = 512
+_MAX_GSM_SCORING_EXPRESSION_TOKENS = 160
+_MAX_GSM_SCORING_EXPRESSION_OPERATORS = 80
+_MAX_GSM_SCORING_DIGIT_RUN = 64
+
+
+def _is_pathological_gsm_scoring_expression(expression: str) -> bool:
+    """Return whether a generated GSM expression is too large for safe scoring.
+
+    The guard is intentionally much looser than the active split's gold answers:
+    a 2026-06-29 audit found max gold length 119 chars and max operator count
+    22 across train+eval. Larger generated strings are treated as invalid
+    before native parser/prover code can wedge the evaluator.
+    """
+
+    text = str(expression or "").strip()
+    if len(text) > _MAX_GSM_SCORING_EXPRESSION_CHARS:
+        return True
+    if len(text.split()) > _MAX_GSM_SCORING_EXPRESSION_TOKENS:
+        return True
+    if len(re.findall(r"[+\-*/%()]", text)) > _MAX_GSM_SCORING_EXPRESSION_OPERATORS:
+        return True
+    if re.search(r"\d{" + str(_MAX_GSM_SCORING_DIGIT_RUN) + r",}", text):
+        return True
+    return False
+
+
 def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
+    """Static ``gsm.lark`` for CRANE-faithful syntax scoring only.
+
+    Constrained decode uses dataset-owned ``crane_valid_vars_gsm_grammar`` per
+    example (see ``build_dynamic_parser``); ``--grammars-dir`` does not change
+    adaptive CRANE decode masks.
+    """
     return grammars_dir / "gsm.lark"
+
+
+def emits_visible_delimiters() -> bool:
+    # GSM answers really are written as visible <<...>> spans, so the
+    # delimiter diagnostics tell the author something real here.
+    return True
 
 
 def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
@@ -93,7 +134,7 @@ def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
 def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str, Any]):
     from synthesis.evaluate.benchmarks.common.parser_utils import create_lark_dafny_parser
     from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import (
-        build_dynamic_grammar,
+        crane_valid_vars_gsm_grammar,
         extract_variables_from_mapping,
     )
 
@@ -107,13 +148,17 @@ def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str,
     cache_key = tuple(sorted(allowed_variables))
     parser_factory = evaluator._dynamic_parser_factory_cache.get(cache_key)
     if parser_factory is None:
-        grammar_text = build_dynamic_grammar(evaluator._get_grammar_text(), list(cache_key))
+        grammar_text = crane_valid_vars_gsm_grammar(list(cache_key))
         parser_factory = create_lark_dafny_parser(
             grammar_text,
             env["VerifiedDecoderAgent"],
             env["_dafny"],
-            start="csd_start",
+            start="start",
             tokenizer=env["tokenizer"],
+            dfa_mode="grammar_strict",
+            apply_forbidden_token_filter=False,
+            constrained_span_opener="<<",
+            complete_start="expr",
         )
         evaluator._dynamic_parser_factory_cache[cache_key] = parser_factory
 
@@ -135,20 +180,48 @@ def is_correct(
     scored_output: str,
 ) -> bool:
     vt = example.get("variable_types", {})
+    # Nothing here is caught, deliberately. Turning an unreadable field into an
+    # empty dict does not just lose the error -- {} is falsy, so the check below
+    # skips the symbolic grader entirely and scores this example by numeric
+    # comparison instead. That is a different measurement (a proof of algebraic
+    # equivalence versus "do these two numbers match"), averaged in with the
+    # rest of the split, with nothing recording that the method changed.
+    #
+    # Pinned by tests/test_unreadable_types_does_not_switch_graders.py.
     if isinstance(vt, str):
-        try:
-            vt = ast.literal_eval(vt)
-        except (ValueError, SyntaxError):
-            vt = {}
+        vt = ast.literal_eval(vt)
     if not isinstance(vt, dict):
-        vt = {}
-    if vt and example.get("answer_parsed"):
-        return evaluator._gsm_symbolic_equivalence(actual, expected, vt)
-    numeric_actual = evaluator._extract_answer_gsm(scored_output)
-    numeric_expected = re.search(r"####\s*([-+]?\d*\.?\d+)", example.get("answer", ""))
-    if numeric_expected:
-        return evaluator._answers_match(numeric_actual, numeric_expected.group(1))
-    return evaluator._answers_match(numeric_actual, expected)
+        raise UngradableExample(
+            "GSM variable_types must be a mapping of variable name to type, "
+            f"got {type(vt).__name__}: {vt!r}"
+        )
+    # There is exactly one way to grade GSM here, and it is CRANE's: prove the
+    # model's formula equals the gold's for every legal value of every variable.
+    #
+    # A numeric comparison used to sit below this as a fallback. It is gone.
+    # CRANE has no such thing -- its parse_answer (gsm_symbolic.py:28-56) either
+    # runs validate_expression_equivalence or leaves correct = False -- so every
+    # example that fallback graded was measured by a method CRANE does not have
+    # and then averaged into a figure reported against CRANE's published number.
+    # It was not a rare path either: answer_parsed defaults to '' (dataset.py:65
+    # and :164), which is falsy, so any source row missing that field took it.
+    #
+    # A row that cannot be graded this way is a dataset problem, not evidence
+    # about the model, so it stops the run.
+    # Pinned by tests/test_unreadable_types_does_not_switch_graders.py.
+    if not vt:
+        raise UngradableExample(
+            "GSM example has no variable_types, so its answer cannot be checked "
+            "for symbolic equivalence the way CRANE does. Refusing to fall back "
+            f"to a numeric comparison. Question: {str(example.get('question', ''))[:200]!r}"
+        )
+    if not example.get("answer_parsed"):
+        raise UngradableExample(
+            "GSM example has no parsed gold expression (answer_parsed), so there "
+            "is nothing to prove the model's answer equivalent to. Refusing to "
+            f"fall back to a numeric comparison. Question: {str(example.get('question', ''))[:200]!r}"
+        )
+    return evaluator._gsm_symbolic_equivalence(actual, expected, vt)
 
 
 def get_generation_runner():
@@ -201,8 +274,8 @@ def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
 # This replaces the OLD metric (all visible spans + per-example variable
 # restriction) which was stricter than CRANE and caused phantom-variable
 # expressions to count as syntax failures even though CRANE would pass them.
-# The per-example dynamic grammar is still used at DECODE TIME (in
-# build_dynamic_parser) to restrict what the LM can generate — this only
+# The per-example CRANE-shaped grammar (see crane_valid_vars_gsm_grammar) is used at
+# DECODE TIME in build_dynamic_parser to restrict what the LM can generate — this only
 # changes the post-hoc scoring metric.
 # ---------------------------------------------------------------------------
 
@@ -229,6 +302,8 @@ def _extract_final_block(output: str) -> str:
 def _check_gsm_parsed(block: str, parser) -> bool:
     # Faithful port of CRANE src/get_avgs.py check_gsm_parsed.
     if block == "" or "{" in block or "}" in block or "round(" in block:
+        return False
+    if _is_pathological_gsm_scoring_expression(block):
         return False
     if not block.startswith("<<") or not block.endswith(">>"):
         return False
@@ -258,6 +333,8 @@ def check_syntax(
     block = _extract_final_block(output)
     if block == "":
         return False, []
+    if _is_pathological_gsm_scoring_expression(block):
+        return False, [(block, False)]
     parses = _check_gsm_parsed(block, _final_block_parser(evaluator))
     return parses, [(block, parses)]
 

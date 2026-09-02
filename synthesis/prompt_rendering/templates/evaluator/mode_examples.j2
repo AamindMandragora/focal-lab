@@ -1,0 +1,14 @@
+{% for block in blocks %}
+{% if not loop.first %}
+
+{% endif %}
+--- Example of {{ block.mode }} ---
+PROMPT:
+{{ block.prompt }}
+
+QWEN OUTPUT:
+{{ block.qwen_output }}
+
+STRATEGY EXTRACTED: {{ block.actual_str }}
+CORRECT ANSWER: {{ block.expected_str }}
+{% endfor %}

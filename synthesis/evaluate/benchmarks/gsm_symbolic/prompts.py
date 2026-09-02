@@ -97,7 +97,9 @@ _GSM_STD_FEWSHOTS = [
 ]
 
 
-_GSM_REASONING_HEADER = (
+# Trailing space before \n in "below: \n" is deliberate: CRANE gsm_symbolic.yaml
+# has that space; greedy Qwen3.5-2B diverges without it (verified 2026-07-02).
+GSM_CRANE_COT_TASK = (
     "You are an expert in solving grade school math tasks. "
     "You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\n"
     "Before answering you should reason about the problem (using the <reasoning> field in the response described below). "
@@ -105,9 +107,23 @@ _GSM_REASONING_HEADER = (
     "Then, output the symbolic expression wrapped in << >> that answers the question. "
     "The expressions must use numbers as well as the variables defined in the question. "
     "You are only allowed to use the following operations: +, -, /, //, %, (), and int().\n\n"
-    "You will always respond in the format described below:\n"
-    "Let's think step by step. <reasoning> The final answer is <<symbolic expression>>\n"
+    # Trailing space before \n is deliberate: CRANE's gsm_symbolic.yaml has
+    # "described below: \n" and greedy Qwen3.5-2B output diverges without it
+    # (verified 2026-07-02: with the space, unconstrained greedy reproduces the
+    # original CRANE response 771/784 chars on eval-ex0; without it, diverges
+    # at char 156). Byte-identical prompts are required for baseline parity.
+    "You will always respond in the format described below: \n"
+    # No trailing newline after this last line. It is load-bearing for startup,
+    # not for the model: this same string is copied into the campaign manifest
+    # as each GSM cell's "task", and run_cold_synthesis_queue refuses to launch
+    # the whole 20-cell campaign when the two copies differ by even one
+    # character. Commit 66fbfab8 settled on no trailing newline; the checkpoint
+    # commit 5d055932 put one back by accident and blocked every launch until
+    # this line was restored. The model never sees the difference either way --
+    # the only consumer, reasoning_with_symbolic_expr_messages below, strips it.
+    "Let's think step by step. <reasoning> The final answer is <<symbolic expression>>"
 )
+_GSM_REASONING_HEADER = GSM_CRANE_COT_TASK
 
 
 def reasoning_with_symbolic_expr_prompt(question: str) -> str:

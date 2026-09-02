@@ -1,0 +1,19 @@
+{
+  "acceptances": [
+    {
+      "label": "smiles-acrylates-qwen25-7b-gcd",
+      "source_sha256": "03a8d326a038d23b898e173842bf59bdde17dbc34aed56dd61e3e28e931076e6",
+      "review_reason": "50/50 nonblank sampled outputs, 19 distinct answers, exit 0, no traceback or memory failure, and varied RDKit parse/valence failures; functioning decoder produced a genuine 0/0 model result"
+    },
+    {
+      "label": "smiles-isocyanates-qwen25-7b-gcd",
+      "source_sha256": "0a8a553c52f2aa2ef92045f5cbb3dc73217e5a473318a440de7e6467e66cf4b9",
+      "review_reason": "50/50 nonblank sampled outputs, 34 distinct answers, exit 0, no traceback or memory failure, and varied RDKit parse/valence failures; functioning decoder produced a genuine 0/0 model result"
+    },
+    {
+      "label": "smiles-isocyanates-qwen35-2b-gcd",
+      "source_sha256": "da5330fed79bcb8bf1d22f8085be1c4b7dc93935d054f9008aa370db07f57b17",
+      "review_reason": "50/50 nonblank sampled outputs, 38 distinct answers, exit 0, no traceback or memory failure, and varied RDKit syntax/ring-closure failures; 49/50 outputs reached the generation cap, which is a severe decoding failure but not a harness failure"
+    }
+  ]
+}

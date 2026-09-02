@@ -1,0 +1,137 @@
+import threading
+from types import SimpleNamespace
+
+from synthesis.scripts import eval_worker_pool
+from synthesis.scripts import sharded_eval_core
+
+
+def _four_idle_gpus(*_args, **_kwargs):
+    return SimpleNamespace(
+        stdout=(
+            "0, 10, 40960, 0\n"
+            "1, 10, 40960, 0\n"
+            "2, 10, 40960, 0\n"
+            "3, 10, 40960, 0\n"
+        )
+    )
+
+
+def test_gpu_slot_detection_respects_cuda_visible_devices(monkeypatch):
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "3")
+    monkeypatch.setattr(sharded_eval_core.subprocess, "run", _four_idle_gpus)
+
+    slots = sharded_eval_core.detect_gpu_slots(
+        workers_per_gpu=1,
+        idle_util_threshold=30,
+        min_free_mb=8000,
+    )
+
+    assert slots == [3]
+
+
+def test_worker_pool_fallback_stays_on_the_assigned_visible_gpu(monkeypatch):
+    created_gpus = []
+
+    class FakeWorker:
+        def __init__(self, worker_id, gpu):
+            created_gpus.append((worker_id, gpu))
+
+        def configure(self, _config):
+            pass
+
+        def shutdown(self):
+            pass
+
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "2")
+    monkeypatch.delenv("CSD_EVAL_POOL_SIZE", raising=False)
+    monkeypatch.setattr(eval_worker_pool, "detect_gpu_slots", lambda *_args: [])
+    monkeypatch.setattr(eval_worker_pool, "_Worker", FakeWorker)
+
+    pool = eval_worker_pool.EvalWorkerPool({})
+
+    assert created_gpus == [(0, 2)]
+    pool.shutdown()
+
+
+def test_worker_pool_uses_explicit_queue_gpu_bundle_without_global_detection(monkeypatch):
+    created_gpus = []
+
+    class FakeWorker:
+        def __init__(self, worker_id, gpu):
+            created_gpus.append((worker_id, gpu))
+
+        def configure(self, _config):
+            pass
+
+        def shutdown(self):
+            pass
+
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "3,1")
+    monkeypatch.setenv("CSD_EVAL_GPU_SLOTS", "3,1")
+    monkeypatch.delenv("CSD_EVAL_POOL_SIZE", raising=False)
+    monkeypatch.setattr(
+        eval_worker_pool,
+        "detect_gpu_slots",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("global scan used")),
+    )
+    monkeypatch.setattr(eval_worker_pool, "_Worker", FakeWorker)
+
+    pool = eval_worker_pool.EvalWorkerPool({})
+
+    assert created_gpus == [(0, 3), (1, 1)]
+    pool.shutdown()
+
+
+def test_dispatch_starts_all_worker_shards_before_waiting_for_results():
+    entered: list[int] = []
+    entered_lock = threading.Lock()
+    both_started = threading.Event()
+    release = threading.Event()
+
+    class FakeWorker:
+        alive = True
+
+        def __init__(self, worker_id):
+            self.worker_id = worker_id
+
+        def evaluate(self, _module, examples, _start_index, _dataset_len):
+            with entered_lock:
+                entered.append(self.worker_id)
+                if len(entered) == 2:
+                    both_started.set()
+            assert release.wait(timeout=2)
+            return [{"example": example} for example in examples]
+
+    pool = object.__new__(eval_worker_pool.EvalWorkerPool)
+    workers = [FakeWorker(0), FakeWorker(1)]
+    outcome = {}
+
+    def run_dispatch():
+        try:
+            outcome["results"] = pool._dispatch(
+                object(),
+                "/tmp/compiled.py",
+                list(enumerate(["a", "b", "c", "d"])),
+                workers,
+            )
+        except BaseException as exc:
+            outcome["error"] = exc
+
+    dispatch_thread = threading.Thread(target=run_dispatch)
+    dispatch_thread.start()
+    try:
+        assert both_started.wait(timeout=0.5), (
+            "the second worker did not start while the first shard was running"
+        )
+    finally:
+        release.set()
+        dispatch_thread.join(timeout=3)
+
+    assert not dispatch_thread.is_alive()
+    assert "error" not in outcome
+    assert outcome["results"] == [
+        {"example": "a"},
+        {"example": "b"},
+        {"example": "c"},
+        {"example": "d"},
+    ]

@@ -1,0 +1,29 @@
+Structured verification analysis:
+{% for d in diagnostics %}
+{{ d.index }}. {{ d.obligation_kind_title }} failure at {{ d.location }}
+   Message: {{ d.message }}
+{% if d.call_name %}
+   Related call: {{ d.call_name }}(...)
+{% endif %}
+{% if d.failing_text %}
+   Failing code: {{ d.failing_text }}
+{% endif %}
+{% if d.related_display %}
+   Related contract: {{ d.related_display }}
+{% endif %}
+{% if d.source_excerpt_lines %}
+   Local code excerpt:
+{% for line in d.source_excerpt_lines %}
+     {{ line }}
+{% endfor %}
+{% endif %}
+{% if d.contract_excerpt_lines %}
+   Relevant contract excerpt:
+{% for line in d.contract_excerpt_lines %}
+     {{ line }}
+{% endfor %}
+{% endif %}
+{% if d.remediation %}
+   {{ d.remediation }}
+{% endif %}
+{% endfor %}

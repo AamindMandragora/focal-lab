@@ -48,6 +48,21 @@ FINGERPRINT_AXES: Tuple[str, ...] = (
     "accuracy_applicable",   # bool
 )
 
+# Axes that only mean something on a surface where the model can emit a
+# visible `<<`/`>>` span at all. On a surface that never shows spans (for
+# example Spider's token-0 setting), these three are true for every single
+# failure by construction -- they are not something the failures have in
+# common, they are just a fact about the surface. Printing them in the
+# cluster block makes them look like a real finding, which has sent people
+# chasing a problem that cannot exist. `render_cluster_block` drops these
+# when it is told (via `require_delimiters=False`) that spans are not
+# possible on this run.
+SPAN_ONLY_AXES: Tuple[str, ...] = (
+    "visible_delimiters",
+    "zero_visible_spans",
+    "zero_valid_spans",
+)
+
 
 def _normalize_answer_source(value: Any) -> str:
     if value is None:
@@ -279,11 +294,16 @@ def render_cluster_block(
     max_clusters_shown: int = 6,
     persistent_ledger: Optional[PersistentLedger] = None,
     attempt_index: Optional[int] = None,
+    require_delimiters: bool = True,
 ) -> str:
     """Build the single cluster-organized failure block.
 
     Pass `persistent_ledger` + `attempt_index` to enable Change 2 (cross-attempt
     cluster IDs and the persistence summary footer).
+
+    Pass `require_delimiters=False` when this run cannot emit visible `<<`/`>>`
+    spans (see SPAN_ONLY_AXES above). This drops those axes from the rendered
+    text; the fingerprint and clustering are unaffected, only what gets printed.
     """
     wrong = [
         s for s in samples
@@ -306,23 +326,35 @@ def render_cluster_block(
         labeled = [(f"cluster_{i+1}", c) for i, c in enumerate(clusters)]
 
     meta = cluster_meta_stats(clusters)
+
+    # On a surface that cannot show visible spans, SPAN_ONLY_AXES are
+    # meaningless (see the constant's docstring above) -- drop them here, at
+    # render time, in every place an axis name reaches the printed text.
+    # This only changes what gets printed; the fingerprint and clustering
+    # above still use all 17 axes.
+    def _shown_axis(axis: str) -> bool:
+        return require_delimiters or axis not in SPAN_ONLY_AXES
+
+    constants = {
+        axis: v
+        for axis, v in meta["axes_constant_across_clusters"].items()
+        if _shown_axis(axis)
+    }
+    varying = [axis for axis in meta["axes_varying_across_clusters"] if _shown_axis(axis)]
+
     lines: List[str] = []
     lines.append("\nFailure Clusters (17-axis fingerprint, Hamming ≤ 1):")
     lines.append(
         f"  Wrong samples: {meta['n_wrong_samples']} grouped into "
         f"{meta['n_clusters']} cluster(s)."
     )
-    if meta["axes_constant_across_clusters"]:
+    if constants:
         constant_summary = ", ".join(
-            f"{axis}={_format_axis_value(axis, v)}"
-            for axis, v in meta["axes_constant_across_clusters"].items()
+            f"{axis}={_format_axis_value(axis, v)}" for axis, v in constants.items()
         )
         lines.append(f"  Constant across all clusters: {constant_summary}")
-    if meta["axes_varying_across_clusters"]:
-        lines.append(
-            "  Varying across clusters: "
-            + ", ".join(meta["axes_varying_across_clusters"])
-        )
+    if varying:
+        lines.append("  Varying across clusters: " + ", ".join(varying))
 
     for mode_id, c in labeled[:max_clusters_shown]:
         profile = cluster_axis_profile(c)
@@ -330,15 +362,18 @@ def render_cluster_block(
         lines.append(f"\n  [{mode_id}] {size} sample(s):")
         # Show only axes whose dominant value is "non-trivial" (not the
         # global constant); reduces noise in per-cluster profiles.
-        constants = meta["axes_constant_across_clusters"]
         salient = [
             (axis, val, share)
             for axis, (val, share) in profile.items()
-            if axis not in constants
+            if axis not in constants and _shown_axis(axis)
         ]
         if not salient:
             # Fallback: print top axes anyway so the cluster has a description.
-            salient = [(axis, val, share) for axis, (val, share) in profile.items()][:6]
+            salient = [
+                (axis, val, share)
+                for axis, (val, share) in profile.items()
+                if _shown_axis(axis)
+            ][:6]
         for axis, val, share in salient:
             lines.append(
                 f"    {axis}: {_format_axis_value(axis, val)} ({share:.0%})"

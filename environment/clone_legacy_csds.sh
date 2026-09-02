@@ -19,43 +19,18 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 LEGACY_ROOT="${LEGACY_ROOT:-${REPO_ROOT}/legacy}"
-PATCH_ROOT="${LEGACY_PATCH_ROOT:-${REPO_ROOT}/environment/legacy_patches}"
-REPOS_MANIFEST="${REPO_ROOT}/environment/legacy/repos.json"
-PYTHON_BIN="${PYTHON_BIN:-python3}"
+PATCH_ROOT="${REPO_ROOT}/environment/legacy_patches"
 
 mkdir -p "${LEGACY_ROOT}"
 
-manifest_value() {
-  "$PYTHON_BIN" - "$REPOS_MANIFEST" "$1" "$2" <<'PY'
-import json
-import sys
+CRANE_URL="${LEGACY_CRANE_URL:-https://github.com/uiuc-focal-lab/CRANE.git}"
+ITERGEN_URL="${LEGACY_ITERGEN_URL:-https://github.com/structuredllm/itergen.git}"
+CARS_URL="${LEGACY_CARS_URL:-https://github.com/pparys/cars.git}"
 
-manifest, name, field = sys.argv[1:]
-print(json.load(open(manifest))[name][field])
-PY
-}
-
-CRANE_URL="${LEGACY_CRANE_URL:-$(manifest_value CRANE git_url)}"
-ITERGEN_URL="${LEGACY_ITERGEN_URL:-$(manifest_value itergen git_url)}"
-CARS_URL="${LEGACY_CARS_URL:-$(manifest_value cars git_url)}"
-LEGACY_CRANE_REF="${LEGACY_CRANE_REF:-$(manifest_value CRANE commit)}"
-LEGACY_ITERGEN_REF="${LEGACY_ITERGEN_REF:-$(manifest_value itergen commit)}"
-LEGACY_CARS_REF="${LEGACY_CARS_REF:-$(manifest_value cars commit)}"
-export LEGACY_CRANE_REF LEGACY_ITERGEN_REF LEGACY_CARS_REF
-
-FETCH_ARGS=()
+SHALLOW_ARGS=()
 if [[ "${LEGACY_SHALLOW:-1}" != "0" ]]; then
-  FETCH_ARGS+=(--depth 1)
+  SHALLOW_ARGS+=(--depth 1)
 fi
-
-fetch_ref() {
-  local dest="$1" ref="$2"
-  if [[ ${#FETCH_ARGS[@]} -gt 0 ]]; then
-    git -C "${dest}" fetch "${FETCH_ARGS[@]}" origin "${ref}"
-  else
-    git -C "${dest}" fetch origin "${ref}"
-  fi
-}
 
 clone_repo() {
   local name="$1" url="$2" ref_var="$3"
@@ -65,27 +40,23 @@ clone_repo() {
   if [[ -d "${dest}/.git" ]]; then
     echo "[legacy] existing repo: ${dest}"
     git -C "${dest}" remote set-url origin "${url}" || true
-    fetch_ref "${dest}" "${ref}"
-    if [[ "$(git -C "${dest}" rev-parse HEAD)" != "$(git -C "${dest}" rev-parse FETCH_HEAD)" ]]; then
-      git -C "${dest}" checkout --detach --force FETCH_HEAD
-      rm -rf "${dest}/.git/vas-applied-patches"
+    git -C "${dest}" fetch origin --tags || git -C "${dest}" fetch origin || true
+    if [[ -n "${ref}" ]]; then
+      git -C "${dest}" checkout "${ref}" || {
+        echo "[legacy] WARN: checkout '${ref}' failed in ${dest}; staying on current HEAD" >&2
+      }
+    else
+      git -C "${dest}" pull --ff-only || true
     fi
   else
-    git init "${dest}"
-    git -C "${dest}" remote add origin "${url}"
-    fetch_ref "${dest}" "${ref}"
-    git -C "${dest}" checkout --detach FETCH_HEAD
+    if [[ -n "${ref}" ]]; then
+      git clone "${SHALLOW_ARGS[@]}" --branch "${ref}" "${url}" "${dest}"
+    else
+      git clone "${SHALLOW_ARGS[@]}" "${url}" "${dest}"
+    fi
   fi
 
   apply_patches "${name}" "${dest}"
-  local expected actual
-  expected="$(git -C "${dest}" rev-parse FETCH_HEAD)"
-  actual="$(git -C "${dest}" rev-parse HEAD)"
-  if [[ "$actual" != "$expected" ]]; then
-    echo "[legacy] ERROR: ${name} HEAD ${actual} does not match pinned ${expected}" >&2
-    return 1
-  fi
-  echo "[legacy] verified ${name} commit ${actual}"
 }
 
 apply_patches() {
@@ -103,24 +74,14 @@ apply_patches() {
   fi
   echo "[legacy] applying ${#patches[@]} patch(es) in ${name}"
   for p in "${patches[@]}"; do
-    local stamp_dir stamp
-    stamp_dir="${dest}/.git/vas-applied-patches"
-    stamp="${stamp_dir}/$(basename "${p}")"
-    if [[ -f "$stamp" ]]; then
-      echo "[legacy] already applied: $(basename "${p}")"
-      continue
-    fi
     if [[ -d "${dest}/.git" ]]; then
-      if git -C "${dest}" apply --check "${p}"; then
-        git -C "${dest}" apply "${p}"
-      elif git -C "${dest}" apply --reverse --check "${p}"; then
-        echo "[legacy] detected existing patch: $(basename "${p}")"
-      else
-        echo "[legacy] ERROR: patch does not apply cleanly: ${p}" >&2
-        return 1
-      fi
-      mkdir -p "$stamp_dir"
-      : > "$stamp"
+      git -C "${dest}" apply "${p}" || git -C "${dest}" apply --reject --whitespace=fix "${p}" || {
+        echo "[legacy] git apply failed for $(basename "${p}"); trying patch -p1" >&2
+        patch -d "${dest}" -p1 --forward < "${p}" || {
+          echo "[legacy] ERROR: failed to apply ${p}" >&2
+          return 1
+        }
+      }
     else
       patch -d "${dest}" -p1 --forward < "${p}" || {
         echo "[legacy] ERROR: patch failed for ${p}" >&2

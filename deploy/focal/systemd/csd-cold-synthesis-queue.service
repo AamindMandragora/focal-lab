@@ -1,0 +1,26 @@
+[Unit]
+Description=Dynamic CSD remaining six-cell cold synthesis queue
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/aadivyar/csd-generation
+EnvironmentFile=/home/aadivyar/csd-generation/.env
+Environment=PYTHONUNBUFFERED=1
+Environment=CSD_CACHE_ROOT=/home/aadivyar/csd-generation/cache
+Environment=SYNCODE_CACHE=/home/aadivyar/csd-generation/cache/
+Environment=ITER_SYNCODE_CACHE=/home/aadivyar/csd-generation/cache/
+Environment=HF_HOME=/home/aadivyar/.cache/huggingface
+Environment=TRANSFORMERS_CACHE=/home/aadivyar/.cache/huggingface
+Environment=CSD_COMBINED_RUN_LOG=/home/aadivyar/csd-generation/logs/remaining_six_20260729_combined.log
+ExecStart=/apps/conda/aadivyar/envs/csd/bin/python -m scripts.runtime.run_cold_synthesis_queue --repo /home/aadivyar/csd-generation --manifest /home/aadivyar/csd-generation/saved-results/2026-07-19-exhaustive-cold-queue-manifest.json --python /apps/conda/aadivyar/envs/csd/bin/python --lock-file /home/aadivyar/csd-generation/.context/remaining_six_20260729/controller.lock --state-dir /home/aadivyar/csd-generation/.context/remaining_six_20260729/state --poll-seconds 30 --gpus 0,2,3 --exclude-cell-prefix spider- --exclude-cell-prefix smiles-acrylates-qwen25- --exclude-cell-prefix smiles-acrylates-qwen35-2b --exclude-cell-prefix smiles-chain_extenders- --exclude-cell-prefix smiles-isocyanates-
+Restart=on-failure
+RestartSec=300
+KillMode=control-group
+TimeoutStopSec=60
+StandardOutput=append:/home/aadivyar/csd-generation/logs/remaining_six_20260729_controller.log
+StandardError=inherit
+
+[Install]
+WantedBy=default.target

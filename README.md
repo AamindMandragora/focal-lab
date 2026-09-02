@@ -11,23 +11,7 @@ The project is organized so the core workflow is explicit:
 
 ## Repository Layout
 
-Top-level directories:
-
-| Path | Role |
-|------|------|
-| `synthesis/` | Core pipeline package (generate → verify → evaluate) |
-| `environment/` | Conda/mxeval setup, benchmark splits, legacy clone scripts and patches |
-| `legacy/` | Gitignored CRANE / IterGen / CARS clones for fixed-strategy baselines |
-| `cache/` | Local, gitignored model and parser caches; create or mount as needed |
-| `outputs/` | Local, gitignored synthesis runs and baseline JSON artifacts |
-| `logs/` | Per-run prompt/response logs (`CSD_LOGS_DIR` override) |
-| `experiments/` | Archived manual scripts, historical strategy `.dfy` bodies, extra split JSONs (not imported by the pipeline) |
-
-Root entry points:
-
-- **`run_all_tests.py`** — full GSM + Spider + SMILES matrix (fixed-strategy baselines; add `metadecode` to `--strategies` for synthesis runs).
-- **`run_tmux.sh`** — tmux wrapper with conda, `.env`, and caller-selected GPU settings.
-
+- Non-hidden project directories are intentionally limited to `synthesis/`, `environment/`, `cache/`, and `outputs/`.
 - `synthesis/`: core pipeline package. First-party subfolders include paired **`README.md`** and **`AGENTS.md`** for docs and agent rules (`synthesis/README.md` summarizes).
 - `synthesis/generate/`: generation prompts, rationale extraction, and generator logic.
 - `synthesis/verify/`: Dafny verification/compilation wrappers.
@@ -38,8 +22,8 @@ Root entry points:
 - `synthesis/evaluate/grammars/`: Lark grammar files used by constrained decoding.
 - `synthesis/evaluate/syncode/`: vendored Syncode dependency for DFA-mask parser acceleration.
 - `environment/`: environment setup and dependency installation notes/scripts.
-- `cache/`: local model, parser, and DFA-mask caches; not included in Git.
-- `outputs/`: generated runs and baselines; not included in Git.
+- `cache/`: local model, parser, DFA mask, and preserved cache artifacts.
+- `outputs/`: generated runs, baselines, and preserved local experiment artifacts.
 - `logs/`: per-run LLM prompt/response records (`prompt_io.jsonl`; override root via `CSD_LOGS_DIR`).
 - `outputs/generated/`: synthesis outputs (one folder per synthesized CSD run).
 - `outputs/baselines/`: baseline result artifacts.
@@ -79,22 +63,65 @@ Fixed-strategy baselines use legacy codepaths:
 - `itergen`: `legacy/itergen`
 - `cars`: `legacy/cars` adapter across GSM-Symbolic, Spider, and SMILES.
 
-Those three `legacy/*` trees are **gitignored** (large upstream copies). Install them locally with **`bash environment/clone_legacy_csds.sh`** — see **`legacy/README.md`**, **`environment/legacy/DIFFERENCES.md`**, and **`environment/legacy_patches/`** for harness vs upstream behavior and tracked patches.
+Those three `legacy/*` trees are **gitignored** (large upstream copies). Install them locally with **`bash environment/clone_legacy_csds.sh`** — see **`legacy/README.md`**, **`environment/legacy/DIFFERENCES.md`**, and **`python synthesis/scripts/report_legacy_upstream_diff.py --help`** for upstream-vs-local diffing.
+
+On focal, `scripts/run_focal_collection_pool.py --campaign full-baseline-20260803`
+builds the fresh 100-cell baseline matrix: five fixed strategies across four
+Qwen models, GSM-Symbolic, Spider, and three class-specific SMILES cohorts. It
+uses the tracked train splits and packs jobs against live GPU use plus
+outstanding scheduler reservations; use `--dry-run` to inspect all commands
+without starting model processes.
+
+After those 100 artifacts are complete,
+`scripts/runtime/build_full_baseline_cold_manifest.py` hashes all five source
+artifacts for each model/cohort cell, computes the accuracy bar as one exact
+example above the best baseline, and caps the syntax bar at 90%. A perfect
+baseline uses the separately approved 95% accuracy exception. Its waiting mode
+then launches the 20 cold Opus 5 jobs (40 attempts each) through
+`run_cold_synthesis_queue.py --campaign-profile full-baseline-20260803`.
+
+Campaign evidence also checks generated content: exact 0/0 batches that are
+all blank or repeat one malformed answer are rejected. SMILES accuracy is
+recomputed as the number of distinct RDKit-valid, in-class, non-exemplar
+molecules divided by the trial size. Selective repairs use a new
+`--campaign-output-name` plus exact `--include-label` filters, preserving the
+original 100 baseline artifacts.
 
 ## Long runs (tmux)
 
-Use **`./run_tmux.sh`** to start or attach a session with the active Python
-environment, `.env`, and the local CUDA defaults already set:
+Use **`./run_tmux.sh`** to start or attach a session with conda, `.env`, and `CUDA_VISIBLE_DEVICES=2,3` already set:
 
 ```bash
 ./run_tmux.sh shell                              # interactive shell
 ./run_tmux.sh -d -f matrix -- --dry-run        # detached; -f replaces old session
 ./run_tmux.sh attach                           # attach to session
 ./run_tmux.sh synthesis -- --dataset gsm_symbolic --output-name smoke_gsm ...
-./run_tmux.sh run -- python3 -m synthesis.run_synthesis --help
+./run_tmux.sh run -- python -m synthesis.run_synthesis --help
 ```
 
-Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp>.log`**. Override the session name with **`METADECODE_TMUX_SESSION`**.
+Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp>.log`**. Override the session name with **`VAS_TMUX_SESSION`**.
+
+## Live Dashboard
+
+Use **`scripts/experiment_dashboard.py`** on the experiment host to inspect active matrix jobs, GPU use, the GPU3 retry queue, recent reports, and recent metric lines from logs in a browser. It serves a static HTML page plus `/api/status` using only the Python standard library.
+
+### Post-14B result finalization
+
+After the fixed synthesis queue finishes through Spider-14B, use `scripts/results_finalization/validate_pre_rebar.py` to validate terminal queue state and freeze the authoritative `results_matrix.md` SHA-256. `scan_metadecode_rebar.py` requires that complete matrix-bound snapshot plus a reviewed row file: every active and archived table row must be referenced as baseline/metaDecode evidence or explicitly excluded with a reason. The scanner computes independent accuracy and syntax maxima with exact counts, caps the syntax goal at 90%, and emits a candidate manifest only when coverage is complete and comparison cohorts are unambiguous.
+
+`.context/run_post14b_rebar_queue.sh` accepts only a candidate manifest whose prerequisite completion snapshot, matrix, scanner audit, manifest, exact cells, and synthesis-launcher hashes match a fresh approval record. It claims each cell atomically before the first author call, runs one cold 40-iteration cycle, and never launches that cell again after a restart or interruption. Accepted CSDs use direct compiled-CSD held-out evaluation with author credentials removed. Use `--dry-run` to inspect both commands without claiming a cell or invoking a model. See `scripts/results_finalization/README.md` for the file contracts.
+
+```bash
+python scripts/experiment_dashboard.py --host 127.0.0.1 --port 8765
+```
+
+If the server is remote, open it through an SSH tunnel:
+
+```bash
+ssh -L 8765:127.0.0.1:8765 focal
+```
+
+Then visit `http://127.0.0.1:8765/`.
 
 ## Quick Start
 
@@ -102,13 +129,9 @@ Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp
 
 ```bash
 pip install -r requirements.txt
-# Apple Silicon (without NVIDIA-only vLLM):
-pip install -r requirements-mac.txt
-python3 -m nltk.downloader punkt punkt_tab
 ```
 
-2. Verify Dafny is installed externally and available through `PATH` or
-   `DAFNY_PATH`.
+2. Verify Dafny is available.
 
 ```bash
 dafny --version
@@ -116,10 +139,12 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). The default matrix profiles are **`sonnet4.6,gpt5.5,gemini`**: `sonnet4.6` uses the Anthropic backend (`ANTHROPIC_API_KEY`, optional `ANTHROPIC_SONNET_MODEL`), `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. `opus4.7` remains an optional Anthropic profile using `ANTHROPIC_OPUS_MODEL`. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** only for explicit smoke or infrastructure checks, not synthesis-quality runs. Evaluation defaults to local vLLM with **`Qwen/Qwen3.5-2B`** (first model in the matrix list) unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. The Claude Code route (`--generation-backend claude`) uses the isolated Claude Code Max login with the fixed model `claude-opus-5`. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation always runs on local vLLM; pick the model with `--eval-model` (the backend is fixed in `synthesis/run_constants.py`).
+
+**BYOD (bring your own credentials):** all provider API keys load from the environment / `.env` (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, AWS credentials for Bedrock). There are no key or base-URL CLI flags.
 
 ```bash
-python3 -m synthesis.run_synthesis \
+CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
   --task "Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters." \
   --dataset gsm_symbolic \
   --eval-model "Qwen/Qwen2.5-Coder-7B-Instruct" \
@@ -129,44 +154,10 @@ python3 -m synthesis.run_synthesis \
   --eval-sample-size 10
 ```
 
-Optional search-space controls for UCB/bandit helper-call pruning:
-
-- `--adaptive-helper-mask` / `--no-adaptive-helper-mask`
-- `--helper-selection-policy` (`bandit`)
-- `--helper-bandit-min-evals`
-- `--helper-bandit-top-k`
-- `--helper-bandit-ucb-c`
-- `--helper-bandit-explore-untried`
-
-Optional local-beam refinement controls:
-
-- `--refinement-beam-size` (defaults to 2)
-- `--local-neighborhood-refinement` / `--no-local-neighborhood-refinement`
-- `--max-local-edit-ratio`
-- `--beam-verify-candidates` / `--no-beam-verify-candidates`
-
-## Reproduce the recorded seed tables
-
-These commands use the tracked disjoint manifests and repository-relative
-paths. They run the fixed-strategy baselines only; add `metadecode` to
-`--strategies` only when intentionally running paid synthesis with an approved
-author-model account.
-
-```bash
-python3 run_all_tests.py \
-  --models Qwen/Qwen3.5-2B,Qwen/Qwen3.5-4B,Qwen/Qwen3.5-9B \
-  --benchmarks gsm \
-  --strategies unconstrained,gcd,crane,itergen,rs,cars \
-  --gsm-split-file experiments/splits/gsm_symbolic_crane_proportional_49x49_seed123.json \
-  --skip-ablations
-
-python3 run_all_tests.py \
-  --models Qwen/Qwen3.5-2B,Qwen/Qwen3.5-4B,Qwen/Qwen3.5-9B \
-  --benchmarks spider \
-  --strategies unconstrained,gcd,crane,itergen,rs,cars \
-  --spider-split-file experiments/splits/spider_dev_proportional_300x300_seed334.json \
-  --skip-ablations
-```
+UCB/bandit helper-call pruning and local-beam refinement are no longer
+CLI-configurable: every recorded run used the same settings, so they are
+hard-coded in `synthesis/evaluate/feedback_loop.py` (2026-07-18 bucket-1
+audit; see `planning/ws2-ws3-landed-audit.md`).
 
 ## Dafny Files Used by Synthesis
 
@@ -182,29 +173,33 @@ python3 run_all_tests.py \
 - Generated CSDs may append their own evaluator prompt guidance through `helpers.AppendTaskGuidance(lm, guidance)` as a first action after output initialization. The runtime records the first non-empty guidance block and reports it in evaluation feedback.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
-- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order and strategies in `unconstrained, gcd, crane, itergen, rs, cars` order to reduce model reload churn. Default eval models are `Qwen/Qwen3.5-2B`, `Qwen/Qwen3.5-4B`, `Qwen/Qwen3.5-9B`, and `meta-llama/Llama-3.1-8B-Instruct`. Add `metadecode` to `--strategies` for synthesis runs; Metadecode uses `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and `--min-accuracy` as the best matching legacy baseline accuracy plus the configured margin (default `--accuracy-win-margin 0.0`).
-- Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.0`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--refinement-beam-size 2`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The default `sonnet4.6` profile and optional `opus4.7` profile both forward Anthropic adaptive thinking with `--anthropic-effort xhigh` and summarized thinking; the `gemini` profile uses Gemini thinking level `high` by default.
-- `run_all_tests.py` uses the active Python environment by default, verifies
-  RDKit import before a real run, and fails fast when the selected environment
-  is incomplete. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) to select
-  another environment (see `environment/README.md`).
-- Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
-- Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, `rs`, and `cars` so those strategies compare against the same questions.
+- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider` order (GSM and SQL/Spider) and strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn. The CARS molecular/SMILES benchmark remains available for explicit manual runs, but it is not part of the default matrix. Metadecode runs use `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and use `--min-accuracy` as the best matching legacy baseline accuracy plus `--accuracy-win-margin 0.03`.
+- Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `opus4.7` profile also forwards Anthropic adaptive thinking with `--anthropic-effort xhigh` and summarized thinking; the `gemini` profile uses Gemini thinking level `high` by default.
+- `run_all_tests.py` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
+- Existing baseline JSONs are skipped by the general matrix runner when they contain at least one answer entry with a `generated_answer` field. Empty strings remain serializable answers there, but the full-campaign evidence gate rejects degenerate exact 0/0 batches; empty `answers: []` artifacts are incomplete and rerun.
+- Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so those strategies compare against the same questions.
 - Fixed-strategy exports do not assume missing syntax metadata means valid syntax. Legacy rows are annotated with benchmark parser checks where possible; otherwise missing syntax booleans count as invalid.
+- Fixed-strategy SMILES GCD, IterGen, and CRANE sample at temperature 0.7;
+  GSM and Spider stay greedy. SMILES CRANE uses neutral reasoning before a
+  visible `<< >>` constrained span and scores only the final SMILES inside it.
+  Spider IterGen keeps recurrence penalty 0.3, applied sign-aware so repeated
+  positive and negative logits both become less likely.
+  Qwen3.5 IterGen checks cached sequence length before latest-token-only input;
+  config-allocated empty cache layers must not cause it to discard the prompt.
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
 - The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.
 - GSM rows without exposed symbolic numeric variables use numeric-only syntax checks, so arbitrary words such as `reasoning` are not accepted as variable names.
-- `run_all_tests.py` loads `synthesis/.env` (dotenv-style) before resolving generation profiles. Its default profiles are **`sonnet4.6,gpt5.5,gemini`**. **`sonnet4.6`** uses the **Anthropic** backend (`ANTHROPIC_API_KEY`, optional `ANTHROPIC_SONNET_MODEL`) with adaptive thinking; **`opus4.7`** remains an optional Anthropic profile using `ANTHROPIC_OPUS_MODEL`. **`gpt5.5`** uses **OpenAI** with synthesis author reasoning effort `xhigh` by default (`CSD_OPENAI_REASONING_EFFORT` / `OPENAI_GENERATION_REASONING_EFFORT` override); **`gemini`** uses the direct **Gemini** API (`GEMINI_API_KEY`, optional `GEMINI_GENERATION_MODEL`, default `gemini-3-pro-preview`) with `CSD_GEMINI_THINKING_LEVEL=high` by default. Bedrock and Bedrock-backed `gemini-pro` profiles are rejected by the matrix runner.
+- `run_all_tests.py` sources `synthesis/.env` before resolving generation profiles. **`gpt5.5`** uses **OpenAI** with synthesis author reasoning effort `xhigh` by default (`CSD_OPENAI_REASONING_EFFORT` / `OPENAI_GENERATION_REASONING_EFFORT` override); **`opus4.7`** uses the **Anthropic** backend (`ANTHROPIC_API_KEY`, optional `ANTHROPIC_OPUS_MODEL`) with adaptive thinking; **`gemini`** uses the direct **Gemini** API (`GEMINI_API_KEY`, optional `GEMINI_GENERATION_MODEL`, default `gemini-3-pro-preview`) with `CSD_GEMINI_THINKING_LEVEL=high` by default. Bedrock and Bedrock-backed `gemini-pro` profiles are rejected by the matrix runner.
 
 ## Path Configuration
 
-Path defaults are intentionally overrideable. Use CLI flags where available and env vars for runtime/config paths:
+Since the 2026-07-17 CLI simplification, `run_synthesis.py` no longer takes `--output-dir`, `--baseline-output-dir`, or `--grammars-dir` flags — those paths are settled constants in `synthesis/run_constants.py` (`OUTPUT_DIR`, `GRAMMARS_DIR`). What still varies at runtime:
 
-- `--output-dir` / `CSD_OUTPUT_DIR`
-- `--baseline-output-dir` / `CSD_BASELINE_OUTPUT_DIR`
-- `--grammars-dir` / `CSD_GRAMMARS_DIR`
+- `CSD_OUTPUT_DIR` — recovery-resume-only override so a resumed run keeps writing under its original directory; not a general-purpose output location flag.
+- `CSD_GRAMMARS_DIR` — honored by the evaluator when `GRAMMARS_DIR` is unset (built-in grammars under `synthesis/evaluate/grammars/` otherwise).
+- `run_all_tests.py` (the matrix runner, a separate script from `run_synthesis.py`) has its own `--generated-output-dir` / `CSD_OUTPUT_DIR` and `--baseline-output-dir` / `CSD_BASELINE_OUTPUT_DIR` flags for where it writes matrix output.
 - `--dafny-path` / `DAFNY_PATH`
-- `VAS_CONDA_ENV` / `VAS_RDKIT_CONDA_ENV` (optional Python environment prefix for `run_all_tests.py`; defaults to the active environment; see `environment/README.md`)
+- `VAS_CONDA_ENV` / `VAS_RDKIT_CONDA_ENV` (conda prefix for `run_all_tests.py`; default `/apps/conda/advayth2/envs/advayth2`; see `environment/README.md`)
 - `DAFNY_EXTRA_PATH` (extra PATH entries for Dafny subprocesses)
 - `VERIFIED_AGENT_SYNTHESIS_DFY` / `DAFNY_PROOFS_DIR`
 - `CSD_SYNCODE_DIR`

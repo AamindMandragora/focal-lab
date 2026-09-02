@@ -1,9 +1,9 @@
 # Dynamic CSD Gen win strategy across SMILES, GSM, and Spider
 
-**Date:** 2026-06-30
-**Source of truth:** focal checkout at `/home/aadivyar/csd-generation`
-**Purpose:** make the campaign logic explicit enough that you can critique it and redirect it before we spend more time or paid Bedrock calls.
-**Scope:** the current Qwen3.5 Dynamic CSD Gen campaign: SMILES, GSM, Spider, regression checks, and ablations.
+**Date:** 2026-06-30  
+**Source of truth:** focal checkout at `/home/aadivyar/csd-generation`  
+**Purpose:** make the campaign logic explicit enough that you can critique it and redirect it before we spend more time or paid Bedrock calls.  
+**Scope:** the current Qwen3.5 Dynamic CSD Gen campaign: SMILES, GSM, Spider, regression checks, and ablations.  
 
 ## One-page summary
 
@@ -791,6 +791,25 @@ Ranks 4 and 5 should get more attention than they have so far. They are higher r
 
 The updated bias is stronger than "consider ranks 4 and 5." After a capability-shaped failure, ranks 4 and 5 are the default next place to look. Ranks 1 and 2 are still required when the evidence is about trust, fairness, or measurement, but they should not be used as a substitute for giving the generated CSD the missing operation.
 
+### Change size: attack the biggest gaps with the biggest structural changes first
+
+Match the size of the change to the size of the gap. When a cell is far from its
+baseline (a large gap), do not open with small tweaks. Start with the biggest core
+changes to the framework — the ones that change what the CSD fundamentally can do:
+
+- **Introduce a new CSD** (a new constrained-decoding primitive/operation the author
+  model can call), rather than only re-tuning an existing helper's threshold or shape.
+- **Change the iteration style itself** (how the synthesis/feedback loop runs — e.g. the
+  span-close discipline, when/how spans open, the search/feedback mechanics), rather
+  than only adjusting run settings.
+
+The reasoning: a large gap is unlikely to be closed by a small-behavior tweak; it usually
+means the CSD is missing a whole operation or the loop is shaped wrong. Small helper-shape
+and run-setting changes are for closing the *last* small distance once a big structural
+change has already moved the cell most of the way. Go big-first, then refine. This must stay
+fair — a new CSD or iteration-style change is only allowed if it changes the mechanism, never
+if it leaks dataset-specific "how to win" guidance (that stays rank-6 disallowed).
+
 The practical rule:
 
 1. If a failure is caused by bad measurement, fix measurement.
@@ -1266,34 +1285,3 @@ The newest correction is even more direct: when the evidence points at a core CS
 Put plainly: the framework is the product being improved. The experiments are not just trying to find a lucky strategy. They are supposed to reveal which fair operation the current framework fails to give the generated CSD. Once the missing operation is visible, the next move should usually be to build or repair that operation, then relaunch cold to test whether the author model can use it.
 
 The main risk is that some live bars, especially SMILES bars near `1.00`, may be naturally hard to beat under pure cold discovery. If that happens, the right output is not to keep spending blindly. The right output is a recorded dead-end/blocker with evidence: what was tried, why it was fair, what failed, and what lever would be needed to continue.
-
-## 2026-07-01 Fidelity Re-Eval Record
-
-### H94: baseline reconstruction fidelity check
-
-Inputs:
-
-- Real baselines: `run_legacy_fixed_strategy.py` for CRANE/GSM, IterGen/Spider, and CARS/SMILES.
-- Reconstructions: extracted `verify/reference/*.dfy` strategy bodies run through `run_synthesis.py --initial-strategy-file ... --max-iterations 1`.
-- Eval model/backend: `Qwen/Qwen3.5-2B` through local vLLM on focal.
-- Output folder: `/tmp/fidelity_reeval_results`.
-
-Outputs:
-
-| Cell | Real baseline | Reconstruction | Evidence |
-|---|---:|---:|---|
-| CRANE/GSM, N=49 | 24.49% acc / 83.67% syntax from existing verified baseline JSON | 6.12% acc / 8.16% syntax | Baseline `/home/aadivyar/crane_qwen35_baselines/thinkfix/crane_gsm_Qwen_Qwen3-5-2B_n49_s123_2b.json`; reconstruction `/home/aadivyar/csd-generation/outputs/generated/fidelity_crane_gsm_20260701_101543_1f062a/results/success_report.json` |
-| IterGen/Spider, N=100 | 5.00% acc / 52.00% syntax | 8.00% acc / 54.00% syntax | Baseline `/tmp/fidelity_reeval_results/itergen_spider_legacy.json`; reconstruction `/home/aadivyar/csd-generation/outputs/generated/fidelity_itergen_spider_20260701_111142_8c3897/results/success_report.json` |
-| CARS/SMILES acrylates, N=50 | 28.00% UV / 100.00% validity | 8.00% UV / 96.00% validity | Baseline `/tmp/fidelity_reeval_results/cars_smiles_legacy.json`; reconstruction `/home/aadivyar/csd-generation/outputs/generated/fidelity_cars_smiles_20260701_112124_ea6990/results/success_report.json` |
-
-Algorithm:
-
-1. Run the real baseline adapter where possible.
-2. Run the matching hand-written reconstruction through the metaDecode re-eval path.
-3. Compare the JSON metrics directly.
-4. Record the result in `saved-results/2026-07-01-fidelity-reeval-results.md`.
-
-Notes:
-
-- The fresh CRANE/GSM legacy command failed before writing JSON because the CRANE environment's Transformers build did not recognize `qwen3_5`; the log is `/tmp/fidelity_reeval_results/crane_gsm_legacy.log`.
-- `results_matrix.md` was not changed. The CARS/SMILES real-baseline rerun conflicts with the existing Qwen3.5-2B acrylates row, the IterGen rerun used N=100 rather than the active N=300 bar, and the fresh CRANE rerun failed.

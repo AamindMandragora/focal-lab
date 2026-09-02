@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -27,43 +28,29 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent
 CALLER_CUDA_VISIBLE_DEVICES = os.environ.get("CUDA_VISIBLE_DEVICES", "")
 DEFAULT_GSM_SPLIT_FILE = (
-    ROOT_DIR
-    / "experiments"
-    / "splits"
-    / "gsm_symbolic_crane_proportional_49x49_seed123.json"
+    ROOT_DIR / "environment" / "benchmark_splits" / "gsm_symbolic_crane_proportional.json"
 )
 DEFAULT_SPIDER_SPLIT_FILE = ROOT_DIR / "environment" / "benchmark_splits" / "spider_dev_proportional.json"
 
 DEFAULT_MODELS = (
-    "Qwen/Qwen3.5-2B,"
-    "Qwen/Qwen3.5-4B,"
-    "Qwen/Qwen3.5-9B,"
+    "Qwen/Qwen2.5-1.5B-Instruct,"
+    "Qwen/Qwen2.5-Coder-7B-Instruct,"
+    "Qwen/Qwen2.5-Coder-14B-Instruct,"
     "meta-llama/Llama-3.1-8B-Instruct"
 )
-DEFAULT_BENCHMARKS = "gsm,spider,smiles"
-DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
-DEFAULT_CARS_SEARCH_STEPS = "200"
-DEFAULT_SMILES_SAMPLES_PER_CLASS = "100"
-DEFAULT_BASELINE_STRATEGIES = (
-    "unconstrained",
-    "gcd",
-    "crane",
-    "itergen",
-    "rs",
-    "cars",
-)
-DEFAULT_STRATEGIES = ",".join(DEFAULT_BASELINE_STRATEGIES)
+DEFAULT_BENCHMARKS = "gsm,spider"
+DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,metadecode,cars"
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10,30,40"
 DEFAULT_MAIN_SYNTH_ITERS = "40"
-DEFAULT_GEN_MODELS = "sonnet4.6,gpt5.5,gemini"
+DEFAULT_GEN_MODELS = "sonnet4.6,gpt5.6-sol,gemini"
 DEFAULT_STEP_BUDGETS = "256,512,900,1024"
 DEFAULT_GSM_MAX_STEPS = "900"
 DEFAULT_GPU3_RETRY_QUEUE = ROOT_DIR / "outputs" / "gpu3_retry_queue.jsonl"
 VALID_ABLATION_SECTIONS = ("A", "B", "C", "D", "E")
 DEFAULT_ABLATION_SECTIONS = ",".join(VALID_ABLATION_SECTIONS)
-BASELINE_TARGET_STRATEGIES = DEFAULT_BASELINE_STRATEGIES
-ABLATION_FIXED_STRATEGIES = ("gcd", "crane", "itergen", "rs", "cars")
+DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
+CSD_TARGET_STRATEGIES = ("crane", "itergen")
 OOM_RE = re.compile(
     r"out of memory|OutOfMemoryError|CUDA out of memory|"
     r"CUDA error: out of memory|torch\.cuda\.OutOfMemoryError|"
@@ -72,29 +59,12 @@ OOM_RE = re.compile(
     r"Engine core initialization failed",
     re.IGNORECASE,
 )
-
-
-def matrix_max_cuda_devices() -> int:
-    raw = os.environ.get(
-        "VAS_MAX_CUDA_DEVICES",
-        os.environ.get("CSD_MAX_CUDA_DEVICES", "1"),
-    )
-    try:
-        return max(1, int(raw))
-    except ValueError:
-        return 1
-
-
-def limit_matrix_cuda_visible_devices(value: str | None) -> str | None:
-    if not value:
-        return value
-    parts = [part.strip() for part in value.split(",") if part.strip()]
-    return ",".join(parts[:matrix_max_cuda_devices()])
 # Quota / credit exhaustion on the AUTHOR-model API (OpenAI / Anthropic / Bedrock).
 # These errors are NOT transient — retrying or moving GPUs won't help. We abort
 # the whole matrix run so the user is forced to notice and fix the credit issue
 # instead of letting every metadecode cell silently fail with empty output.
 QUOTA_RE = re.compile(
+    r"\[claude-author-access\]|"
     r"insufficient_quota|"
     r"RateLimitError|rate_limit_error|"
     r"credit balance is too low|"
@@ -109,37 +79,7 @@ QUOTA_RE = re.compile(
 )
 
 
-def _parse_env_value(raw: str) -> str:
-    raw = raw.strip()
-    if not raw:
-        return ""
-    try:
-        parsed = shlex.split(raw, posix=True)
-    except ValueError:
-        return raw.strip("\"'")
-    if not parsed:
-        return ""
-    return parsed[0]
-
-
-def load_env_file(path: Path) -> None:
-    """Load KEY=VALUE lines from a dotenv-style file into ``os.environ``."""
-    if not path.exists():
-        return
-    for line in path.read_text().splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if stripped.startswith("export "):
-            stripped = stripped[len("export ") :].strip()
-        if "=" not in stripped:
-            continue
-        key, raw_value = stripped.split("=", 1)
-        key = key.strip()
-        if key:
-            os.environ[key] = _parse_env_value(raw_value)
-
-
+from synthesis.env_utils import load_env_file
 from synthesis.evaluate.benchmarks.smiles.dataset import normalize_smiles_classes
 
 
@@ -227,19 +167,9 @@ class Config:
     eval_max_steps: str
     eval_max_steps_gsm: str
     eval_max_steps_smiles: str
-    rs_search_steps: str
-    cars_search_steps: str
-    smiles_samples_per_class: str
     eval_max_seconds_per_example: str
-    eval_min_examples_before_threshold_stop: str
     accuracy_win_margin: float
     synthesis_max_tokens: str
-    restart_after_stuck_iters: str
-    helper_selection_policy: str
-    refinement_beam_size: str
-    anthropic_thinking: str
-    anthropic_effort: str
-    anthropic_thinking_display: str
     vllm_gpu_memory_utilization: str
     vllm_tensor_parallel_size: int
     dafny_path: str
@@ -252,7 +182,7 @@ class Config:
     dry_run: bool = False
     skip_main: bool = False
     skip_ablations: bool = False
-    conda_env_path: Path = Path(sys.prefix)
+    conda_env_path: Path = Path("/apps/conda/advayth2/envs/advayth2")
     cuda_devices: str = "auto"
     cuda_oom_fallback: str = "auto"
     free_gpu_max_used_mb: int = 1024
@@ -266,13 +196,15 @@ class Config:
 class Runner:
     config: Config
     env: dict[str, str]
-    prepared_baselines: set[tuple[str, ...]] = field(default_factory=set)
+    prepared_baselines: set[tuple[str, str, str, str, str]] = field(default_factory=set)
     last_failure_was_author_access: bool = False
 
     def configure_cuda_devices(self) -> bool:
+        from synthesis.evaluate.benchmarks.common.model_utils import limit_cuda_visible_devices
+
         selected = self.resolve_cuda_visible_devices("primary", ())
         if selected:
-            selected = limit_matrix_cuda_visible_devices(selected) or selected
+            selected = limit_cuda_visible_devices(selected) or selected
             self.env["CUDA_VISIBLE_DEVICES"] = selected
             os.environ["CUDA_VISIBLE_DEVICES"] = selected
             if self.config.cuda_devices == "auto" and not CALLER_CUDA_VISIBLE_DEVICES:
@@ -400,8 +332,6 @@ class Runner:
     def evaluation_sample_size(self, benchmark: str) -> str:
         if benchmark == "gsm_symbolic":
             return self.config.gsm_eval_sample_size
-        if benchmark == "smiles":
-            return self.config.smiles_samples_per_class
         return self.config.eval_sample_size
 
     def ensure_split_manifests(self) -> None:
@@ -412,16 +342,8 @@ class Runner:
             if not gsm_path.is_file():
                 raise SystemExit(
                     f"GSM split manifest not found: {gsm_path}\n"
-                    "Restore or regenerate the committed manifest; see "
-                    "environment/benchmark_splits/README.md"
-                )
-            manifest = json.loads(gsm_path.read_text())
-            train = set(manifest.get("train_indices", []))
-            evaluation = set(manifest.get("eval_indices", []))
-            if not train or not evaluation or not train.isdisjoint(evaluation):
-                raise SystemExit(
-                    "GSM split manifest must contain non-empty, disjoint "
-                    f"train_indices and eval_indices: {gsm_path}"
+                    "Regenerate tracked splits with:\n"
+                    "  python -m synthesis.evaluate.benchmarks.write_fixed_benchmark_splits"
                 )
 
         if "spider" in normalized:
@@ -429,12 +351,23 @@ class Runner:
             if not spider_path.is_file():
                 raise SystemExit(
                     f"Spider split manifest not found: {spider_path}\n"
-                    "Restore or regenerate the committed manifest; see "
-                    "environment/benchmark_splits/README.md"
+                    "Regenerate tracked splits with:\n"
+                    "  python -m synthesis.evaluate.benchmarks.write_fixed_benchmark_splits"
                 )
 
     def gsm_split_name_for_role(self, role: str) -> str:
-        """Map generation/evaluation roles to disjoint manifest keys."""
+        """
+        Map generation/evaluation roles to manifest keys.
+
+        The default CRANE proportional manifest has train_size=0; use the eval
+        pool for synthesis as well so metadecode tunes on the same fixed subset.
+        """
+        path = Path(self.config.gsm_split_file)
+        if not path.is_file():
+            return "eval" if role != "train" else "train"
+        manifest = json.loads(path.read_text())
+        if role == "train" and not manifest.get("train_indices"):
+            return "eval"
         return "train" if role == "train" else "eval"
 
     def add_generation_split_flags(self, cmd: list[str], benchmark: str) -> None:
@@ -501,9 +434,6 @@ class Runner:
         target_accuracy_path: str | None = None,
         target_syntax_strategy: str | None = None,
         target_syntax_path: str | None = None,
-        beam_size: str | None = None,
-        mask_flag: str | None = None,
-        helper_policy: str | None = None,
     ) -> dict:
         return {
             "phase": phase,
@@ -533,21 +463,11 @@ class Runner:
             },
             "runtime_controls": {
                 "eval_max_seconds_per_example": maybe_float(self.config.eval_max_seconds_per_example),
-                "eval_min_examples_before_threshold_stop": maybe_int(
-                    self.config.eval_min_examples_before_threshold_stop
-                ),
                 "vllm_gpu_memory_utilization": maybe_float(self.config.vllm_gpu_memory_utilization),
                 "vllm_tensor_parallel_size": self.config.vllm_tensor_parallel_size,
             },
             "synthesis_controls": {
                 "max_tokens": maybe_int(self.config.synthesis_max_tokens),
-                "restart_after_stuck_iters": maybe_int(self.config.restart_after_stuck_iters),
-                "adaptive_helper_mask": mask_flag != "--no-adaptive-helper-mask",
-                "helper_selection_policy": helper_policy or self.config.helper_selection_policy,
-                "refinement_beam_size": maybe_int(beam_size or self.config.refinement_beam_size),
-                "anthropic_thinking": self.config.anthropic_thinking,
-                "anthropic_effort": self.config.anthropic_effort,
-                "anthropic_thinking_display": self.config.anthropic_thinking_display,
             },
             "splits": {
                 benchmark: self.split_metadata_for(benchmark, "eval"),
@@ -710,7 +630,7 @@ class Runner:
         if benchmark == "gsm_symbolic":
             return "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters."
         if benchmark == "spider":
-            return "Generate a single valid SQL query as exactly `SQL: <<YOUR QUERY>>`, using only the provided schema context."
+            return "Generate a single valid SQL query using only the provided schema context. Only output the SQL query."
         if benchmark == "smiles":
             return "Generate valid SMILES strings that match the requested molecular class while maintaining parser-valid output."
         return "Generate parser-valid benchmark answers."
@@ -738,6 +658,8 @@ class Runner:
         )
         if profile == "gpt5.5":
             return "openai", openai_gpt
+        if profile == "gpt5.6-sol":
+            return "codex", "gpt-5.6-sol"
         if profile == "opus4.7":
             if self.env.get("CSD_OPUS47_BACKEND", "").strip().lower() == "bedrock":
                 raise ValueError(
@@ -745,12 +667,18 @@ class Runner:
                 )
             return "anthropic", anthropic_opus47
         if profile == "sonnet4.6":
-            if self.env.get("CSD_SONNET46_BACKEND", "").strip().lower() == "bedrock":
-                raise ValueError(
-                    "Bedrock generation profiles are disabled for the experimental matrix."
-                )
+            warnings.warn(
+                "generation profile 'sonnet4.6' now uses Claude Code Max Opus 5; "
+                "use 'anthropic-sonnet4.6' for the direct Anthropic API",
+                FutureWarning,
+                stacklevel=2,
+            )
+            return "claude", "claude-opus-5"
+        if profile == "claude-sonnet4.6":
+            return "claude", "claude-opus-5"
+        if profile == "anthropic-sonnet4.6":
             return "anthropic", anthropic_sonnet46
-        if profile == "bedrock-sonnet4.6":
+        if profile in {"claude-bedrock-sonnet4.6", "bedrock-sonnet4.6"}:
             raise ValueError(
                 "Bedrock generation profiles are disabled for the experimental matrix."
             )
@@ -783,7 +711,7 @@ class Runner:
             )
         raise ValueError(
             f"Unknown generation profile: {profile}. "
-            "Allowed profiles are sonnet4.6, opus4.7, gpt5.5, and gemini."
+            "Allowed profiles are sonnet4.6, opus4.7, gpt5.5, gpt5.6-sol, and gemini."
         )
 
     def baseline_case_key(
@@ -793,13 +721,8 @@ class Runner:
         benchmark_key: str,
         token_budget: str,
         max_steps: str,
-    ) -> tuple[str, ...]:
-        key: tuple[str, ...] = (strategy, model_slug, benchmark_key, token_budget, max_steps)
-        if strategy == "rs":
-            return key + (self.config.rs_search_steps,)
-        if strategy == "cars" and benchmark_key.startswith("smiles__class_"):
-            return key + (self.config.cars_search_steps,)
-        return key
+    ) -> tuple[str, str, str, str, str]:
+        return strategy, model_slug, benchmark_key, token_budget, max_steps
 
     def baseline_json_complete(self, path: Path) -> bool:
         try:
@@ -864,7 +787,7 @@ class Runner:
     ) -> tuple[float, str, str, str, float, str, str, str]:
         best_accuracy: tuple[float, str, str, str] | None = None
         best_syntax: tuple[float, str, str, str] | None = None
-        for strategy in BASELINE_TARGET_STRATEGIES:
+        for strategy in CSD_TARGET_STRATEGIES:
             path = self.fixed_baseline_path(
                 strategy, eval_model, benchmark, token_budget, max_steps, smiles_class
             )
@@ -923,7 +846,7 @@ class Runner:
         max_steps: str,
         smiles_class: str = "",
     ) -> None:
-        for strategy in BASELINE_TARGET_STRATEGIES:
+        for strategy in CSD_TARGET_STRATEGIES:
             ok = self.run_fixed_strategy_case(
                 strategy,
                 benchmark,
@@ -1006,17 +929,13 @@ class Runner:
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
         self.add_evaluation_split_flags(cmd, benchmark)
-        if benchmark == "smiles" and smiles_class:
+        if benchmark == "smiles":
             cmd += [
                 "--smiles-classes",
                 smiles_class,
                 "--smiles-samples-per-class",
-                self.config.smiles_samples_per_class,
+                self.evaluation_sample_size(benchmark),
             ]
-        if strategy == "rs":
-            cmd += ["--rs-search-steps", self.config.rs_search_steps]
-        if strategy == "cars":
-            cmd += ["--cars-search-steps", self.config.cars_search_steps]
 
         if self.run_cmd(cmd):
             self.prepared_baselines.add(case_key)
@@ -1171,12 +1090,8 @@ class Runner:
             backend,
             "--eval-model",
             eval_model,
-            "--eval-backend",
-            self.config.eval_backend,
             "--max-iterations",
             synth_iter,
-            "--output-name",
-            run_name,
             "--min-accuracy",
             f"{required_accuracy:.12g}",
             "--min-syntax-rate",
@@ -1189,35 +1104,11 @@ class Runner:
             token_budget,
             "--eval-max-seconds-per-example",
             self.config.eval_max_seconds_per_example,
-            "--eval-min-examples-before-threshold-stop",
-            self.config.eval_min_examples_before_threshold_stop,
             "--max-tokens",
             self.config.synthesis_max_tokens,
-            "--restart-after-stuck-iters",
-            self.config.restart_after_stuck_iters,
-            "--vllm-gpu-memory-utilization",
-            self.config.vllm_gpu_memory_utilization,
             "--device",
             self.config.device,
-            "--output-dir",
-            str(self.config.generated_output_dir),
-            "--adaptive-helper-mask",
-            "--helper-selection-policy",
-            self.config.helper_selection_policy,
-            "--refinement-beam-size",
-            self.config.refinement_beam_size,
         ]
-        if backend in ("anthropic", "bedrock"):
-            cmd += [
-                "--anthropic-thinking",
-                self.config.anthropic_thinking,
-                "--anthropic-effort",
-                self.config.anthropic_effort,
-                "--anthropic-thinking-display",
-                self.config.anthropic_thinking_display,
-            ]
-        self.add_vllm_parallel_flags(cmd)
-        self.add_generation_split_flags(cmd, benchmark)
         if benchmark == "smiles":
             cmd += [
                 "--smiles-samples-per-class",
@@ -1400,13 +1291,8 @@ class Runner:
         print(
             "split policy: "
             f"GSM generation={self.config.gsm_generation_sample_size}/eval={self.config.gsm_eval_sample_size}; "
-            f"SMILES per-class={self.config.smiles_samples_per_class}; "
             f"other generation={self.config.generation_sample_size}/eval={self.config.eval_sample_size}"
-        )
-        print(
-            f"CARS search steps: {self.config.cars_search_steps}; "
-            f"RS search steps: {self.config.rs_search_steps}"
-        )
+            )
         print(f"accuracy win margin (metadecode): +{self.config.accuracy_win_margin:.1%}")
         print(f"main synthesis iterations (metadecode): {self.config.main_synthesis_iterations}")
         if self.config.gpu3_retry_enabled:
@@ -1512,12 +1398,8 @@ class Runner:
             generation_model,
             "--eval-model",
             eval_model,
-            "--eval-backend",
-            self.config.eval_backend,
             "--max-iterations",
             self.config.synth_iters[-1],
-            "--output-name",
-            run_name,
             "--min-accuracy",
             f"{required_accuracy:.12g}",
             "--min-syntax-rate",
@@ -1530,26 +1412,11 @@ class Runner:
             token_budget,
             "--eval-max-seconds-per-example",
             self.config.eval_max_seconds_per_example,
-            "--eval-min-examples-before-threshold-stop",
-            self.config.eval_min_examples_before_threshold_stop,
             "--max-tokens",
             self.config.synthesis_max_tokens,
-            "--restart-after-stuck-iters",
-            self.config.restart_after_stuck_iters,
-            "--vllm-gpu-memory-utilization",
-            self.config.vllm_gpu_memory_utilization,
             "--device",
             self.config.device,
-            "--output-dir",
-            str(self.config.generated_output_dir),
-            "--refinement-beam-size",
-            beam_size,
-            mask_flag,
-            "--helper-selection-policy",
-            policy,
         ]
-        self.add_vllm_parallel_flags(cmd)
-        self.add_generation_split_flags(cmd, benchmark)
         if benchmark == "smiles":
             cmd += [
                 "--smiles-samples-per-class",
@@ -1587,9 +1454,6 @@ class Runner:
                 target_accuracy_path=_target_path,
                 target_syntax_strategy=target_syntax_strategy,
                 target_syntax_path=_target_syntax_path,
-                beam_size=beam_size,
-                mask_flag=mask_flag,
-                helper_policy=policy,
             ),
         )
 
@@ -1598,7 +1462,7 @@ class Runner:
             return
         print("")
         print("=== Phase 2: Ablation studies ===")
-        ablation_model = "Qwen/Qwen3.5-9B"
+        ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
         sections = self.config.ablation_sections
 
         if "A" in sections:
@@ -1606,7 +1470,7 @@ class Runner:
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for step_budget in self.config.step_budgets:
-                    for strategy in (*ABLATION_FIXED_STRATEGIES, "metadecode"):
+                    for strategy in ("gcd", "crane", "itergen", "metadecode"):
                         if strategy == "metadecode":
                             self.run_metadecode_cases(
                                 benchmark,
@@ -1662,7 +1526,7 @@ class Runner:
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for token_budget in self.config.token_budgets:
-                    for strategy in (*ABLATION_FIXED_STRATEGIES, "metadecode"):
+                    for strategy in ("gcd", "crane", "itergen", "metadecode"):
                         if strategy == "metadecode":
                             self.run_metadecode_cases(
                                 benchmark,
@@ -1755,31 +1619,10 @@ def make_parser() -> argparse.ArgumentParser:
         help="Per-benchmark override for --eval-max-steps used on SMILES classes.",
     )
     parser.add_argument(
-        "--rs-search-steps",
-        default="200",
-        help="Max RS decode attempts per baseline example (default: 200).",
-    )
-    parser.add_argument(
-        "--cars-search-steps",
-        default=DEFAULT_CARS_SEARCH_STEPS,
-        help="Max CARS rejection attempts per SMILES class session (default: 200).",
-    )
-    parser.add_argument(
-        "--smiles-samples-per-class",
-        default=DEFAULT_SMILES_SAMPLES_PER_CLASS,
-        help="Attempt budget per SMILES class for fixed-strategy baselines (default: 100).",
-    )
-    parser.add_argument(
         "--eval-max-seconds-per-example",
         default="90",
         help="Per-example wall-clock timeout for synthesis evaluation (seconds). "
         "Wired through to synthesis.run_synthesis. Default: 90.",
-    )
-    parser.add_argument(
-        "--eval-min-examples-before-threshold-stop",
-        default="15",
-        help="Minimum number of evaluated examples before threshold-impossible "
-        "early stops can fire during synthesis. Default: 15.",
     )
     parser.add_argument(
         "--accuracy-win-margin",
@@ -1796,43 +1639,9 @@ def make_parser() -> argparse.ArgumentParser:
         help="Author-model token budget for each MetaDecode synthesis attempt (default: 32768).",
     )
     parser.add_argument(
-        "--restart-after-stuck-iters",
-        default="0",
-        help="Forwarded to synthesis.run_synthesis; 0 disables restart mode (default: 0).",
-    )
-    parser.add_argument(
-        "--helper-selection-policy",
-        choices=["bandit"],
-        default="bandit",
-        help="Forwarded to synthesis.run_synthesis for adaptive helper masking (default: bandit).",
-    )
-    parser.add_argument(
-        "--refinement-beam-size",
-        default="2",
-        help="Forwarded to synthesis.run_synthesis for refinement candidate count (default: 2).",
-    )
-    parser.add_argument(
-        "--anthropic-thinking",
-        choices=["auto", "off", "adaptive", "enabled"],
-        default="auto",
-        help="Forwarded for Anthropic MetaDecode author profiles (default: auto).",
-    )
-    parser.add_argument(
-        "--anthropic-effort",
-        choices=["low", "medium", "high", "xhigh", "max"],
-        default="xhigh",
-        help="Forwarded for Anthropic adaptive thinking (default: xhigh).",
-    )
-    parser.add_argument(
-        "--anthropic-thinking-display",
-        choices=["omitted", "summarized"],
-        default="summarized",
-        help="Forwarded for Anthropic thinking summaries (default: summarized).",
-    )
-    parser.add_argument(
         "--gsm-split-file",
         default=os.environ.get("CSD_GSM_SPLIT_FILE", str(DEFAULT_GSM_SPLIT_FILE)),
-        help="Stratified GSM-Symbolic manifest (default: experiments/splits/gsm_symbolic_crane_proportional_49x49_seed123.json)",
+        help="Stratified GSM-Symbolic manifest (default: environment/benchmark_splits/gsm_symbolic_crane_proportional.json)",
     )
     parser.add_argument(
         "--spider-split-file",
@@ -1901,23 +1710,15 @@ def normalize_smiles_classes_for_cli(raw: str) -> list[str]:
         raise SystemExit(str(exc)) from exc
 
 
-def resolve_matrix_tensor_parallel_size(requested: int | None = None) -> int:
-    """Resolve the matrix GPU count without importing the heavy model runtime."""
-    cap = matrix_max_cuda_devices()
-    return max(1, min(requested or 1, cap))
-
-
-def configure_conda_environment(
-    root: Path,
-    *,
-    validate: bool = True,
-) -> tuple[Path, dict[str, str]]:
-    configured_env = os.environ.get("VAS_CONDA_ENV") or os.environ.get(
-        "VAS_RDKIT_CONDA_ENV"
+def configure_conda_environment(root: Path) -> tuple[Path, dict[str, str]]:
+    default_env = Path("/apps/conda/advayth2/envs/advayth2")
+    conda_env_path = Path(
+        os.environ.get("VAS_CONDA_ENV")
+        or os.environ.get("VAS_RDKIT_CONDA_ENV")
+        or str(default_env)
     )
-    conda_env_path = Path(configured_env).expanduser() if configured_env else Path(sys.prefix)
     python_path = conda_env_path / "bin" / "python"
-    if validate and not python_path.exists():
+    if not python_path.exists():
         print(f"conda environment python not found: {python_path}", file=sys.stderr)
         raise SystemExit(1)
 
@@ -1929,28 +1730,25 @@ def configure_conda_environment(
         env["LD_LIBRARY_PATH"] = f"{lib_dir}{os.pathsep}{env['LD_LIBRARY_PATH']}" if env.get("LD_LIBRARY_PATH") else str(lib_dir)
     env["PYTHONUNBUFFERED"] = "1"
 
-    if validate:
-        rdkit_check = subprocess.run(
-            [str(python_path), "-c", "import rdkit"],
-            cwd=root,
-            env=env,
-            text=True,
-            capture_output=True,
-        )
-        if rdkit_check.returncode != 0:
-            sys.stderr.write(rdkit_check.stderr)
-            print(
-                f"failed to import rdkit in environment: {conda_env_path}",
-                file=sys.stderr,
-            )
-            raise SystemExit(rdkit_check.returncode)
+    rdkit_check = subprocess.run(
+        [str(python_path), "-c", "import rdkit"],
+        cwd=root,
+        env=env,
+        text=True,
+        capture_output=True,
+    )
+    if rdkit_check.returncode != 0:
+        sys.stderr.write(rdkit_check.stderr)
+        print(f"failed to import rdkit in conda environment: {conda_env_path}", file=sys.stderr)
+        raise SystemExit(rdkit_check.returncode)
 
-    mode = "configured" if configured_env else "active"
-    print(f"[env] using {mode} Python environment: {conda_env_path}")
+    print(f"[env] using conda environment: {conda_env_path}")
     return conda_env_path, env
 
 
 def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
+    from synthesis.evaluate.benchmarks.common.model_utils import resolve_vllm_tensor_parallel_size
+
     dafny_path = args.dafny_path
     if not dafny_path and (ROOT_DIR / "dafny" / "dafny").is_file():
         dafny_path = str(ROOT_DIR / "dafny" / "dafny")
@@ -1978,23 +1776,11 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         eval_max_steps=str(args.eval_max_steps),
         eval_max_steps_gsm=str(args.eval_max_steps_gsm),
         eval_max_steps_smiles=str(args.eval_max_steps_smiles),
-        rs_search_steps=str(args.rs_search_steps),
-        cars_search_steps=str(args.cars_search_steps),
-        smiles_samples_per_class=str(args.smiles_samples_per_class),
         eval_max_seconds_per_example=str(args.eval_max_seconds_per_example),
-        eval_min_examples_before_threshold_stop=str(args.eval_min_examples_before_threshold_stop),
         accuracy_win_margin=float(args.accuracy_win_margin),
         synthesis_max_tokens=str(args.synthesis_max_tokens),
-        restart_after_stuck_iters=str(args.restart_after_stuck_iters),
-        helper_selection_policy=str(args.helper_selection_policy),
-        refinement_beam_size=str(args.refinement_beam_size),
-        anthropic_thinking=str(args.anthropic_thinking),
-        anthropic_effort=str(args.anthropic_effort),
-        anthropic_thinking_display=str(args.anthropic_thinking_display),
         vllm_gpu_memory_utilization=str(args.vllm_gpu_memory_utilization),
-        vllm_tensor_parallel_size=resolve_matrix_tensor_parallel_size(
-            args.vllm_tensor_parallel_size
-        ),
+        vllm_tensor_parallel_size=resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size),
         dafny_path=dafny_path,
         generated_output_dir=Path(args.generated_output_dir),
         baseline_output_dir=Path(args.baseline_output_dir),
@@ -2022,10 +1808,7 @@ def main(argv: list[str] | None = None) -> int:
     load_env_file(ROOT_DIR / "synthesis" / ".env")
     parser = make_parser()
     args = parser.parse_args(argv)
-    conda_env_path, env = configure_conda_environment(
-        ROOT_DIR,
-        validate=not args.dry_run,
-    )
+    conda_env_path, env = configure_conda_environment(ROOT_DIR)
     config = build_config(args, conda_env_path)
     return Runner(config=config, env=env).run()
 

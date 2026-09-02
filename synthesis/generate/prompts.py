@@ -193,8 +193,31 @@ consume token budget by themselves.
 ### Task prompt guidance
 
 - `helpers.AppendTaskGuidance(lm, guidance)`
-  Role: append a CSD-chosen guidance block to the evaluator's existing task
-  prompt before generation begins.
+  Role: split ownership. The constrained decode owns the answer's form — which
+  spans exist, where they sit, what surface syntax is legal — and the parser
+  reads that form back. Neither owns meaning: what the task's language refers to
+  and the conventions it obeys. No grammar can encode that, so this is the only
+  channel that can carry it.
+
+  The call is first-call-wins and the string it takes rides every later attempt,
+  so treat the first emission as final rather than as a draft to repair.
+
+  Compatibility: this guidance is additive. It must not contradict, weaken, or
+  replace earlier task instructions, examples, schema, or output-format
+  requirements. If wording conflicts, the earlier task contract remains
+  authoritative.
+
+  Say what the task's language means wherever the grammar leaves meaning open —
+  a named quantity, an operator or relation, or a convention holding across the
+  whole problem. To give a sense of the shape: in a math word problem this might
+  be that a quantity is a whole count rather than a fraction, or what "per"
+  distributes over; in text-to-SQL, which schema object an ambiguous phrase
+  picks out, or which direction "best" orders by; in a molecular string, which
+  bond or valence a token stands for. These are illustrations, not a checklist —
+  what a given task leaves open is yours to find.
+
+  Do not restate delimiters, output format, or syntax; the parser already
+  enforces those, so spending the sentence there changes nothing.
   Mechanics: forwards `guidance` to the runtime LM wrapper. The evaluator keeps
   its normal prompt, examples, schema, question, and output contract; the
   guidance is appended as an extra block. Runtime semantics are append-only and
@@ -329,23 +352,44 @@ consume token budget by themselves.
   Control profile: budget-bounded completeness-tracking close that needs no caller-side proof of completeness.
 
 - `helpers.ManagedStep(lm, parser, prompt, generated, insideConstrained, currentConstrained, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
-  Role: one self-contained free-or-constrained decode step with delimiter and
-  parser-state management built in.
-  Mechanics: outside a span, takes one free step and enters constrained mode on
-  `"<<"`; inside a span, closes a complete parse or advances with
-  `AdaptiveConstrainedStep`.
-  Cost: exactly +1 token-step.
+  Role: one self-contained free-or-constrained decode step with delimiter/state
+  management built in.
+  Mechanics: outside a span, takes one `UnconstrainedStep` and enters constrained
+  mode if it emits `"<<"`; inside a span, closes when `currentConstrained` is
+  complete, otherwise takes one `AdaptiveConstrainedStep` and appends it.
+  Returns `(generatedOut, insideOut, currentOut, done)` where `done` means EOS or
+  span close was reached.
+  Requires: same parser-valid/current-state shape as the lower-level span helpers,
+  `"<<", ">>", eosToken in lm.Tokens`, and bounded non-negative `boostAmount`.
+  Cost: exactly +1 token-step on every path.
+  Control profile: proof-friendly single-step state machine for strategies that
+  need to manage spans without hand-writing delimiter and parser-state branches.
 
 - `helpers.GenerateWithManagedSpan(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
-  Role: bounded full decode with free preamble, constrained span handling, and
-  completeness-gated closing managed inside the verified helper.
+  Role: bounded full decode loop with free preamble, constrained span handling,
+  completeness-gated close, and proof obligations discharged inside the helper.
+  Mechanics: loops up to `maxSteps`; outside a span it samples freely until EOS
+  or `"<<"`; inside a span it closes when complete, otherwise advances with
+  `AdaptiveConstrainedStep`. The caller receives `(generated,
+  insideConstrainedOut, currentConstrainedOut)` and does not need to prove a
+  custom loop.
+  Requires: same parser-valid/current-state shape as `ManagedStep`, `"<<", ">>",
+  eosToken in lm.Tokens`, and bounded non-negative `boostAmount`.
   Cost: at most +`maxSteps`.
+  Control profile: high-level span manager for cold strategies that are losing
+  budget or correctness in hand-written free/inside-span loops.
 
 - `helpers.GenerateWithPrefixAndManagedSpan(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, prefixBudget, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
-  Role: bounded full decode that caps the free preamble before forcing entry into
-  a constrained span.
-  Requires: `prefixBudget <= maxSteps`.
+  Role: bounded full decode loop that hard-caps the unconstrained preamble before
+  forcing entry into a constrained span.
+  Mechanics: like `GenerateWithManagedSpan`, but while outside a span it allows
+  at most `prefixBudget` free steps; after that it calls `OpenConstrainedSpan`
+  so the remaining budget can be spent on parser-controlled content and closing.
+  Requires: same requirements as `GenerateWithManagedSpan`, plus
+  `prefixBudget <= maxSteps`.
   Cost: at most +`maxSteps`.
+  Control profile: output-budget guard for failures where the model stays in
+  free text too long or enters constrained mode too late.
 
 ### Soft preferences and group-aware constrained decoding
 
@@ -533,6 +577,25 @@ consume token budget by themselves.
 - `helpers.RegenerateUnitOnCheckFailure(lm, parser, prompt, currentConstrained, eosToken, maxStepsPerUnit, maxRetries, maxRollbackBudget, allowedUnits)`
   Role: generate a constrained span unit-by-unit, rewinding and resampling any
   unit whose rendered text is not in a caller-supplied allowed set.
+  When to use: when evaluation shows outputs that are syntax-valid but score
+  incorrect — i.e. the failure is in WHICH units the model chose, not in
+  structure. If outputs are already well-formed (grammar-valid) yet wrong, the
+  problem is unit selection; this helper directly addresses that by checking each
+  completed grammar unit against a set of acceptable values and resampling on
+  mismatch.
+  How to use: build `allowedUnits` from the identifiers or names that appear
+  in the per-example prompt context (e.g. scan `prompt` for recognizable tokens
+  using `CSDHelpers.PrefixToString` or by extracting from the rendered input
+  string). Pass this as a `seq<string>`. Start with conservative retry values
+  such as `maxStepsPerUnit := 20`, `maxRetries := 3`, `maxRollbackBudget := 10`.
+  Example call shape:
+    var allowed: seq<string> := /* names extracted from prompt context */;
+    var result := helpers.RegenerateUnitOnCheckFailure(
+        lm, parser, prompt, currentConstrained, eosToken,
+        20, 3, 10, allowed);
+  If `allowedUnits` is empty (e.g. because no names were found in context), the
+  check is disabled and the helper degrades gracefully to plain dead-end-avoiding
+  generation — so it is always safe to call.
   Mechanics: generates tokens via `DeadEndAvoidingStep`. At each grammar-unit
   boundary (`parser.IsCompletePrefix` becomes true), it renders the new unit text
   and checks it against `allowedUnits`. On a failed check and with remaining retry
@@ -570,17 +633,22 @@ consume token budget by themselves.
   execution feedback or gold answers.
 
 - `helpers.PrefixAppearsInPrompt(lm, prefix)`
-  Role: no-gold duplicate check for a generated prefix.
-  Mechanics: renders `prefix` and checks for an exact normalized match among
-  candidates visible in the current prompt, including rolling suffix text.
+  Role: no-gold duplicate/exemplar check for a generated prefix.
+  Mechanics: renders `prefix` and asks whether the normalized span already
+  appears in the current prompt context, including prompt examples and rolling
+  suffix text visible to the model. It uses exact normalized span matching, not
+  substring search.
   Cost: +0.
+  Fair: reads only prompt-visible text; never reads gold labels, scorer state,
+  evaluator results, or class-specific win rules.
 
 - `helpers.PrefixResemblesPromptExamples(lm, prefix)`
   Role: no-gold resemblance score for a generated prefix.
-  Mechanics: renders `prefix` and returns a real number in [0,1] measuring its
-  structural similarity to example spans visible in the current prompt. Generic
-  fingerprints are used, and the strategy chooses its own threshold. Returns
-  0.0 when examples are absent or the candidate cannot be parsed.
+  Mechanics: renders `prefix` and returns a real number in [0,1] measuring how
+  structurally similar it is to the example spans shown in the current prompt
+  (the same prompt-visible examples `PrefixAppearsInPrompt` inspects). Similarity
+  is computed with generic tooling. Returns 0.0 when the prompt shows no examples
+  or the prefix cannot be parsed. The strategy chooses its own threshold.
   Cost: +0.
   Fair: reads only prompt-visible examples; never reads gold labels, scorer
   state, held-out data, evaluator results, or class-specific strategy advice.
@@ -867,7 +935,7 @@ Generate a complete Dafny method body for this use-case.
 
 Task:
 {task_description}
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 
 Return exactly the Dafny method body: rationale block, proof sketch block, then body statements.
 Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
@@ -2108,7 +2176,7 @@ Your previous method body failed Dafny verification.
 
 Task:
 {task_description}
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 
 ## Verified Examples
 
@@ -2146,7 +2214,7 @@ Your method body passed Dafny verification but failed at runtime.
 
 Task:
 {task_description}
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 
 {search_memory_block}
 Previous attempt:
@@ -2168,7 +2236,7 @@ Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Ma
 COMPILATION_ERROR_REFINEMENT_PROMPT = """\
 Your method body passed Dafny verification but failed during Dafny-to-Python compilation.
 
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 {search_memory_block}
 Previous attempt:
 ```dafny
@@ -2190,7 +2258,7 @@ FORMAT_REPAIR_PROMPT = """Your output must be a Dafny method body and is missing
 
 Rewrite the following content into a valid Dafny method body that preserves the same strategy semantics and outputs ONLY the method body.
 
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 {search_memory_block}
 Content to rewrite:
 ```dafny
@@ -2209,7 +2277,7 @@ but did not meet evaluation thresholds.
 
 Task:
 {task_description}
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 
 ## Verified Dafny patterns (proof-style reference only)
 
@@ -2267,6 +2335,39 @@ def _build_tool_reference_block(allowed_helpers: list[str] | None) -> str:
     return _filter_tool_reference(allowed_helpers) + "\n\n"
 
 
+def _build_decoding_surface_block(start_inside_constrained: bool) -> str:
+    """State which decoding surface this run uses.
+
+    Two different runs hand the strategy different starting points: one
+    starts outside the constrained region and must open it explicitly with
+    `OpenConstrainedSpan` (which emits a literal `<<`); the other starts
+    already inside the constrained region, entered with
+    `EnterObservedConstrainedSpan`, which emits nothing -- no `<<` token is
+    ever produced by anyone. Without this block a strategy written for one
+    surface silently does nothing on the other, e.g. a strategy that waits
+    for `next == "<<"` before constraining never constrains anything on a
+    run that starts inside the constrained region, because that token never
+    arrives.
+    """
+    if start_inside_constrained:
+        return (
+            "## Decoding surface\n\n"
+            "This run starts inside the constrained region already. Enter "
+            "constrained mode by calling `EnterObservedConstrainedSpan`, not "
+            "`OpenConstrainedSpan` -- no `<<` token will ever appear in the "
+            "output, from you or anyone else. Do not write logic that waits "
+            "for `<<` before entering constrained mode; that logic will "
+            "never run.\n\n"
+        )
+    return (
+        "## Decoding surface\n\n"
+        "This run starts outside the constrained region. Enter constrained "
+        "mode by calling `OpenConstrainedSpan`, which appends a literal "
+        "`<<` to the output. Call `CloseConstrainedSpan` to append `>>` and "
+        "exit constrained mode.\n\n"
+    )
+
+
 def _build_verified_examples_block(allowed_helpers: list[str] | None) -> str:
     """Keep only verified examples compatible with the active helper contract."""
     allowed = set(allowed_helpers) if allowed_helpers is not None else None
@@ -2297,11 +2398,13 @@ def _build_verified_examples_block(allowed_helpers: list[str] | None) -> str:
 def build_initial_prompt(
     task_description: str,
     allowed_helpers: list[str] | None = None,
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     user_prompt = INITIAL_GENERATION_PROMPT.format(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         verified_examples=_build_verified_examples_block(allowed_helpers),
     )
     return SYSTEM_PROMPT, user_prompt
@@ -2317,6 +2420,7 @@ def build_verification_error_prompt(
     strategy_context: str = "",
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     behavioral_context_block = ""
     structured_feedback_block = ""
@@ -2352,6 +2456,7 @@ def build_verification_error_prompt(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         previous_strategy=previous_strategy,
         error_message=error_message,
         strategy_context_block=strategy_context_block,
@@ -2370,12 +2475,14 @@ def build_runtime_error_prompt(
     task_description: str = "Unknown task",
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = RUNTIME_ERROR_REFINEMENT_PROMPT.format(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         previous_strategy=previous_strategy,
         error_traceback=error_traceback,
         search_memory_block=search_memory_block,
@@ -2388,11 +2495,13 @@ def build_compilation_error_prompt(
     error_message: str,
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = COMPILATION_ERROR_REFINEMENT_PROMPT.format(
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         previous_strategy=previous_strategy,
         error_message=error_message,
         search_memory_block=search_memory_block,
@@ -2404,11 +2513,13 @@ def build_format_repair_prompt(
     previous_strategy: str,
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = FORMAT_REPAIR_PROMPT.format(
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         previous_strategy=previous_strategy,
         search_memory_block=search_memory_block,
     )
@@ -2469,6 +2580,7 @@ def build_evaluation_failure_prompt(
     eval_max_seconds_per_example: float | None = None,
     mode_examples: str = "",
     attempt_outcome_ledger: str = "",
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     best_so_far_block = _build_best_so_far_block(
@@ -2492,6 +2604,7 @@ def build_evaluation_failure_prompt(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         previous_strategy=previous_strategy,
         previous_accuracy=previous_accuracy,
         previous_syntax_rate=previous_syntax_rate,

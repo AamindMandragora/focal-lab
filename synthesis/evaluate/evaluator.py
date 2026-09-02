@@ -7,10 +7,12 @@ to enable feedback-driven refinement based on actual performance metrics.
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import re
 from collections import Counter
+from synthesis.safe_logging import display_text, safe_logging_enabled
 
 # SQL keyword set for failure-preview anonymization. Identifiers outside this
 # set are replaced with <id>; numbers with <num>; string literals with <str>.
@@ -62,24 +64,221 @@ def _anonymize_sql_preview(s: str) -> str:
 
 import time
 import signal
+import inspect
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+# region agent log
+_AGENT_DEBUG_SESSION = "d7d0bd"
+_AGENT_DEBUG_FOCAL_PATH = "/tmp/debug-d7d0bd-focal.ndjson"
+_AGENT_DEBUG_SMILES_CAP = 5
+_agent_debug_smiles_logged = 0
+
+
+def _agent_debug_log(
+    hypothesis_id: str,
+    location: str,
+    message: str,
+    data: Optional[Dict[str, Any]] = None,
+    run_id: str = "pre-fix",
+) -> None:
+    """Append one NDJSON debug line for session d7d0bd (focal-local file)."""
+    payload = {
+        "sessionId": _AGENT_DEBUG_SESSION,
+        "runId": run_id,
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data or {},
+        "timestamp": int(time.time() * 1000),
+    }
+    try:
+        with open(_AGENT_DEBUG_FOCAL_PATH, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(payload, default=str) + "\n")
+    except Exception:
+        pass
+# endregion
 
 try:
     from synthesis.failure_taxonomy import render_cluster_block
 except ImportError:
     from failure_taxonomy import render_cluster_block
 
+try:
+    from synthesis.prompt_rendering import render as _render_prompt
+    from synthesis.prompt_rendering.models.feedback import (
+        AntiDegeneracyFields,
+        EarlyStopMetricsFields,
+        FailureModeEntry,
+        FeedbackSummaryModel,
+        SmilesTrialFields,
+    )
+    from synthesis.prompt_rendering.models.feedback_loop import HintLinesModel
+    from synthesis.prompt_rendering.models.evaluator import (
+        ModeExampleEntry,
+        ModeExamplesModel,
+    )
+except ImportError:
+    from prompt_rendering import render as _render_prompt
+    from prompt_rendering.models.feedback import (
+        AntiDegeneracyFields,
+        EarlyStopMetricsFields,
+        FailureModeEntry,
+        FeedbackSummaryModel,
+        SmilesTrialFields,
+    )
+    from prompt_rendering.models.feedback_loop import HintLinesModel
+    from prompt_rendering.models.evaluator import (
+        ModeExampleEntry,
+        ModeExamplesModel,
+    )
+
 from synthesis.evaluate.benchmarks.smiles.rolling_prompt import (
     apply_suffix as _apply_smiles_rolling_suffix,
     update_suffix as _update_smiles_rolling_suffix,
 )
+from synthesis.evaluate.benchmarks.common.ungradable import UngradableExample
 from synthesis.evaluate.metrics import choose_denominator_basis
+from synthesis.run_constants import VLLM_ENFORCE_EAGER
 
 
 class PerExampleTimeout(Exception):
     """Raised when a single evaluation example exceeds its runtime budget."""
+
+
+# Datasets whose per-iteration eval can run on the persistent data-parallel
+# worker pool (synthesis/scripts/eval_worker_pool.py). GSM and Spider examples
+# carry no state between examples, so splitting them across workers and
+# merging in original order reproduces the sequential result exactly. SMILES
+# is excluded: its rolling-prompt path (_apply_smiles_rolling_suffix /
+# _update_smiles_rolling_suffix below) threads state from each example into
+# the next, which a data-parallel split cannot reproduce, and SMILES also has
+# its own `should_stop_collected` early stop — SMILES keeps the untouched
+# single-process path.
+POOLABLE_DATASETS = {"gsm_symbolic", "spider"}
+_POOL_LOG = "[sharded-eval]"
+
+
+def _resolve_eval_pool_loader():
+    """Return the parallel eval pool's entry point, or None if it is
+    unavailable (meaning: use the sequential path).
+
+    The pool is a speed optimisation, not a correctness requirement -- a
+    missing or broken pool module must never be allowed to blow up and get
+    laundered into a fake 0% score by the broad `except Exception` around the
+    eval method. So this catches everything and reports None instead.
+    """
+    try:
+        pool_module = importlib.import_module("synthesis.scripts.eval_worker_pool")
+        return pool_module.get_synthesis_eval_pool
+    except Exception as e:
+        print(
+            f"{_POOL_LOG} eval worker pool unavailable ({type(e).__name__}: {e}); "
+            "falling back to the slower sequential eval path.",
+            flush=True,
+        )
+        return None
+
+
+# Pathological-strategy guard: stop after this many timed-out examples. Also
+# used post-hoc by _posthoc_early_stop to replay the same decision over a
+# pool-merged, full (non-early-stopped) batch of results.
+_MAX_TIMEOUTS_PATHOLOGICAL = 10
+
+# Marker prefix for EvaluationResult.early_stop_reason when the per-attempt
+# wall-clock cap (SynthesisPipeline.max_attempt_seconds) fires. feedback_loop.py
+# checks for this exact prefix to tell "this attempt ran out of its overall
+# time budget" apart from every other early-stop reason (which are ordinary
+# threshold misses, not timeouts, and must not be recorded as one).
+ATTEMPT_DEADLINE_EARLY_STOP_REASON = "attempt wall-clock budget exceeded"
+
+
+_MAX_GSM_SCORING_EXPRESSION_CHARS = 512
+_MAX_GSM_SCORING_EXPRESSION_TOKENS = 160
+_MAX_GSM_SCORING_EXPRESSION_OPERATORS = 80
+_MAX_GSM_SCORING_DIGIT_RUN = 64
+
+
+def _print_realtime_completion(
+    example_number: int, total_examples: int, completion: str
+) -> None:
+    """Write one generated completion to stdout with unambiguous boundaries."""
+    prefix = f"  [EVAL]   Sample {example_number}/{total_examples} completion"
+    if safe_logging_enabled():
+        print(display_text(prefix, completion), flush=True)
+        return
+    print(f"{prefix} begin", flush=True)
+    print(completion, flush=True)
+    print(f"{prefix} end", flush=True)
+
+
+_STRATEGY_SAMPLE_EVIDENCE_FIELDS = (
+    "strategy_output_relation",
+    "strategy_mutation",
+    "strategy_removed_sampled_token_ids",
+)
+
+
+def _strategy_sample_evidence_fields(evidence: Any) -> dict[str, Any]:
+    """Copy strategy-origin fields from token evidence into the sample row."""
+    if not isinstance(evidence, dict):
+        return {}
+    return {
+        key: evidence[key]
+        for key in _STRATEGY_SAMPLE_EVIDENCE_FIELDS
+        if key in evidence
+    }
+
+
+def _is_pathological_gsm_scoring_expression(expression: str) -> bool:
+    """Return whether a generated GSM expression is too large for safe scoring.
+
+    This guard is intentionally far above the current GSM split's gold answers:
+    a 2026-06-29 audit found max gold length 119 chars and max operator count
+    22 across the train/eval split. Outputs above this guard are treated as
+    wrong before entering native parser/prover code that Python alarms may not
+    interrupt reliably.
+    """
+
+    text = str(expression or "").strip()
+    if len(text) > _MAX_GSM_SCORING_EXPRESSION_CHARS:
+        return True
+    if len(text.split()) > _MAX_GSM_SCORING_EXPRESSION_TOKENS:
+        return True
+    if len(re.findall(r"[+\-*/%()]", text)) > _MAX_GSM_SCORING_EXPRESSION_OPERATORS:
+        return True
+    if re.search(r"\d{" + str(_MAX_GSM_SCORING_DIGIT_RUN) + r",}", text):
+        return True
+    return False
+
+
+# Numbers, names, and any other single non-space character. Used when no
+# tokenizer is available; unlike a whitespace split it still grows with the
+# length of the text.
+_SPAN_UNIT_PATTERN = re.compile(r"\d+|[A-Za-z_]\w*|\S")
+
+
+def span_token_length(tokenizer: Any, text: str) -> int:
+    """Return how many tokens a generated span is.
+
+    Measured with the eval model's own tokenizer when one is available. This
+    used to be a whitespace split, which is wrong for every benchmark we run:
+    GSM answers are arithmetic and SMILES answers are molecule strings, and
+    neither contains spaces, so a 1555-character runaway span counted as one
+    "token". That number is one of the axes `synthesis/failure_taxonomy.py`
+    clusters on, so runaway spans were filed under "spans are too tiny" and the
+    author model was told to lengthen spans that were already spiralling.
+    """
+    text = str(text or "").strip()
+    if not text:
+        return 0
+    if tokenizer is not None:
+        try:
+            return len(tokenizer.encode(text, add_special_tokens=False))
+        except Exception:
+            pass  # fall through to the pattern below
+    return len(_SPAN_UNIT_PATTERN.findall(text))
 
 
 class _PerExampleTimer:
@@ -169,129 +368,84 @@ class EvaluationResult:
     def get_feedback_summary(self, require_delimiters: bool = True) -> str:
         """Generate a summary for feedback to the generator.
 
-        When ``require_delimiters`` is False (i.e. the run was launched with
-        --no-require-delimiters), the visible ``<<``/``>>`` span diagnostics are
-        omitted: the "Contains << >>" header line, the whole "Structural
-        Generation Metrics" block, and the span-centric lines of the diagnostic
-        decomposition. Those statistics are meaningless when the model is not
-        asked to emit spans and have misled the author into chasing a non-issue.
+        When ``require_delimiters`` is False, the visible ``<<``/``>>`` span
+        diagnostics are omitted: the "Contains << >>" header line, the whole
+        "Structural Generation Metrics" block, and the span-centric lines of
+        the diagnostic decomposition. Those statistics are meaningless when the
+        model is not asked to emit spans and have misled the author into
+        chasing a non-issue.
+
+        Callers get that flag from
+        ``registry.resolve_require_delimiters(dataset, cli_value)``, which asks
+        the benchmark itself via ``emits_visible_delimiters()``. GSM can emit
+        spans, so there the CLI flag decides; Spider and SMILES generate whole
+        outputs and cannot emit a span at all, so for them it is always False.
         """
         eval_count_label = (
             f"{self.num_examples}/{self.planned_num_examples}"
             if self.early_stopped and self.planned_num_examples
             else str(self.num_examples)
         )
-        lines = [
-            f"Evaluation Results ({eval_count_label} examples):",
-            (
-                "  Accuracy: "
-                f"{self.accuracy:.1%} "
-                f"({self.num_correct}/{self.accuracy_denominator or self.num_examples})"
-            ),
-            f"  Syntax Rate: {self.syntax_rate:.1%}",
-            f"  Total Time: {self.total_time_seconds:.2f}s",
-            f"  Slowest Example Time: {self.max_sample_time_seconds:.2f}s",
+
+        smiles_trial_raw = self.aux_metrics.get("smiles_paper_trial")
+        smiles_trial = None
+        if isinstance(smiles_trial_raw, dict):
+            smiles_trial = SmilesTrialFields(
+                validity_pct=f"{smiles_trial_raw.get('validity_rdkit', 0.0):.1%}",
+                membership_pct=f"{smiles_trial_raw.get('membership', 0.0):.1%}",
+                diversity_display=(
+                    str(smiles_trial_raw.get("diversity_tanimoto"))
+                    if smiles_trial_raw.get("diversity_tanimoto") is not None
+                    else "n/a"
+                ),
+                retro_score_display=(
+                    str(smiles_trial_raw.get("retro_score"))
+                    if smiles_trial_raw.get("retro_score") is not None
+                    else "n/a"
+                ),
+                samples_to_target_display=str(
+                    smiles_trial_raw.get("samples_to_target_unique_valid", "n/a")
+                ),
+                unique_valid_display=(
+                    f"{smiles_trial_raw.get('unique_valid_count', 0)}/"
+                    f"{smiles_trial_raw.get('sample_count', 0)}"
+                ),
+            )
+
+        anti_raw = self.aux_metrics.get("anti_degeneracy")
+        anti_degeneracy = None
+        if isinstance(anti_raw, dict):
+            anti_degeneracy = AntiDegeneracyFields(
+                churn_ratio_display=f"{anti_raw.get('delimiter_churn_ratio', 0.0):.3f}",
+                tiny_span_pct=f"{anti_raw.get('tiny_span_rate', 0.0):.1%}",
+                max_steps_hit_pct=f"{anti_raw.get('max_steps_hit_rate', 0.0):.1%}",
+                penalty_pct=f"{anti_raw.get('penalty', 0.0):.1%}",
+                adjusted_membership_pct=(
+                    f"{anti_raw.get('adjusted_membership_score', self.accuracy):.1%}"
+                ),
+            )
+
+        early_stop_raw = self.aux_metrics.get("early_stop")
+        early_stop_metrics = None
+        if isinstance(early_stop_raw, dict):
+            early_stop_metrics = EarlyStopMetricsFields(
+                reason=str(early_stop_raw.get("reason", "unknown")),
+                max_possible_pct=(
+                    f"{float(early_stop_raw.get('max_possible_accuracy', 0.0)):.1%}"
+                ),
+                target_pct=f"{float(early_stop_raw.get('target_accuracy', 0.0)):.1%}",
+                evaluated_display=(
+                    f"{early_stop_raw.get('evaluated_examples', 0)}/"
+                    f"{early_stop_raw.get('total_examples', self.num_examples)}"
+                ),
+            )
+
+        failure_modes = [
+            FailureModeEntry(mode=mode, count=count, detail=detail)
+            for mode, count, detail in self._summarize_failure_modes()
         ]
-        # The "Contains << >>" status only matters when delimiters are required;
-        # omit it under --no-require-delimiters (insert after Accuracy to keep
-        # the original line order).
-        if require_delimiters:
-            lines.insert(
-                2, f"  Contains << >>: {'yes' if self.contains_delimiters else 'no'}"
-            )
-        if self.early_stopped:
-            lines.append("  Early Stop: yes")
-            if self.early_stop_reason:
-                lines.append(f"  Early Stop Reason: {self.early_stop_reason}")
-        if self.accuracy_definition != "correct_examples_over_all_examples":
-            lines.append(f"  Accuracy Definition: {self.accuracy_definition}")
-        if self.invalid_outputs_excluded_from_accuracy:
-            lines.append(
-                "  Invalid outputs excluded from accuracy denominator: "
-                f"{self.invalid_outputs_excluded_from_accuracy}"
-            )
-        if self.task_guidance:
-            lines.extend(["", "Prompt guidance used by this attempt:"])
-            for guidance in self.task_guidance:
-                lines.append(f"  - {guidance}")
-
-        smiles_trial = self.aux_metrics.get("smiles_paper_trial")
-        if isinstance(smiles_trial, dict):
-            lines.extend(
-                [
-                    "",
-                    "SMILES Quality Metrics (paper-aligned, single trial):",
-                    f"  RDKit Validity: {smiles_trial.get('validity_rdkit', 0.0):.1%}",
-                    f"  Membership: {smiles_trial.get('membership', 0.0):.1%}",
-                    (
-                        "  Diversity (avg pairwise Tanimoto distance): "
-                        f"{smiles_trial.get('diversity_tanimoto') if smiles_trial.get('diversity_tanimoto') is not None else 'n/a'}"
-                    ),
-                    (
-                        "  RetroStar score: "
-                        f"{smiles_trial.get('retro_score') if smiles_trial.get('retro_score') is not None else 'n/a'}"
-                    ),
-                    (
-                        "  Samples to 100 unique valid (cap 1000): "
-                        f"{smiles_trial.get('samples_to_target_unique_valid', 'n/a')}"
-                    ),
-                    (
-                        "  Unique valid molecules: "
-                        f"{smiles_trial.get('unique_valid_count', 0)}/{smiles_trial.get('sample_count', 0)}"
-                    ),
-                ]
-            )
-
-        anti = self.aux_metrics.get("anti_degeneracy")
-        if isinstance(anti, dict):
-            lines.extend(
-                [
-                    "",
-                    "Anti-Degeneracy Diagnostics:",
-                    f"  Delimiter churn ratio: {anti.get('delimiter_churn_ratio', 0.0):.3f}",
-                    f"  Tiny-span rate: {anti.get('tiny_span_rate', 0.0):.1%}",
-                    f"  Max-steps hit rate: {anti.get('max_steps_hit_rate', 0.0):.1%}",
-                    f"  Applied penalty: {anti.get('penalty', 0.0):.1%}",
-                    (
-                        "  Membership adjusted by penalty: "
-                        f"{anti.get('adjusted_membership_score', self.accuracy):.1%}"
-                    ),
-                ]
-            )
-
-        early_stop = self.aux_metrics.get("early_stop")
-        if isinstance(early_stop, dict):
-            lines.extend(
-                [
-                    "",
-                    "Early Stop:",
-                    f"  Reason: {early_stop.get('reason', 'unknown')}",
-                    (
-                        "  Max possible accuracy: "
-                        f"{float(early_stop.get('max_possible_accuracy', 0.0)):.1%}"
-                    ),
-                    (
-                        "  Target accuracy: "
-                        f"{float(early_stop.get('target_accuracy', 0.0)):.1%}"
-                    ),
-                    (
-                        "  Evaluated examples: "
-                        f"{early_stop.get('evaluated_examples', 0)}/"
-                        f"{early_stop.get('total_examples', self.num_examples)}"
-                    ),
-                ]
-            )
-
-        failure_modes = self._summarize_failure_modes()
-        if failure_modes:
-            lines.append("\nPrimary Failure Modes:")
-            for mode, count, detail in failure_modes:
-                lines.append(f"  - {mode}: {count} example(s) {detail}")
 
         output_run_summary = self._summarize_output_run()
-        if output_run_summary:
-            lines.append("\nOutput Run Summary:")
-            lines.extend(f"  {metric}" for metric in output_run_summary)
 
         # Anonymized failure summary (April 25): we used to dump up to 3 specific
         # failed examples (question + expected + actual) into the feedback to
@@ -301,34 +455,26 @@ class EvaluationResult:
         # statistics — failure_mode counts (already populated above), runtime
         # budget exceedances, and any unexpected exception types — without any
         # question text, expected SQL, or actual SQL strings.
+        aggregate_failure_stats_lines: List[str] = []
         if self.sample_outputs:
             n_total = len(self.sample_outputs)
             n_runtime_exceeded = sum(
                 1 for s in self.sample_outputs if s.get("runtime_budget_exceeded")
             )
-            extras = []
             if n_runtime_exceeded:
-                extras.append(
+                aggregate_failure_stats_lines.append(
                     f"  {n_runtime_exceeded}/{n_total} examples timed out "
                     f"(exceeded the per-example time limit) and were scored as failures "
                     f"(accuracy 0, syntax 0 for each timed-out example)."
                 )
-            if extras:
-                lines.append("\nAggregate Failure Stats:")
-                lines.extend(extras)
 
         diagnostic_metrics = self._summarize_diagnostic_metrics(require_delimiters)
-        if diagnostic_metrics:
-            lines.append("\nDiagnostic Error Decomposition:")
-            lines.extend(f"  {metric}" for metric in diagnostic_metrics)
 
         # The structural block is entirely visible-`<<`-span statistics, which
         # are meaningless when delimiters are not required — omit the whole block.
+        structural_metrics: List[str] = []
         if require_delimiters:
             structural_metrics = self._summarize_structural_metrics()
-            if structural_metrics:
-                lines.append("\nStructural Generation Metrics:")
-                lines.extend(f"  {metric}" for metric in structural_metrics)
 
         # Change 1: replace the 5 flat aggregate blocks (Diagnostic Error
         # Decomposition, Output Provenance, Correct-vs-Wrong Contrast,
@@ -347,11 +493,48 @@ class EvaluationResult:
             slow_threshold_seconds=30.0,
             persistent_ledger=getattr(self, "_failure_ledger", None),
             attempt_index=getattr(self, "_attempt_index", None),
+            require_delimiters=require_delimiters,
         )
-        if cluster_block:
-            lines.append(cluster_block)
 
-        return "\n".join(lines)
+        model = FeedbackSummaryModel(
+            eval_count_label=eval_count_label,
+            accuracy_pct=f"{self.accuracy:.1%}",
+            num_correct=self.num_correct,
+            accuracy_denominator_display=self.accuracy_denominator or self.num_examples,
+            show_contains_delimiters=require_delimiters,
+            contains_delimiters_yesno="yes" if self.contains_delimiters else "no",
+            syntax_pct=f"{self.syntax_rate:.1%}",
+            total_time_str=f"{self.total_time_seconds:.2f}",
+            max_sample_time_str=f"{self.max_sample_time_seconds:.2f}",
+            early_stopped=self.early_stopped,
+            early_stop_reason=self.early_stop_reason,
+            accuracy_definition_display=(
+                self.accuracy_definition
+                if self.accuracy_definition != "correct_examples_over_all_examples"
+                else None
+            ),
+            invalid_outputs_excluded_from_accuracy=self.invalid_outputs_excluded_from_accuracy,
+            task_guidance=list(self.task_guidance),
+            smiles_trial=smiles_trial,
+            anti_degeneracy=anti_degeneracy,
+            early_stop_metrics=early_stop_metrics,
+            failure_modes=failure_modes,
+            output_run_summary=list(output_run_summary),
+            aggregate_failure_stats_lines=aggregate_failure_stats_lines,
+            diagnostic_metrics=list(diagnostic_metrics),
+            show_structural_metrics=bool(structural_metrics),
+            structural_metrics=list(structural_metrics),
+            cluster_block=cluster_block,
+        )
+
+        rendered = _render_prompt(model, "feedback/feedback_summary.j2")
+        # The original implementation joined its lines with "\n" and never
+        # added a trailing newline; keep_trailing_newline on the shared Jinja
+        # environment means the template's own final line terminator survives
+        # rendering, so strip exactly that one trailing newline back off.
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
 
     @staticmethod
     def _format_trace_event(event: Dict[str, Any]) -> str:
@@ -565,50 +748,6 @@ class EvaluationResult:
         wrong = [sample for sample in self.sample_outputs if not sample.get("is_correct")]
         return [summarize("Correct examples", correct), summarize("Wrong examples", wrong)]
 
-    def _summarize_representative_snapshots(self, max_snapshots: int = 4) -> List[str]:
-        """Show small redacted factual records for distinct observed failure locations."""
-        if not self.sample_outputs:
-            return []
-        selected: List[tuple[str, Dict[str, Any]]] = []
-        seen_locations: set[str] = set()
-        priority = [
-            "syntax_valid_semantic_mismatch",
-            "visible_span_syntax",
-            "answer_extraction_or_completion",
-            "span_absent",
-            "no_valid_visible_span",
-            "time_budget_exceeded",
-            "wrong_after_constrained_activity",
-            "wrong_without_constrained_activity",
-        ]
-        wrong_samples = [sample for sample in self.sample_outputs if not sample.get("is_correct")]
-        for location in priority:
-            for sample in wrong_samples:
-                if sample.get("failure_location") == location and location not in seen_locations:
-                    selected.append((location, sample))
-                    seen_locations.add(location)
-                    break
-            if len(selected) >= max_snapshots:
-                break
-        if not selected:
-            return []
-
-        lines = []
-        for location, sample in selected:
-            tags = ",".join((sample.get("provenance_tags") or [])[:4]) or "none"
-            lines.append(
-                "  - "
-                f"location={location}; "
-                f"syntax={'valid' if sample.get('is_syntax_valid') else 'invalid'}; "
-                f"answer_source={sample.get('answer_source', 'none')}; "
-                f"provenance={sample.get('answer_provenance', 'unknown')}; "
-                f"expected={self._redact_artifact_preview(sample.get('expected'))}; "
-                f"actual={self._redact_artifact_preview(sample.get('actual'))}; "
-                f"valid_spans={sample.get('num_valid_visible_spans', 0)}/{sample.get('num_visible_spans', 0)}; "
-                f"control_tags={tags}"
-            )
-        return lines
-
     def get_behavioral_context_summary(
         self, max_examples: int = 1, max_trace_events: int = 12, require_delimiters: bool = True
     ) -> str:
@@ -624,8 +763,9 @@ class EvaluationResult:
             if "provenance_tags" not in sample:
                 self._annotate_sample_observability(sample)
             # The "Contains << >>" status only matters when delimiters are required;
-            # omit it under --no-require-delimiters so the author is not fed an
-            # irrelevant span signal on tasks (e.g. SQL) that use no << >> delimiters.
+            # omit it when the dataset does not require them so the author is not
+            # fed an irrelevant span signal on tasks (e.g. SQL) that use no << >>
+            # delimiters.
             delim_segment = (
                 f"Contains << >>: {'yes' if sample.get('contains_delimiters') else 'no'} | "
                 if require_delimiters
@@ -649,7 +789,120 @@ class EvaluationResult:
                 for event in tail:
                     lines.append(f"    - {self._format_trace_event(event)}")
 
-        return "\n".join(lines)
+        model = HintLinesModel(lines=lines)
+        rendered = _render_prompt(model, "feedback_loop/hint_lines.j2")
+        # The original implementation joined its lines with "\n" and never added
+        # a trailing newline; keep_trailing_newline on the shared Jinja
+        # environment means the template's own final line terminator survives
+        # rendering, so strip exactly that one trailing newline back off (same
+        # idiom as get_feedback_summary / get_failure_summary).
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
+
+    def _classify_sample_failure_modes(self, sample: Dict[str, Any]) -> List[Tuple[str, str]]:
+        """Classify a single sample's observable failure modes.
+
+        Returns an ordered list of (mode_key, detail_string) tuples for every
+        failure-mode bucket this sample matches, in cascade order (first-seen
+        detail order). Shared by `_summarize_failure_modes` (aggregate counts)
+        and `_pick_representative_samples_by_mode` (example picking) so the
+        two never disagree on how a sample is classified.
+
+        NOTE: the delimiter rules below deliberately use `<<`/`>>` counts and the
+        parser's span accounting (num_visible_spans / num_valid_visible_spans),
+        NOT the old "is this substring present anywhere" checks. This is an
+        intentional feedback-quality fix, not accidental drift from the
+        byte-identical prompt refactor: the old rules only fired in the
+        all-or-nothing extreme and mislabeled mixed outputs (one span dangling,
+        an extra close, or 1-of-N spans invalid) as "other". Covered by
+        tests/prompt_rendering/test_feedback_content_fixes.py. These labels feed
+        only the author feedback text, never any scored metric.
+        """
+        error = sample.get("error")
+        full_output = sample.get("full_output") or ""
+        actual = sample.get("actual") or ""
+        contains_delimiters = sample.get("contains_delimiters", False)
+        uses_hidden_chunks = sample.get("uses_hidden_chunks", False)
+        visible_delimiters = sample.get("visible_delimiters", contains_delimiters)
+        used_constrained_chunk = sample.get("used_constrained_chunk", contains_delimiters)
+        syntax_rate = float(sample.get("syntax_rate", 0.0))
+        matched = False
+        modes: List[Tuple[str, str]] = []
+
+        if sample.get("runtime_budget_exceeded"):
+            modes.append(("too_slow", "(generation exceeded the per-example runtime budget)"))
+            matched = True
+            if error:
+                return modes
+
+        if error:
+            modes.append(("runtime_or_generation_error", f"(first error: {str(error)[:120]})"))
+            return modes
+
+        n_open = full_output.count("<<")
+        n_close = full_output.count(">>")
+        if not uses_hidden_chunks and n_open > n_close:
+            if n_close == 0:
+                detail = "(opened `<<` but did not close `>>`)"
+            else:
+                detail = f"(opened {n_open} `<<` but closed only {n_close} `>>`)"
+            modes.append(("unterminated_constrained_segment", detail))
+            matched = True
+
+        if uses_hidden_chunks:
+            if not used_constrained_chunk:
+                modes.append(("missing_constrained_chunk", "(no internal parser-governed chunk was used)"))
+                matched = True
+        elif not contains_delimiters and "<<" not in full_output:
+            modes.append(("missing_constrained_segment", "(no `<< >>` segment detected)"))
+            matched = True
+
+        if not uses_hidden_chunks and n_close > n_open:
+            if n_open == 0:
+                detail = "(generated `>>` without a matching opening `<<`)"
+            else:
+                detail = f"(closed {n_close} `>>` but only {n_open} `<<` were opened)"
+            modes.append(("premature_or_unmatched_closure", detail))
+            matched = True
+
+        num_visible_spans = int(sample.get("num_visible_spans", 0))
+        num_valid_visible_spans = int(sample.get("num_valid_visible_spans", 0))
+        if (
+            not uses_hidden_chunks
+            and num_visible_spans > 0
+            and num_valid_visible_spans < num_visible_spans
+        ):
+            detail = (
+                f"({num_visible_spans - num_valid_visible_spans}/{num_visible_spans} "
+                "closed spans failed syntax checks)"
+            )
+            modes.append(("malformed_constrained_content", detail))
+            matched = True
+
+        if not uses_hidden_chunks and self._looks_like_early_constrained_entry(full_output):
+            modes.append((
+                "entered_constrained_mode_too_early",
+                "(output entered `<<` almost immediately after the prompt continuation began)",
+            ))
+            matched = True
+
+        if self._has_repetition_loop(full_output):
+            modes.append(("repetition_loop", "(local token pattern repeated in output)"))
+            matched = True
+
+        if not actual:
+            modes.append(("answer_extraction_failed", "(no extractable final answer)"))
+            matched = True
+
+        if not matched and not sample.get("is_correct", False):
+            modes.append((
+                "other_observed_failure",
+                "(uncategorized wrong answer; see representative rollout examples "
+                "for observed output)",
+            ))
+
+        return modes
 
     def _summarize_failure_modes(self) -> List[Tuple[str, int, str]]:
         """Classify the most common observable evaluation failure patterns."""
@@ -657,96 +910,10 @@ class EvaluationResult:
         details: Dict[str, str] = {}
 
         for sample in self.sample_outputs:
-            error = sample.get("error")
-            full_output = sample.get("full_output") or ""
-            actual = sample.get("actual") or ""
-            contains_delimiters = sample.get("contains_delimiters", False)
-            uses_hidden_chunks = sample.get("uses_hidden_chunks", False)
-            visible_delimiters = sample.get("visible_delimiters", contains_delimiters)
-            used_constrained_chunk = sample.get("used_constrained_chunk", contains_delimiters)
-            syntax_rate = float(sample.get("syntax_rate", 0.0))
-            matched = False
-
-            if sample.get("runtime_budget_exceeded"):
-                key = "too_slow"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(generation exceeded the per-example runtime budget)"
-                matched = True
-                if error:
-                    continue
-
-            if error:
-                key = "runtime_or_generation_error"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = f"(first error: {str(error)[:120]})"
-                continue
-
-            if not uses_hidden_chunks and "<<" in full_output and ">>" not in full_output:
-                key = "unterminated_constrained_segment"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(opened `<<` but did not close `>>`)"
-                matched = True
-
-            if uses_hidden_chunks:
-                if not used_constrained_chunk:
-                    key = "missing_constrained_chunk"
-                    counters[key] = counters.get(key, 0) + 1
-                    if key not in details:
-                        details[key] = "(no internal parser-governed chunk was used)"
-                    matched = True
-            elif not contains_delimiters and "<<" not in full_output:
-                key = "missing_constrained_segment"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(no `<< >>` segment detected)"
-                matched = True
-
-            if not uses_hidden_chunks and ">>" in full_output and "<<" not in full_output:
-                key = "premature_or_unmatched_closure"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(generated `>>` without a matching opening `<<`)"
-                matched = True
-
-            if not uses_hidden_chunks and "<<" in full_output and ">>" in full_output and syntax_rate == 0.0:
-                key = "malformed_constrained_content"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(delimiters present, but constrained content failed syntax checks)"
-                matched = True
-
-            if not uses_hidden_chunks and self._looks_like_early_constrained_entry(full_output):
-                key = "entered_constrained_mode_too_early"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(output entered `<<` almost immediately after the prompt continuation began)"
-                matched = True
-
-            if self._has_repetition_loop(full_output):
-                key = "repetition_loop"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(local token pattern repeated in output)"
-                matched = True
-
-            if not actual:
-                key = "answer_extraction_failed"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(no extractable final answer)"
-                matched = True
-
-            if not matched and not sample.get("is_correct", False):
-                key = "other_observed_failure"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = (
-                        "(uncategorized wrong answer; see representative rollout examples "
-                        "for observed output)"
-                    )
+            for mode, detail in self._classify_sample_failure_modes(sample):
+                counters[mode] = counters.get(mode, 0) + 1
+                if mode not in details:
+                    details[mode] = detail
 
         ranked = sorted(counters.items(), key=lambda item: (-item[1], item[0]))
         return [(mode, count, details.get(mode, "")) for mode, count in ranked]
@@ -768,42 +935,8 @@ class EvaluationResult:
             counters[mode] = counters.get(mode, 0) + 1
 
         for sample in self.sample_outputs:
-            error = sample.get("error")
-            full_output = sample.get("full_output") or ""
-            actual = sample.get("actual") or ""
-            contains_delimiters = sample.get("contains_delimiters", False)
-            uses_hidden_chunks = sample.get("uses_hidden_chunks", False)
-            used_constrained_chunk = sample.get("used_constrained_chunk", contains_delimiters)
-            syntax_rate = float(sample.get("syntax_rate", 0.0))
-            matched = False
-
-            if sample.get("runtime_budget_exceeded"):
-                _add("too_slow", sample)
-                matched = True
-                if error:
-                    continue
-            if error:
-                _add("runtime_or_generation_error", sample)
-                continue
-            if not uses_hidden_chunks and "<<" in full_output and ">>" not in full_output:
-                _add("unterminated_constrained_segment", sample); matched = True
-            if uses_hidden_chunks:
-                if not used_constrained_chunk:
-                    _add("missing_constrained_chunk", sample); matched = True
-            elif not contains_delimiters and "<<" not in full_output:
-                _add("missing_constrained_segment", sample); matched = True
-            if not uses_hidden_chunks and ">>" in full_output and "<<" not in full_output:
-                _add("premature_or_unmatched_closure", sample); matched = True
-            if not uses_hidden_chunks and "<<" in full_output and ">>" in full_output and syntax_rate == 0.0:
-                _add("malformed_constrained_content", sample); matched = True
-            if not uses_hidden_chunks and self._looks_like_early_constrained_entry(full_output):
-                _add("entered_constrained_mode_too_early", sample); matched = True
-            if self._has_repetition_loop(full_output):
-                _add("repetition_loop", sample); matched = True
-            if not actual:
-                _add("answer_extraction_failed", sample); matched = True
-            if not matched and not sample.get("is_correct", False):
-                _add("other_observed_failure", sample)
+            for mode, _detail in self._classify_sample_failure_modes(sample):
+                _add(mode, sample)
 
         ranked = sorted(counters.items(), key=lambda item: (-item[1], item[0]))[:4]
         picks: List[Tuple[str, Dict[str, Any]]] = []
@@ -835,7 +968,7 @@ class EvaluationResult:
         picks = self._pick_representative_samples_by_mode()
         if not picks:
             return ""
-        blocks: List[str] = []
+        blocks: List[ModeExampleEntry] = []
         for mode, sample in picks:
             prompt = sample.get("question_full") or sample.get("question") or ""
             qwen_output = sample.get("full_output") or ""
@@ -844,61 +977,24 @@ class EvaluationResult:
             expected_val = sample.get("expected")
             expected_str = "" if expected_val is None else str(expected_val)
             blocks.append(
-                f"--- Example of {mode} ---\n"
-                f"PROMPT:\n{prompt}\n\n"
-                f"QWEN OUTPUT:\n{qwen_output}\n\n"
-                f"STRATEGY EXTRACTED: {actual_str}\n"
-                f"CORRECT ANSWER: {expected_str}"
+                ModeExampleEntry(
+                    mode=mode,
+                    prompt=prompt,
+                    qwen_output=qwen_output,
+                    actual_str=actual_str,
+                    expected_str=expected_str,
+                )
             )
-        return "\n\n".join(blocks)
-
-    def get_primary_failure_summary(self) -> Optional[str]:
-        """Return a compact 'where to focus next' block for the top of refinement
-        prompts. Surfaces the single dominant failure mode + dominant failure
-        location + most-used control tags so the model has one ranked target
-        instead of having to integrate 7 diagnostic sub-sections itself.
-
-        Returns None when there is no usable signal (no samples, fully succeeded).
-        Change 2 of the feedback-shape interventions.
-        """
-        if not self.sample_outputs:
-            return None
-        n = self.num_examples or len(self.sample_outputs)
-        if n == 0:
-            return None
-        failure_modes = self._summarize_failure_modes()
-        if not failure_modes:
-            return None
-        prov = self.get_provenance_counts()
-        loc_counter = prov.get("failure_location")
-        tag_counter = prov.get("control_tags")
-        top_loc = loc_counter.most_common(1)[0] if loc_counter else None
-        top_tags = tag_counter.most_common(3) if tag_counter else []
-
-        lines = ["## Primary failure to fix"]
-        mode_name, mode_count, mode_detail = failure_modes[0]
-        lines.append(
-            f"- Dominant failure mode: {mode_name} "
-            f"({mode_count}/{n} examples) {mode_detail}".rstrip()
-        )
-        if len(failure_modes) > 1:
-            m2_name, m2_count, m2_detail = failure_modes[1]
-            if m2_count >= max(2, n // 5):
-                lines.append(
-                    f"- Secondary failure mode: {m2_name} "
-                    f"({m2_count}/{n} examples) {m2_detail}".rstrip()
-                )
-        if top_loc:
-            loc_name, loc_count = top_loc
-            if loc_name and loc_name != "correct":
-                lines.append(
-                    f"- Dominant failure location: {loc_name} "
-                    f"({loc_count}/{n} examples)"
-                )
-        if top_tags:
-            tag_str = ", ".join(f"{name} ({c}/{n})" for name, c in top_tags)
-            lines.append(f"- Most-used control path tags in previous attempt: {tag_str}")
-        return "\n".join(lines)
+        model = ModeExamplesModel(blocks=blocks)
+        rendered = _render_prompt(model, "evaluator/mode_examples.j2")
+        # The original implementation joined its blocks with "\n\n" and never
+        # added a trailing newline; keep_trailing_newline on the shared Jinja
+        # environment means the template's own final line terminator survives
+        # rendering, so strip exactly that one trailing newline back off (same
+        # idiom as get_feedback_summary / get_failure_summary).
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
 
     @staticmethod
     def _mean(values: List[float]) -> Optional[float]:
@@ -944,13 +1040,11 @@ class EvaluationResult:
         if first_open >= 0:
             first_open_tokens = len(output[:first_open].split())
 
-        span_lengths = [len(span.strip().split()) for span in spans if span.strip()]
         complete_spans = len(spans)
         return {
             "opens": opens,
             "closes": closes,
             "complete_spans": complete_spans,
-            "span_lengths": span_lengths,
             "first_open_tokens": first_open_tokens,
             "unterminated": active_opens > 0 or opens > complete_spans,
             "unmatched_close": unmatched_closes > 0 or closes > complete_spans,
@@ -968,10 +1062,28 @@ class EvaluationResult:
     }
     _SOFT_CONSTRAINED_HELPERS = {"SoftConstrainedStep", "SafeSoftConstrainedStep"}
     _SYMBOL_HELPERS = {"ConstrainedSymbol", "ConstrainedSymbolInGenerated"}
+    # Non-"Safe" logit-step variants (traced constrained-step helpers, previously omitted).
+    _LOGIT_STEP_HELPERS = {
+        "BoostedConstrainedStep",
+        "PenalizedConstrainedStep",
+        "RepetitionPenaltyStep",
+        "TemperatureConstrainedStep",
+        "AdaptiveConstrainedStepWithPenalties",
+    }
+    # Rollout/generation constrained helpers (traced constrained-step helpers, previously omitted).
+    _ROLLOUT_GENERATION_HELPERS = {
+        "SpeculativeConstrainedRollout",
+        "RolloutConstrainedWithPenalties",
+        "ConstrainedGeneration",
+        "CraneGeneration",
+    }
     _REPAIR_HELPERS = {
         "RollbackConstrainedSpan",
         "RollbackConstrainedSuffix",
         "RollbackToValidPrefix",
+        # Traced constrained-step helpers, previously omitted.
+        "RollbackAndContinue",
+        "RegenerateUnitOnCheckFailure",
     }
     _CONSTRAINED_HELPERS = {
         "OpenConstrainedSpan",
@@ -985,6 +1097,8 @@ class EvaluationResult:
         *_SOFT_CONSTRAINED_HELPERS,
         *_SYMBOL_HELPERS,
         *_REPAIR_HELPERS,
+        *_LOGIT_STEP_HELPERS,
+        *_ROLLOUT_GENERATION_HELPERS,
     }
 
     _UNCONSTRAINED_HELPERS = {"UnconstrainedStep", "UnconstrainedChunk"}
@@ -1141,7 +1255,7 @@ class EvaluationResult:
         When ``require_delimiters`` is False, the span-centric lines
         (no-complete-span counts, answer-extraction source, span usefulness) are
         omitted — they only describe visible ``<<``/``>>`` behavior, which is not
-        expected under --no-require-delimiters.
+        expected on datasets that do not require delimiters (Spider, SMILES).
         """
         if not self.sample_outputs:
             return []
@@ -1221,10 +1335,13 @@ class EvaluationResult:
             for shape in shapes
             if shape["first_open_tokens"] is not None
         ]
+        # Read the per-sample token lengths recorded at generation time rather
+        # than re-deriving them from the output text: there is one measurement
+        # of span length, taken with the model's tokenizer, not two.
         visible_span_lengths = [
             float(length)
-            for shape in shapes
-            for length in shape["span_lengths"]
+            for sample in self.sample_outputs
+            for length in sample.get("visible_span_token_lengths", [])
         ]
         valid_span_lengths = [
             float(length)
@@ -1277,7 +1394,11 @@ class EvaluationResult:
             and max(sample.get("valid_visible_span_token_lengths")) <= 2
         )
         examples_with_long_visible_span = sum(
-            1 for shape in shapes if any(length > 64 for length in shape["span_lengths"])
+            1 for sample in self.sample_outputs
+            if any(
+                length > 64
+                for length in sample.get("visible_span_token_lengths", [])
+            )
         )
         examples_hitting_max_steps = sum(
             1 for sample in self.sample_outputs if sample.get("hit_max_steps")
@@ -1426,16 +1547,26 @@ def _crane_test_expression_equivalence(expr1_gsm, expr2_gsm, var_names, var_type
     for _ in range(1000):
         test_case = {}
         for var in var_names:
-            vt = var_types.get(var)
+            # Plain indexing, not .get(), matching upstream (CRANE
+            # gsm_symbolic.py:101). A variable the regex picked up that has no
+            # entry at all raises KeyError and stops the run, exactly as it does
+            # upstream. Softening this to .get() returns a verdict upstream
+            # never produces. A variable that IS present but carries a type
+            # upstream does not recognise is the different case handled below.
+            vt = var_types[var]
             if vt == "float between 0 and 1":
                 test_case[var] = _rng.uniform(0.001, 1)
             elif vt == "float":
                 test_case[var] = _rng.uniform(0.001, 100)
             elif vt == "int":
                 test_case[var] = _rng.randint(1, 100)
-            else:
-                # untyped variable -> cannot sample reliably; treat as not provable
-                return False
+            # An untyped variable is deliberately left unassigned, matching
+            # upstream (CRANE gsm_symbolic.py:100-107). It survives into the
+            # substituted string, so the eval below raises NameError -- and
+            # which answer that produces depends on which expression it sits in,
+            # because the two catches are asymmetric. Refusing to sample instead
+            # is stricter than CRANE and undercounts against their published
+            # number. Pinned by tests/test_crane_parity_is_exact.py.
         expr1_sub = expr1_gsm
         expr2_sub = expr2_gsm
         for var, value in test_case.items():
@@ -1510,7 +1641,18 @@ def _crane_validate_expression_equivalence(expr1, expr2, var_types) -> bool:
 
     if "round(" in expr1:
         return False
-    expr2 = re.sub(r"round\(", "ToInt(", expr2)
+    # Deliberately dead, and it must stay dead. Upstream writes this pattern as
+    # r'\round\(' (CRANE gsm_symbolic.py:168), where \r is the carriage-return
+    # escape -- so it matches nothing and the gold keeps its round(. safe_eval
+    # then throws, because the eval environment has no builtins, and grading
+    # falls through to the random sampler, where a plain eval does have round()
+    # and computes it correctly.
+    #
+    # Repairing the typo is not a fix. ToInt truncates and round rounds, so
+    # rewriting both int( and round( to ToInt( makes them the same function: a
+    # model answering int(x/3) gets proved equal to a gold of round(x/3) and
+    # scored correct. Pinned by tests/test_crane_parity_is_exact.py.
+    expr2 = re.sub(r"\round\(", "ToInt(", expr2)
 
     if "//" in expr1:
         expr1 = _crane_floor_div_replacer(expr1)
@@ -1579,7 +1721,7 @@ class Evaluator:
         vllm_pipeline_parallel_size: int = 1,
         vllm_gpu_memory_utilization: float = 0.8,
         vllm_max_model_len: int = 16384,
-        vllm_enforce_eager: bool = True,
+        vllm_enforce_eager: bool = VLLM_ENFORCE_EAGER,
         sample_seed: Optional[int] = None,
         max_seconds_per_example: Optional[float] = None,
         step_token_budget: int = 1,
@@ -1590,6 +1732,7 @@ class Evaluator:
         spider_split_name: str = "train",
         smiles_classes: Optional[List[str]] = None,
         grammars_dir: str | Path | None = None,
+        early_stop_on_answer: bool = False,
     ):
         """
         Initialize the evaluator.
@@ -1610,8 +1753,8 @@ class Evaluator:
             vllm_enforce_eager: Disable cudagraph/compile in vLLM for stability
             sample_seed: Optional RNG seed for reproducible dataset sampling
             max_seconds_per_example: Optional runtime budget per example in seconds
-            gsm_split_file: Optional JSON manifest with train_indices/eval_indices for GSM.
-            gsm_split_name: Which split from gsm_split_file to use ("train" or "eval").
+            gsm_split_file: Optional JSON manifest with train_indices/test_indices for GSM.
+            gsm_split_name: Which split from gsm_split_file to use ("train" or "test").
             spider_split_file: Optional JSON manifest with train_indices/test_indices for Spider.
             spider_split_name: Which split from spider_split_file to use ("train" or "test").
         """
@@ -1638,8 +1781,17 @@ class Evaluator:
         self.vllm_max_model_len = vllm_max_model_len
         self.vllm_enforce_eager = vllm_enforce_eager
         self.sample_seed = sample_seed
+        # Confirmation-slice offset for the greedy hill-climb search (slice B).
+        # 0 (the default) is the normal slice-A sampling behavior; a caller
+        # passes a nonzero value into evaluate_sample() to draw the NEXT
+        # sample_size examples instead. Reset on every evaluate_sample() call.
+        self.sample_offset: int = 0
         self.max_seconds_per_example = max_seconds_per_example
         self.step_token_budget = step_token_budget
+        # CRANE-style answer early stop (default OFF): stop generation once the
+        # output contains a finished final-answer span instead of running to
+        # the max_steps cap. See run_crane_csd(early_stop_on_answer=...).
+        self.early_stop_on_answer = early_stop_on_answer
         self.gsm_source_dir = gsm_source_dir
         self.gsm_split_file = Path(gsm_split_file) if gsm_split_file is not None else None
         self.gsm_split_name = gsm_split_name
@@ -1680,15 +1832,36 @@ class Evaluator:
             except Exception:
                 pass
 
+    def split_provenance(self, bar_split_name: str | None = None) -> dict:
+        """The split-provenance dict every output JSON embeds (one shape, one place)."""
+        from synthesis.split_provenance import build_split_provenance
+
+        return build_split_provenance(
+            gsm_split_file=self.gsm_split_file,
+            gsm_split_name=self.gsm_split_name if self.gsm_split_file is not None else None,
+            spider_split_file=self.spider_split_file,
+            spider_split_name=self.spider_split_name if self.spider_split_file is not None else None,
+            bar_split_name=bar_split_name,
+        )
+
     def _read_split_manifest(self, split_file: str | Path) -> dict:
         """Load a benchmark split manifest from a filesystem path."""
         return json.loads(Path(split_file).read_text())
 
     def _load_gsm_split_indices(self) -> Optional[List[int]]:
-        """Load explicit GSM example indices from a train/eval split manifest."""
+        """Load explicit GSM example indices from a train/test split manifest."""
         if self.gsm_split_file is None:
             return None
 
+        # GSM's two sides are named "train" and "test", same as Spider — the
+        # manifests' eval_indices key was renamed test_indices 2026-07-17 so
+        # one concept has one name everywhere.
+        if self.gsm_split_name not in ("train", "test"):
+            raise ValueError(
+                f"gsm_split_name must be 'train' or 'test', got "
+                f"'{self.gsm_split_name}'. GSM's held-out side is named "
+                "'test' (the 'eval' alias was removed 2026-07-17)."
+            )
         manifest = self._read_split_manifest(self.gsm_split_file)
         key = f"{self.gsm_split_name}_indices"
         if key not in manifest:
@@ -1701,24 +1874,31 @@ class Evaluator:
         indices = manifest[key]
         if not isinstance(indices, list) or not all(isinstance(i, int) for i in indices):
             raise ValueError(f"{key} in {self.gsm_split_file} must be a list of integers")
-        return indices
-
-    def _normalize_spider_split_name(self) -> str:
-        """Map legacy ``eval`` alias to Spider's ``test`` split field."""
-        if self.spider_split_name == "eval":
-            return "test"
-        return self.spider_split_name
+        # Skip the first `sample_offset` entries so the caller's existing
+        # limit-to-sample_size slicing takes the NEXT N indices instead of
+        # the usual first N -- this is the greedy hill-climb search's
+        # slice-B confirmation eval (see evaluate_sample's sample_offset).
+        offset = self.sample_offset or 0
+        return indices[offset:]
 
     def _load_spider_split_indices(self) -> Optional[List[int]]:
         """Load explicit Spider example indices from a train/test split manifest."""
         if self.spider_split_file is None:
             return None
 
+        # Spider's two sides are named "train" and "test" — exactly the index
+        # keys the manifests store. The legacy "eval" alias (and its
+        # eval_indices fallback) was removed 2026-07-17: aliases are how the
+        # bar/eval split mixup stayed invisible.
+        if self.spider_split_name not in ("train", "test"):
+            raise ValueError(
+                f"spider_split_name must be 'train' or 'test', got "
+                f"'{self.spider_split_name}'. Spider's held-out side is named "
+                "'test' (the 'eval' alias was removed 2026-07-17)."
+            )
         manifest = self._read_split_manifest(self.spider_split_file)
-        split_name = self._normalize_spider_split_name()
+        split_name = self.spider_split_name
         key = f"{split_name}_indices"
-        if key not in manifest and split_name == "test":
-            key = "eval_indices"
         if key not in manifest:
             available = sorted(k for k in manifest.keys() if k.endswith("_indices"))
             raise ValueError(
@@ -1729,7 +1909,10 @@ class Evaluator:
         indices = manifest[key]
         if not isinstance(indices, list) or not all(isinstance(i, int) for i in indices):
             raise ValueError(f"{key} in {self.spider_split_file} must be a list of integers")
-        return indices
+        # See _load_gsm_split_indices: skip the first `sample_offset` entries
+        # so slice-B confirmation draws the NEXT N indices.
+        offset = self.sample_offset or 0
+        return indices[offset:]
 
     def _get_grammar_file(self) -> Path:
         """Get the grammar file path for the dataset."""
@@ -1788,6 +1971,9 @@ class Evaluator:
         if run_dir.name in {"generated_csd", "python"}:
             run_dir = run_dir.parent
 
+        memory_utilization_max_raw = os.environ.get(
+            "CSD_VLLM_GPU_MEMORY_UTILIZATION_MAX", ""
+        ).strip()
         env_cache_key = (
             str(run_dir.resolve()),
             self.dataset_name,
@@ -1801,6 +1987,7 @@ class Evaluator:
             self.vllm_gpu_memory_utilization,
             self.vllm_max_model_len,
             self.vllm_enforce_eager,
+            memory_utilization_max_raw,
         )
         if self._env is not None and self._env_cache_key == env_cache_key:
             return self._env
@@ -1843,15 +2030,12 @@ class Evaluator:
             clear_vllm_engine_cache,
             narrow_cuda_visible_devices_to_index,
             pick_cuda_device_index_with_most_free_memory,
+            visible_cuda_device_ids,
         )
-
-        def _is_vllm_startup_memory_error(exc: Exception) -> bool:
-            message = str(exc)
-            return (
-                "desired GPU memory utilization" in message
-                or "Free memory on device" in message
-                or "Engine core initialization failed" in message
-            )
+        from synthesis.evaluate.benchmarks.common.vllm_startup import (
+            is_vllm_startup_memory_error,
+            vllm_util_retry_candidates,
+        )
 
         try:
             import torch
@@ -1865,61 +2049,122 @@ class Evaluator:
             if candidate >= 1 and candidate not in tp_candidates:
                 tp_candidates.append(candidate)
 
-        util_candidates: List[float] = []
-        for candidate in [
-            self.vllm_gpu_memory_utilization,
-            0.55,
-            0.5,
-            0.45,
-            0.4,
-        ]:
-            if candidate <= self.vllm_gpu_memory_utilization and candidate not in util_candidates:
-                util_candidates.append(candidate)
+        memory_utilization_max = (
+            float(memory_utilization_max_raw) if memory_utilization_max_raw else None
+        )
+        util_candidates = vllm_util_retry_candidates(
+            self.vllm_gpu_memory_utilization, maximum=memory_utilization_max
+        )
 
-        last_error: Exception | None = None
+        def _narrow_to_freest_gpu(reason: str) -> None:
+            best_idx = pick_cuda_device_index_with_most_free_memory()
+            chosen = narrow_cuda_visible_devices_to_index(best_idx)
+            print(
+                f"Retrying vLLM evaluator startup on {reason} "
+                f"(CUDA_VISIBLE_DEVICES={chosen})"
+            )
+            clear_vllm_engine_cache()
+            if torch is not None and torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        def _multiple_devices_visible() -> bool:
+            visible_ids = visible_cuda_device_ids()
+            if visible_ids:
+                return len(visible_ids) > 1
+            if torch is not None and torch.cuda.is_available():
+                return torch.cuda.device_count() > 1
+            return False
+
         narrowed_visible_devices = False
-        for tp in tp_candidates:
-            if tp == 1 and tp != requested_tp and not narrowed_visible_devices:
-                best_idx = pick_cuda_device_index_with_most_free_memory()
-                chosen = narrow_cuda_visible_devices_to_index(best_idx)
-                narrowed_visible_devices = True
+
+        def _try_startup_ladder() -> Dict[str, Any]:
+            nonlocal narrowed_visible_devices
+            last_error: Exception | None = None
+            for tp in tp_candidates:
+                if tp == 1 and tp != requested_tp and not narrowed_visible_devices:
+                    narrowed_visible_devices = True
+                    _narrow_to_freest_gpu("a single GPU")
+                util_idx = 0
+                while util_idx < len(util_candidates):
+                    util = util_candidates[util_idx]
+                    try:
+                        if tp != requested_tp and util == util_candidates[0]:
+                            print(
+                                f"Retrying vLLM evaluator startup with "
+                                f"tensor_parallel_size={tp}"
+                            )
+                        elif util != self.vllm_gpu_memory_utilization:
+                            direction = (
+                                "higher"
+                                if util > self.vllm_gpu_memory_utilization
+                                else "lower"
+                            )
+                            print(
+                                f"Retrying vLLM evaluator startup with {direction} "
+                                f"gpu_memory_utilization={util:.2f}"
+                            )
+                        return _make_env(util, tp)
+                    except Exception as exc:
+                        last_error = exc
+                        if not is_vllm_startup_memory_error(exc):
+                            raise
+                        clear_vllm_engine_cache()
+                        if torch is not None and torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+                        if (
+                            tp == 1
+                            and not narrowed_visible_devices
+                            and _multiple_devices_visible()
+                        ):
+                            # A sibling process may hold the default visible device;
+                            # move to the freest GPU and restart the utilization ladder
+                            # instead of shrinking utilization on the occupied device.
+                            narrowed_visible_devices = True
+                            _narrow_to_freest_gpu("the freest GPU")
+                            util_idx = 0
+                            continue
+                        is_last_attempt = tp == tp_candidates[-1] and util == util_candidates[-1]
+                        if is_last_attempt:
+                            raise
+                        util_idx += 1
+            if last_error is not None:
+                raise last_error
+            raise RuntimeError("Failed to initialize evaluation environment.")
+
+        # When the only visible GPU is transiently held by a sibling process,
+        # exhausting the utilization ladder in a few minutes kills the attempt
+        # without an Accuracy telemetry line. Wait out the pressure (bounded)
+        # and retry the whole ladder before giving up.
+        import time as _time
+
+        startup_wait_s = float(os.environ.get("CSD_VLLM_STARTUP_WAIT_S", "900"))
+        retry_interval_s = float(os.environ.get("CSD_VLLM_STARTUP_RETRY_INTERVAL_S", "30"))
+        deadline = _time.monotonic() + startup_wait_s
+        wait_round = 0
+        while True:
+            try:
+                env = _try_startup_ladder()
+                self._env = env
+                self._env_cache_key = env_cache_key
+                return env
+            except Exception as exc:
+                if not is_vllm_startup_memory_error(exc):
+                    raise
+                remaining = deadline - _time.monotonic()
+                if remaining <= 0:
+                    raise
+                wait_round += 1
+                wait_s = min(retry_interval_s, remaining)
                 print(
-                    "Retrying vLLM evaluator startup on a single GPU "
-                    f"(CUDA_VISIBLE_DEVICES={chosen})"
+                    f"[vllm] Evaluator startup blocked by GPU memory pressure "
+                    f"(round {wait_round}); waiting {wait_s:.0f}s for a sibling "
+                    f"process to release memory ({remaining:.0f}s budget left)...",
+                    flush=True,
                 )
                 clear_vllm_engine_cache()
                 if torch is not None and torch.cuda.is_available():
                     torch.cuda.empty_cache()
-            for util in util_candidates:
-                try:
-                    if tp != requested_tp and util == util_candidates[0]:
-                        print(
-                            f"Retrying vLLM evaluator startup with "
-                            f"tensor_parallel_size={tp}"
-                        )
-                    elif util != self.vllm_gpu_memory_utilization:
-                        print(
-                            f"Retrying vLLM evaluator startup with lower "
-                            f"gpu_memory_utilization={util:.2f}"
-                        )
-                    env = _make_env(util, tp)
-                    self._env = env
-                    self._env_cache_key = env_cache_key
-                    return env
-                except Exception as exc:
-                    last_error = exc
-                    if not _is_vllm_startup_memory_error(exc):
-                        raise
-                    clear_vllm_engine_cache()
-                    if torch is not None and torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                    is_last_attempt = tp == tp_candidates[-1] and util == util_candidates[-1]
-                    if is_last_attempt:
-                        raise
-
-        if last_error is not None:
-            raise last_error
-        raise RuntimeError("Failed to initialize evaluation environment.")
+                _time.sleep(wait_s)
 
     def _extract_constrained_content(self, output: str) -> List[str]:
         """Extract content within << >> delimiters.
@@ -1950,195 +2195,22 @@ class Evaluator:
 
         return output[:min(cut_points)].rstrip()
 
-    def _parse_variable_assignments(self, text: str) -> dict:
-        """Parse variable assignments from text like 'a = 5', 'n1 = 72.5', etc."""
-        assignments = {}
-        pattern = r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([-+]?\d+(?:\.\d+)?)\b'
-        for match in re.finditer(pattern, text):
-            var_name = match.group(1)
-            try:
-                assignments[var_name] = float(match.group(2))
-            except ValueError:
-                pass
-        return assignments
+    # Seven more methods lived here, all of them only reachable from the
+    # deleted numeric grader below: _parse_variable_assignments,
+    # _parse_symbolic_assignments, _safe_eval_arithmetic,
+    # _evaluate_symbolic_expression, _resolve_symbolic_assignments,
+    # _extract_answer_expression_gsm and _evaluate_gsm_expression. Together
+    # they pulled variable values out of the model's prose and substituted them
+    # into its formula to get one number. Nothing needs a number any more.
 
-    def _parse_symbolic_assignments(self, text: str) -> dict[str, str]:
-        """Parse simple symbolic assignments like 'x = 2 * y' or 'y = 1/10'."""
-        assignments: dict[str, str] = {}
-        pattern = r"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([^,\n;]+)"
-        for match in re.finditer(pattern, text):
-            var_name = match.group(1)
-            expr = match.group(2).strip()
-            if expr.endswith(".") and len(expr) >= 2 and expr[-2].isdigit():
-                expr = expr
-            else:
-                expr = expr.rstrip(".").strip()
-            if expr:
-                assignments[var_name] = expr
-        return assignments
-
-    def _safe_eval_arithmetic(self, expr: str) -> Optional[float]:
-        """Safely evaluate a numeric arithmetic expression using AST (no eval())."""
-        import ast
-        import operator as op
-
-        ops = {
-            ast.Add: op.add, ast.Sub: op.sub,
-            ast.Mult: op.mul, ast.Div: op.truediv,
-            ast.FloorDiv: op.floordiv, ast.Mod: op.mod,
-            ast.Pow: op.pow,
-            ast.USub: op.neg, ast.UAdd: op.pos,
-        }
-
-        def _eval(node):
-            if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-                return float(node.value)
-            elif isinstance(node, ast.Num):  # Python 3.7 compat
-                return float(node.n)
-            elif isinstance(node, ast.BinOp) and type(node.op) in ops:
-                return ops[type(node.op)](_eval(node.left), _eval(node.right))
-            elif isinstance(node, ast.UnaryOp) and type(node.op) in ops:
-                return ops[type(node.op)](_eval(node.operand))
-            elif (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                  and node.func.id == 'int' and len(node.args) == 1):
-                return float(int(_eval(node.args[0])))
-            else:
-                raise ValueError(f"Unsupported node: {type(node)}")
-
-        try:
-            tree = ast.parse(expr.strip(), mode='eval')
-            return _eval(tree.body)
-        except Exception:
-            return None
-
-    def _evaluate_symbolic_expression(self, expr: str, var_values: dict) -> Optional[float]:
-        """Substitute variable values into a symbolic expression and evaluate."""
-        substituted = expr
-        # Substitute longest names first to avoid partial replacement (n10 before n1)
-        for var in sorted(var_values.keys(), key=len, reverse=True):
-            substituted = re.sub(r'\b' + re.escape(var) + r'\b',
-                                 str(var_values[var]), substituted)
-        # If alphabetic chars remain, some variables were unresolved
-        if re.search(r'[a-zA-Z_]', substituted):
-            return None
-        return self._safe_eval_arithmetic(substituted)
-
-    def _resolve_symbolic_assignments(self, text: str) -> dict[str, float]:
-        """Resolve assignment chains like 'x = 2 * y, y = 14' into numeric values."""
-        raw_assignments = self._parse_symbolic_assignments(text)
-        resolved: dict[str, float] = {}
-
-        def resolve(name: str, stack: set[str]) -> Optional[float]:
-            if name in resolved:
-                return resolved[name]
-            if name in stack:
-                return None
-
-            expr = raw_assignments.get(name)
-            if expr is None:
-                return None
-
-            stack = set(stack)
-            stack.add(name)
-            substituted = expr
-            var_names = set(re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", expr))
-            for dep in sorted(var_names, key=len, reverse=True):
-                if dep == name:
-                    continue
-                dep_value = resolve(dep, stack)
-                if dep_value is None:
-                    continue
-                substituted = re.sub(r"\b" + re.escape(dep) + r"\b", str(dep_value), substituted)
-
-            if re.search(r"[a-zA-Z_]", substituted):
-                return None
-
-            value = self._safe_eval_arithmetic(substituted)
-            if value is None:
-                return None
-            resolved[name] = value
-            return value
-
-        for var_name in list(raw_assignments.keys()):
-            resolve(var_name, set())
-
-        return resolved
-
-    def _extract_answer_expression_gsm(self, output: str) -> Optional[str]:
-        """Extract the expression after 'The answer is ...' if present."""
-        match = re.search(
-            r"The answer is\s+(.+?)(?:\.\s*$|\n|$)",
-            output,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
-        if not match:
-            return None
-        expr = match.group(1).strip()
-        return expr.rstrip(".").strip() or None
-
-    def _evaluate_gsm_expression(self, expr: str, output: str) -> Optional[str]:
-        """Evaluate a GSM expression using resolved variable assignments when needed."""
-        if not expr:
-            return None
-
-        if not re.search(r"[a-zA-Z_]", expr):
-            result = self._safe_eval_arithmetic(expr)
-            if result is not None:
-                val = int(result) if result == int(result) else result
-                return str(val)
-
-        var_values = self._resolve_symbolic_assignments(output)
-        if not var_values:
-            var_values = self._parse_variable_assignments(output)
-
-        if var_values:
-            result = self._evaluate_symbolic_expression(expr, var_values)
-            if result is not None:
-                val = int(result) if result == int(result) else result
-                return str(val)
-
-        return None
-
-    def _extract_answer_gsm(self, output: str) -> Optional[str]:
-        """Extract numeric answer from GSM-Symbolic output within << >> delimiters."""
-        truncated_output = self._truncate_gsm_output(output)
-
-        answer_expr = self._extract_answer_expression_gsm(truncated_output)
-        if answer_expr is not None:
-            answer = self._evaluate_gsm_expression(answer_expr, truncated_output)
-            if answer is not None:
-                return answer
-
-        matches = self._extract_constrained_content(truncated_output)
-        if not matches:
-            return None
-
-        last_match = matches[-1].strip()
-
-        # Case 1: expression contains "=" — take the part after "=" (e.g. "a + b = 8")
-        if "=" in last_match:
-            answer_part = last_match.split("=")[-1].strip()
-            num_match = re.search(r"[-+]?\d*\.?\d+", answer_part)
-            if num_match:
-                return num_match.group()
-
-        # Case 2: purely numeric expression — evaluate directly (e.g. "5 + 3")
-        answer = self._evaluate_gsm_expression(last_match, truncated_output)
-        if answer is not None:
-            return answer
-
-        # Case 3: symbolic expression — parse variable assignments from surrounding text
-        # and substitute in (e.g. "a + b" with "a = 5, b = 3" defined earlier)
-        var_values = self._resolve_symbolic_assignments(truncated_output)
-        if not var_values:
-            var_values = self._parse_variable_assignments(truncated_output)
-        if var_values:
-            result = self._evaluate_symbolic_expression(last_match, var_values)
-            if result is not None:
-                val = int(result) if result == int(result) else result
-                return str(val)
-
-        return None
+    # _extract_answer_gsm used to live here. It pulled a single number out of the
+    # model's output so GSM answers could be graded by comparing that number to
+    # the gold. CRANE has no such grader -- its parse_answer (gsm_symbolic.py:28-56)
+    # either proves the two formulas equivalent or leaves correct = False -- so
+    # every example it scored was measured a way CRANE does not measure, then
+    # averaged into a figure reported against CRANE's published number. Deleted
+    # rather than left dormant behind a branch nobody takes. See
+    # tests/test_unreadable_types_does_not_switch_graders.py.
 
     def _extract_answer_smiles(self, output: str, example: Optional[dict] = None) -> Optional[str]:
         """Extract the generated SMILES string from raw output."""
@@ -2147,17 +2219,9 @@ class Evaluator:
         smiles = clean_smiles_output(output)
         return smiles or None
 
-    def _answers_match(self, actual: Optional[str], expected: str) -> bool:
-        """Check if actual and expected answers match, normalizing Uncertain/Unknown."""
-        if actual is None:
-            return False
-        a = str(actual).strip().lower()
-        e = str(expected).strip().lower()
-        if a in ("uncertain", "unknown"):
-            a = "unknown"
-        if e in ("uncertain", "unknown"):
-            e = "unknown"
-        return a == e
+    # _answers_match used to live here -- the string comparison the deleted
+    # numeric grader above ended in. GSM was its only caller anywhere in
+    # synthesis/, so it went with it.
 
     def _gsm_symbolic_equivalence(
         self, model_expr: Optional[str], expected_expr: str, variable_types: dict
@@ -2171,27 +2235,38 @@ class Evaluator:
             return False
         model_expr = str(model_expr).strip()
         expected_expr = str(expected_expr).strip()
+        if _is_pathological_gsm_scoring_expression(model_expr):
+            return False
         # CRANE rejects model completions containing ** (parse_answer guard).
         if "**" in model_expr:
             return False
+        # Nothing below is caught, deliberately. A variable_types field we cannot
+        # read, or a prover that will not run, is a fault in our setup -- not
+        # evidence about the model. Swallowing either one grades every example in
+        # the split as wrong and reports 0% accuracy, which is indistinguishable
+        # from a model that genuinely got everything wrong. That is the exact
+        # failure that cost weeks on Spider. Before this was removed, two
+        # identical formulas graded False on any machine without z3, because the
+        # ModuleNotFoundError landed in the catch below.
+        #
+        # Upstream CRANE has no catch here either: parse_answer calls plain
+        # eval() on this field (gsm_symbolic.py:40) and lets a bad value stop the
+        # run, so parity and honest reporting agree. Pinned by
+        # tests/test_gsm_grader_does_not_swallow_setup_failures.py.
         if isinstance(variable_types, str):
             import ast as _ast
 
-            try:
-                variable_types = _ast.literal_eval(variable_types)
-            except Exception:
-                variable_types = {}
+            variable_types = _ast.literal_eval(variable_types)
         if not isinstance(variable_types, dict):
-            variable_types = {}
-        try:
-            return bool(
-                _crane_validate_expression_equivalence(
-                    model_expr, expected_expr, variable_types
-                )
+            raise UngradableExample(
+                "GSM variable_types must be a mapping of variable name to type, "
+                f"got {type(variable_types).__name__}: {variable_types!r}"
             )
-        except Exception:
-            # Any hard failure in the proof path -> conservatively not-correct.
-            return False
+        return bool(
+            _crane_validate_expression_equivalence(
+                model_expr, expected_expr, variable_types
+            )
+        )
 
     def _get_expected_answer(self, example: dict) -> str:
         """Get the expected answer from a dataset example."""
@@ -2238,6 +2313,27 @@ class Evaluator:
                 require_rdkit=True,
             )
             smiles = eval_row["smiles"]
+            # region agent log
+            global _agent_debug_smiles_logged
+            if _agent_debug_smiles_logged < _AGENT_DEBUG_SMILES_CAP:
+                _agent_debug_smiles_logged += 1
+                _agent_debug_log(
+                    "C",
+                    "evaluator.py:_check_syntax_validity:smiles",
+                    "smiles score snapshot",
+                    {
+                        "class_name": class_name,
+                        "cleaned_smiles": smiles,
+                        "cleaned_len": len(smiles or ""),
+                        "grammar_ok": bool(eval_row.get("grammar_valid")),
+                        "rdkit_ok": eval_row.get("rdkit_valid"),
+                        "membership_ok": bool(eval_row.get("class_membership")),
+                        "syntax_ok": bool(eval_row.get("syntax_valid")),
+                        "raw_output_len": len(output or ""),
+                        "log_index": _agent_debug_smiles_logged,
+                    },
+                )
+            # endregion
             if not smiles:
                 return False, []
             return bool(eval_row["syntax_valid"]), [(smiles, bool(eval_row["syntax_valid"]))]
@@ -2255,16 +2351,18 @@ class Evaluator:
         if not matches:
             return True, []
 
-        try:
-            parser = self._get_syntax_parser(example)
-            for match in matches:
-                try:
-                    parser.parse(match.strip())
-                    segments.append((match, True))
-                except LarkError:
-                    segments.append((match, False))
-        except Exception:
-            return True, [(m, True) for m in matches]
+        # If the grammar can't even be built (missing file, bad grammar, bad
+        # import), there is no honest value to return here -- the result can
+        # only say "valid" or "invalid", and neither is true when nothing was
+        # actually checked. So we let that error stop the run instead of
+        # quietly reporting a fake 100% valid result.
+        parser = self._get_syntax_parser(example)
+        for match in matches:
+            try:
+                parser.parse(match.strip())
+                segments.append((match, True))
+            except LarkError:
+                segments.append((match, False))
 
         all_valid = all(is_valid for _, is_valid in segments) if segments else True
         return all_valid, segments
@@ -2323,15 +2421,623 @@ class Evaluator:
         logic = self._benchmark_logic()
         return bool(logic.accuracy_applicable(aux))
 
+    def _evaluate_one_example(
+        self,
+        i: int,
+        example: Any,
+        dataset_len: int,
+        env: Dict[str, Any],
+        logic: Any,
+        run_crane_csd: Any,
+        smiles_suffix: dict,
+    ) -> Dict[str, Any]:
+        """Evaluate exactly one example and return its sample dict.
+
+        This is the unit of work shared by the sequential loop (below) and the
+        data-parallel worker pool (synthesis/scripts/eval_worker_pool.py): it
+        does not read or write any state beyond `smiles_suffix` (SMILES-only
+        rolling-prompt carry, unused for GSM/Spider), so it is safe to call
+        from a worker process on an arbitrary slice of examples in any order.
+        Almost every failure is caught and returned as a sample dict rather
+        than raised. The two exceptions, listed explicitly at the catch below,
+        are a broken harness (ModuleNotFoundError/ImportError) and a row that
+        cannot be graded at all (UngradableExample) — neither of which produced
+        a measurement, so recording one would be inventing a result. It never
+        decides to stop early; that decision is made by the caller
+        (sequentially in-process, or post-hoc over a merged pool result in
+        `_posthoc_early_stop`).
+        """
+        print(f"  [EVAL] Processing example {i+1}/{dataset_len}...", flush=True)
+        example_start = time.time()
+        if self.dataset_name == "smiles" and os.environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+            _apply_smiles_rolling_suffix(example, smiles_suffix)
+        prompt = self._format_prompt(example)
+        expected = self._get_expected_answer(example)
+        benchmark_aux: Optional[dict[str, Any]] = None
+        tokenizer = env.get("tokenizer")
+        generation_token_evidence: Optional[dict[str, Any]] = None
+        constrained_work: Optional[int] = None
+        prompt_contract: Optional[dict[str, Any]] = None
+        from synthesis.evaluate.benchmarks.sql_spider.prompts import SpiderPromptRenderError
+        from synthesis.evaluate.benchmarks.sql_spider.output_contract import (
+            SpiderEvidenceContractError,
+        )
+
+        try:
+            print(f"  [EVAL]   Running CSD strategy (max_steps={self.max_steps})...", flush=True)
+            dynamic_parser = logic.build_dynamic_parser(self, env, example)
+            # region agent log
+            try:
+                _sig = inspect.signature(run_crane_csd)
+                _params = list(_sig.parameters)
+                _agent_debug_log(
+                    "B",
+                    "evaluator.py:_evaluate_one_example:pre_run_crane_csd",
+                    "run_crane_csd signature vs early_stop_on_answer kwarg",
+                    {
+                        "dataset_name": self.dataset_name,
+                        "example_index": i,
+                        "early_stop_on_answer": bool(self.early_stop_on_answer),
+                        "has_early_stop_param": "early_stop_on_answer" in _sig.parameters,
+                        "param_names": _params,
+                    },
+                )
+            except Exception as _sig_exc:
+                _agent_debug_log(
+                    "B",
+                    "evaluator.py:_evaluate_one_example:pre_run_crane_csd",
+                    "failed to inspect run_crane_csd signature",
+                    {"error": repr(_sig_exc)},
+                )
+            # endregion
+            with _PerExampleTimer(self.max_seconds_per_example):
+                generation_result = run_crane_csd(
+                    env=env,
+                    prompt_text=prompt,
+                    max_steps=self.max_steps,
+                    step_token_budget=self.step_token_budget,
+                    grammar_file=self._get_grammar_file(),
+                    dynamic_parser=dynamic_parser,
+                    early_stop_on_answer=self.early_stop_on_answer,
+                )
+            if len(generation_result) == 6:
+                output_text, token_count, gen_time, constrained_segments, helper_trace, constrained_work = generation_result
+            elif len(generation_result) == 5:
+                output_text, token_count, gen_time, constrained_segments, helper_trace = generation_result
+                constrained_work = None
+            else:
+                raise ValueError(f"CSD generation returned {len(generation_result)} values; expected 5 or 6")
+            generation_token_evidence = getattr(
+                env.get("lm"), "_last_generation_evidence", None
+            )
+            prompt_contract = getattr(env.get("lm"), "_last_prompt_contract", None)
+            example_time = time.time() - example_start
+            print(f"  [EVAL]   Generated {token_count} tokens in {example_time:.2f}s", flush=True)
+            # region agent log
+            _agent_debug_log(
+                "A",
+                "evaluator.py:_evaluate_one_example:success",
+                "generation succeeded",
+                {
+                    "dataset_name": self.dataset_name,
+                    "example_index": i,
+                    "token_count": int(token_count) if token_count is not None else None,
+                    "example_time": float(example_time),
+                    "gen_time": float(gen_time) if gen_time is not None else None,
+                    "output_empty": not bool((output_text or "").strip()),
+                    "output_len": len(output_text or ""),
+                },
+            )
+            # endregion
+
+            if self.dataset_name == "spider":
+                # Spider CSD returns generated text only.  Treat an echoed
+                # prompt as invalid output so the strict contract can reject it.
+                completion = str(output_text or "")
+            else:
+                from synthesis.evaluate.completion_text import completion_for_scoring
+
+                completion = completion_for_scoring(prompt, output_text)
+            _print_realtime_completion(i + 1, dataset_len, completion)
+            scored_output = (
+                self._truncate_gsm_output(completion)
+                if self.dataset_name == "gsm_symbolic"
+                else completion
+            )
+
+            # Scoring can spin too (e.g. a Lark Earley parse of a
+            # degenerate span), not just generation — run it under the
+            # same per-example timer so a wedged example times out and
+            # is recorded as a failure instead of hanging the run
+            # (2+ hour wedge observed 2026-06-10 on GSM-1.5B).
+            if self.dataset_name == "spider":
+                self._active_generation_token_evidence = generation_token_evidence
+            try:
+                with _PerExampleTimer(self.max_seconds_per_example):
+                    actual, answer_source, benchmark_aux = self._extract_actual_for_example(scored_output, example)
+                    is_correct = self._is_correct_for_example(
+                        actual,
+                        expected,
+                        example,
+                        benchmark_aux,
+                        scored_output,
+                    )
+            finally:
+                if self.dataset_name == "spider":
+                    self._active_generation_token_evidence = None
+
+            visible_delimiters = self._contains_delimiters(scored_output)
+            used_hidden_chunk = bool(constrained_segments) or any(
+                event.get("helper") in EvaluationResult._CONSTRAINED_HELPERS
+                for event in (helper_trace or [])
+            )
+            contains_delimiters = used_hidden_chunk if self._uses_hidden_chunks() else visible_delimiters
+
+            all_valid_syntax, segments = self._check_syntax_validity(scored_output, example=example)
+            # Per-example syntax pass:
+            # - GSM: visible <<...>> chunks must exist and parse.
+            # - SMILES: the full output is the generated molecule string.
+            # - Spider: chunks are internal/hidden; visible delimiter tokens are not
+            #   part of the answer contract, so count parser-governed chunk usage.
+            example_syntax_pass = self._example_syntax_pass(
+                all_valid_syntax,
+                segments,
+                used_hidden_chunk,
+                benchmark_aux,
+            )
+            if self.dataset_name == "smiles" and os.environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                _update_smiles_rolling_suffix(
+                    example,
+                    smiles_suffix,
+                    actual,
+                    bool(benchmark_aux and benchmark_aux.get("syntax_valid")),
+                )
+            accuracy_applicable = self._accuracy_applicable_for_example(benchmark_aux)
+            example_syntax_rate = 1.0 if example_syntax_pass else 0.0
+            if self._uses_hidden_chunks() and self.dataset_name == "smiles":
+                visible_span_lengths = (
+                    [span_token_length(tokenizer, (benchmark_aux or {}).get("smiles", ""))]
+                    if actual
+                    else []
+                )
+                valid_visible_span_lengths = visible_span_lengths if example_syntax_pass else []
+                num_valid_visible_spans = 1 if example_syntax_pass and actual else 0
+                segments = [(actual or "", example_syntax_pass)] if actual else []
+            else:
+                visible_span_lengths = [
+                    span_token_length(tokenizer, segment) for segment, _ in segments
+                ]
+                valid_visible_span_lengths = [
+                    span_token_length(tokenizer, segment)
+                    for segment, is_valid in segments
+                    if is_valid
+                ]
+                num_valid_visible_spans = sum(1 for _, is_valid in segments if is_valid)
+
+            if hasattr(example, "conclusion"):
+                q_full = example.premises + " | " + example.conclusion
+            else:
+                q_full = example.get("question", str(example.get("premises", "")))
+            q_str = q_full[:200]
+            sample = {
+                "question": q_str,
+                "question_full": q_full,
+                "expected": expected,
+                "actual": actual if self.dataset_name == "spider" else actual or completion[:100],
+                "full_output": completion,
+                "scored_output": scored_output,
+                "answer_source": answer_source,
+                "has_extracted_answer": actual is not None if self.dataset_name == "spider" else actual is not None or answer_source == "text_fallback",
+                "is_correct": is_correct,
+                "accuracy_applicable": accuracy_applicable,
+                "contains_delimiters": contains_delimiters,
+                "visible_delimiters": visible_delimiters,
+                "used_constrained_chunk": used_hidden_chunk,
+                "uses_hidden_chunks": self._uses_hidden_chunks(),
+                "is_syntax_valid": example_syntax_pass,
+                "syntax_rate": example_syntax_rate,
+                "num_visible_spans": len(segments),
+                "num_valid_visible_spans": num_valid_visible_spans,
+                "visible_span_token_lengths": visible_span_lengths,
+                "valid_visible_span_token_lengths": valid_visible_span_lengths,
+                "token_count": token_count,
+                "constrained_work": constrained_work,
+                "hit_max_steps": token_count >= self.max_steps,
+                "time_seconds": gen_time,
+                "runtime_budget_exceeded": (
+                    self.max_seconds_per_example is not None
+                    and gen_time > self.max_seconds_per_example
+                ),
+                "timed_out": False,
+                "helper_trace": helper_trace,
+                "generation_token_evidence": (
+                    generation_token_evidence if self.dataset_name == "spider" else None
+                ),
+                **_strategy_sample_evidence_fields(generation_token_evidence),
+                "prompt_contract": prompt_contract,
+                "removed_terminal_token_count": (
+                    benchmark_aux.get("removed_terminal_token_count")
+                    if self.dataset_name == "spider" and benchmark_aux
+                    else None
+                ),
+                "task_guidance": getattr(env.get("lm"), "task_guidance", None),
+                "smiles_eval": benchmark_aux if self.dataset_name == "smiles" else None,
+                "output_contract_valid": (
+                    benchmark_aux.get("output_contract_valid")
+                    if self.dataset_name == "spider" and benchmark_aux
+                    else None
+                ),
+                "output_rejection_reason": (
+                    benchmark_aux.get("output_rejection_reason")
+                    if self.dataset_name == "spider" and benchmark_aux
+                    else None
+                ),
+            }
+            if self.dataset_name == "smiles":
+                sample["smiles_eval"] = benchmark_aux
+            return EvaluationResult._annotate_sample_observability(sample)
+
+        except (ModuleNotFoundError, ImportError, UngradableExample):
+            # These two are not results, so they must not become one.
+            #
+            # A missing module means nothing ran: the sample dict built below
+            # records is_correct: False with accuracy_applicable: True, and
+            # that sample is counted in num_accuracy_examples (the accuracy
+            # denominator), so a lost file and a model that got the question
+            # wrong come out as the same number. That is exactly how Spider's
+            # 0% was mistaken for a model failure for weeks.
+            #
+            # An UngradableExample means the dataset row has no field to grade
+            # against, so there is no verdict to record either.
+            #
+            # Everything else stays caught on purpose. A model that produced
+            # nonsense, a timeout, a solver that fell over on one expression --
+            # those are real outcomes of running that example, and aborting the
+            # whole run over one of them loses every other example's result.
+            #
+            # This list is fixed at three names and is meant to stay that way;
+            # tests/test_harness_failures_are_not_scored_as_wrong_answers.py
+            # fails if it grows or shrinks. In particular it does not name
+            # TypeError or ValueError: those are what any ordinary bug in the
+            # generation path raises, and re-raising them would turn a stray
+            # None into an aborted evaluation run.
+            raise
+
+        except Exception as e:
+            if self.dataset_name == "spider" and isinstance(
+                e, (SpiderPromptRenderError, SpiderEvidenceContractError)
+            ):
+                # A Spider prompt renderer/setup is part of the harness entry
+                # contract. Its failure must abort the run, not become a scored
+                # generation_error sample. Other datasets retain their legacy
+                # per-example error surface.
+                raise
+            if hasattr(example, "conclusion"):
+                q_full = example.premises + " | " + example.conclusion
+            else:
+                q_full = example.get("question", str(example.get("premises", "")))
+            q_str = q_full[:200]
+            elapsed = time.time() - example_start
+            timed_out = isinstance(e, PerExampleTimeout)
+            if timed_out:
+                print(
+                    f"  [EVAL]   Timed out after {elapsed:.2f}s (per-example runtime budget)",
+                    flush=True,
+                )
+            # region agent log
+            _err_msg = str(e)
+            _hyp = "B" if "early_stop_on_answer" in _err_msg else ("A" if self.dataset_name != "smiles" else "E")
+            _agent_debug_log(
+                _hyp,
+                "evaluator.py:_evaluate_one_example:except",
+                "exception swallowed into empty sample",
+                {
+                    "dataset_name": self.dataset_name,
+                    "example_index": i,
+                    "exc_type": type(e).__name__,
+                    "exc_message": _err_msg[:500],
+                    "elapsed": float(elapsed),
+                    "timed_out": bool(timed_out),
+                    "full_output_empty": True,
+                    "token_count": 0,
+                },
+            )
+            # endregion
+            if self.dataset_name == "spider":
+                # Read the published evidence once after a late generation
+                # failure; the count below must describe this same object.
+                generation_token_evidence = getattr(
+                    env.get("lm"), "_last_generation_evidence", None
+                )
+                prompt_contract = getattr(env.get("lm"), "_last_prompt_contract", None)
+            sample = {
+                "question": q_str,
+                "question_full": q_full,
+                "expected": expected,
+                "actual": None,
+                "full_output": "",
+                "scored_output": "",
+                "answer_source": "none",
+                "has_extracted_answer": False,
+                "is_correct": False,
+                "accuracy_applicable": self._accuracy_applicable_for_example(None),
+                "contains_delimiters": False,
+                "visible_delimiters": False,
+                "used_constrained_chunk": False,
+                "uses_hidden_chunks": self._uses_hidden_chunks(),
+                "is_syntax_valid": False,
+                "syntax_rate": 0.0,
+                "num_visible_spans": 0,
+                "num_valid_visible_spans": 0,
+                "visible_span_token_lengths": [],
+                "valid_visible_span_token_lengths": [],
+                "token_count": 0,
+                "hit_max_steps": False,
+                "time_seconds": elapsed,
+                "runtime_budget_exceeded": timed_out or (
+                    self.max_seconds_per_example is not None
+                    and elapsed > self.max_seconds_per_example
+                ),
+                "generation_token_evidence": (
+                    generation_token_evidence if self.dataset_name == "spider" else None
+                ),
+                **_strategy_sample_evidence_fields(generation_token_evidence),
+                "prompt_contract": prompt_contract,
+                "removed_terminal_token_count": (
+                    len((generation_token_evidence or {}).get("removed_terminal_token_ids", ()))
+                    if self.dataset_name == "spider"
+                    else None
+                ),
+                "output_contract_valid": False if self.dataset_name == "spider" else None,
+                "output_rejection_reason": "generation_error" if self.dataset_name == "spider" else None,
+                "timed_out": timed_out,
+                "error": str(e),
+                "helper_trace": [],
+                "task_guidance": getattr(env.get("lm"), "task_guidance", None),
+            }
+            return EvaluationResult._annotate_sample_observability(sample)
+
+    def _evaluate_examples_sequential_with_early_stop(
+        self,
+        dataset: list,
+        env: Dict[str, Any],
+        logic: Any,
+        target_min_accuracy: Optional[float],
+        early_stop_min_syntax_rate: Optional[float],
+        early_stop_runtime_failures: Optional[int],
+        deadline: Optional[float] = None,
+    ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        """Single-process path: evaluate examples one at a time, checking the
+        early-stop conditions after each one (unchanged behavior from before
+        the worker-pool refactor). Used for SMILES always (its rolling-prompt
+        state and `should_stop_collected` early stop are not poolable), and as
+        the disaster fallback for GSM/Spider if the worker pool cannot be
+        started or every worker dies.
+
+        `deadline`, if given, is an absolute `time.time()` timestamp for the
+        whole attempt (not just this evaluation stage). It is checked between
+        examples so a strategy that loops to its max steps on every example
+        cannot burn unbounded wall-clock time -- the loop stops as soon as the
+        deadline has passed and returns whatever examples finished.
+        """
+        run_crane_csd = logic.get_generation_runner()
+        early_stop_enabled = (
+            target_min_accuracy is not None
+            or early_stop_min_syntax_rate is not None
+            or early_stop_runtime_failures is not None
+        )
+        collected_stop = getattr(logic, "should_stop_collected", None)
+        sample_outputs: List[Dict[str, Any]] = []
+        smiles_suffix: dict = {}
+        n_timeouts = 0
+
+        def early_stop_reason_if_any() -> Optional[str]:
+            if callable(collected_stop) and sample_outputs:
+                reason = collected_stop(sample_outputs)
+                if reason:
+                    return reason
+            if not early_stop_enabled or not sample_outputs:
+                return None
+            runtime_failures = sum(
+                1 for sample in sample_outputs if sample.get("runtime_budget_exceeded")
+            )
+            if (
+                early_stop_runtime_failures is not None
+                and runtime_failures >= early_stop_runtime_failures
+            ):
+                return (
+                    "threshold-impossible early stop: "
+                    f"{runtime_failures} example(s) exceeded the per-example runtime budget."
+                )
+            return None
+
+        for i, example in enumerate(dataset):
+            sample = self._evaluate_one_example(
+                i, example, len(dataset), env, logic, run_crane_csd, smiles_suffix
+            )
+            sample.update(EvaluationResult._sample_identity_metadata(example, i))
+            sample_outputs.append(sample)
+            if sample.get("timed_out"):
+                n_timeouts += 1
+
+            if deadline is not None and time.time() >= deadline:
+                reason = (
+                    f"{ATTEMPT_DEADLINE_EARLY_STOP_REASON}; "
+                    f"N={len(sample_outputs)} of {len(dataset)} examples completed"
+                )
+                print(f"  [EVAL] Early stopping eval: {reason}", flush=True)
+                return sample_outputs, reason
+
+            early_reason = early_stop_reason_if_any()
+            if early_reason:
+                print(f"  [EVAL] Early stopping synthesis eval: {early_reason}", flush=True)
+                return sample_outputs, early_reason
+            if sample.get("timed_out") and n_timeouts >= _MAX_TIMEOUTS_PATHOLOGICAL:
+                reason = (
+                    f"eval stopped early after {n_timeouts} timed-out examples "
+                    f"(pathological-strategy guard); "
+                    f"N={len(sample_outputs)} of {len(dataset)}"
+                )
+                print(f"  [EVAL] Early stopping eval: {reason}", flush=True)
+                return sample_outputs, reason
+
+        return sample_outputs, None
+
+    def _posthoc_early_stop(
+        self,
+        sample_outputs: List[Dict[str, Any]],
+        early_stop_runtime_failures: Optional[int],
+    ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        """Replay the sequential early-stop decisions over an already-computed,
+        original-order list of per-example results (a full pass, evaluated by
+        the worker pool with no per-shard early stop). GSM/Spider carry no
+        state between examples, so replaying the same cumulative counts over
+        the merged list reproduces the exact point (if any) at which the
+        sequential path would have stopped, and the exact reported reason.
+
+        Only the two GSM/Spider-applicable sequential gates are replayed here
+        (runtime-failure threshold, pathological-timeout guard) — the
+        SMILES-only `should_stop_collected` gate does not apply to pooled
+        datasets. If a future poolable dataset needs order-dependent state
+        this function cannot reproduce, do not approximate it: raise instead
+        (that dataset must stay off POOLABLE_DATASETS).
+        """
+        runtime_failures = 0
+        n_timeouts = 0
+        for idx, sample in enumerate(sample_outputs):
+            if sample.get("runtime_budget_exceeded"):
+                runtime_failures += 1
+            if (
+                early_stop_runtime_failures is not None
+                and runtime_failures >= early_stop_runtime_failures
+            ):
+                reason = (
+                    "threshold-impossible early stop: "
+                    f"{runtime_failures} example(s) exceeded the per-example runtime budget."
+                )
+                print(f"{_POOL_LOG} post-hoc early stop at example {idx + 1}: {reason}", flush=True)
+                return sample_outputs[: idx + 1], reason
+            if sample.get("timed_out"):
+                n_timeouts += 1
+            if n_timeouts >= _MAX_TIMEOUTS_PATHOLOGICAL:
+                reason = (
+                    f"eval stopped early after {n_timeouts} timed-out examples "
+                    f"(pathological-strategy guard); "
+                    f"N={idx + 1} of {len(sample_outputs)}"
+                )
+                print(f"{_POOL_LOG} post-hoc early stop at example {idx + 1}: {reason}", flush=True)
+                return sample_outputs[: idx + 1], reason
+        return sample_outputs, None
+
+    def _build_evaluation_result(
+        self,
+        sample_outputs: List[Dict[str, Any]],
+        early_stop_reason: Optional[str],
+        planned_num_examples: int,
+        target_min_accuracy: Optional[float],
+        early_stop_min_syntax_rate: Optional[float],
+        logic: Any,
+        start_time: float,
+    ) -> EvaluationResult:
+        """Aggregate a list of per-example sample dicts into an EvaluationResult.
+
+        Purely a reduction over `sample_outputs` (plus the early-stop reason
+        and the planned sample size) — mechanically identical to the
+        `build_result` closure this replaces, just parameterized so both the
+        sequential path and the pool path call the same aggregation code
+        (keep-B-only: one copy of this math).
+        """
+        total_time = time.time() - start_time
+        evaluated_count = len(sample_outputs)
+        num_correct = sum(1 for s in sample_outputs if s.get("is_correct"))
+        num_examples_syntax_pass = sum(1 for s in sample_outputs if s.get("is_syntax_valid"))
+        num_accuracy_examples = sum(1 for s in sample_outputs if s.get("accuracy_applicable"))
+        all_examples_contain_delimiters = all(
+            s.get("contains_delimiters") for s in sample_outputs
+        ) if sample_outputs else True
+        max_sample_time = max(
+            (float(sample.get("time_seconds", 0.0)) for sample in sample_outputs),
+            default=0.0,
+        )
+
+        def _accuracy_upper_bound() -> float:
+            remaining = max(0, planned_num_examples - evaluated_count)
+            return logic.accuracy_upper_bound(
+                num_correct,
+                remaining,
+                num_accuracy_examples,
+                planned_num_examples,
+            )
+
+        denominator_basis = choose_denominator_basis(
+            early_stop_reason, planned_num_examples, evaluated_count
+        )
+        accuracy_denominator = logic.final_accuracy_denominator(
+            denominator_basis,
+            num_accuracy_examples,
+        )
+        accuracy_definition = logic.accuracy_definition()
+        invalid_excluded = logic.invalid_outputs_excluded(
+            evaluated_count,
+            num_accuracy_examples,
+        )
+        aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)
+        if early_stop_reason is not None:
+            aux_metrics["early_stop"] = {
+                "reason": early_stop_reason,
+                "target_accuracy": target_min_accuracy,
+                "target_syntax_rate": early_stop_min_syntax_rate,
+                "max_possible_accuracy": _accuracy_upper_bound(),
+                "evaluated_examples": evaluated_count,
+                "total_examples": planned_num_examples,
+                "remaining_examples": max(0, planned_num_examples - evaluated_count),
+            }
+        task_guidance = sorted({
+            sample.get("task_guidance")
+            for sample in sample_outputs
+            if sample.get("task_guidance")
+        })
+        # Benchmark-specific accuracy override. Only SMILES defines this hook,
+        # repurposing `accuracy` to the unique-valid RATE (CARS axis); for all
+        # other datasets getattr returns None and the default formula stands.
+        final_accuracy = num_correct / max(1, accuracy_denominator)
+        _override = getattr(logic, "override_accuracy", None)
+        if callable(_override):
+            _ov = _override(aux_metrics, evaluated_count)
+            if _ov is not None:
+                final_accuracy = _ov
+        return EvaluationResult(
+            success=True,
+            accuracy=final_accuracy,
+            contains_delimiters=all_examples_contain_delimiters,
+            syntax_rate=num_examples_syntax_pass / max(1, denominator_basis),
+            num_examples=evaluated_count,
+            num_correct=num_correct,
+            accuracy_denominator=accuracy_denominator,
+            accuracy_definition=accuracy_definition,
+            invalid_outputs_excluded_from_accuracy=invalid_excluded,
+            total_time_seconds=total_time,
+            max_sample_time_seconds=max_sample_time,
+            early_stopped=early_stop_reason is not None,
+            early_stop_reason=early_stop_reason,
+            planned_num_examples=planned_num_examples,
+            error=early_stop_reason,
+            sample_outputs=sample_outputs,
+            task_guidance=task_guidance,
+            aux_metrics=aux_metrics,
+        )
+
     def evaluate_sample(
         self,
         compiled_module_path: Path,
         sample_size: Optional[int] = None,
+        sample_offset: int = 0,
         min_accuracy: Optional[float] = None,
         early_stop_min_accuracy: Optional[float] = None,
         early_stop_min_syntax_rate: Optional[float] = None,
         early_stop_runtime_failures: Optional[int] = None,
         min_examples_before_threshold_stop: Optional[int] = None,
+        deadline: Optional[float] = None,
     ) -> EvaluationResult:
         """
         Evaluate the compiled CSD on a sample of the dataset.
@@ -2339,6 +3045,23 @@ class Evaluator:
         Args:
             compiled_module_path: Path to the compiled GeneratedCSD.py module
             sample_size: Number of examples to evaluate (overrides init value)
+            sample_offset: Number of leading examples to skip before taking
+                sample_size examples. 0 (the default) is the normal slice A.
+                The greedy hill-climb search's slice-B confirmation eval
+                passes a nonzero offset (typically == sample_size) to draw
+                the NEXT sample_size examples instead of re-scoring slice A
+                (a no-op under deterministic greedy decoding). For GSM/Spider
+                this skips the first `offset` entries of the fixed
+                split-index list (see _load_gsm_split_indices /
+                _load_spider_split_indices), so slice B is drawn from the
+                same canonical train split, disjoint from slice A. Datasets
+                with no index manifest (e.g. SMILES) have no list to offset
+                into, so the confirmation slice is instead drawn by shifting
+                the sample seed by `offset` -- a weaker pairing than the
+                index-based slices (see planning/monotonic-search-plan.md
+                §9). Reset to the passed value (default 0) on every call so
+                a later normal call is never contaminated by an earlier
+                confirmation-slice call.
             min_accuracy: Backward-compatible target accuracy for early stop.
             early_stop_min_accuracy: Optional target accuracy for early stop.
             early_stop_min_syntax_rate: Optional target syntax rate for early stop.
@@ -2349,12 +3072,18 @@ class Evaluator:
                 early stop is unaffected (it is a different signal). Lets the
                 synthesis feedback loop see usable data even when the strategy
                 cannot possibly clear the acceptance threshold.
+            deadline: Optional absolute `time.time()` timestamp. Checked between
+                examples (sequential path only); if crossed, evaluation stops
+                early and returns whatever examples finished, with
+                `early_stop_reason` starting with ATTEMPT_DEADLINE_EARLY_STOP_REASON
+                so the caller can tell this apart from a normal early stop.
 
         Returns:
             EvaluationResult with metrics and sample outputs
         """
         if sample_size is not None:
             self.sample_size = sample_size
+        self.sample_offset = sample_offset
 
         # Always re-sample so each iteration gets a fresh random example
         self._dataset = None
@@ -2362,371 +3091,100 @@ class Evaluator:
         start_time = time.time()
         sample_outputs: List[Dict[str, Any]] = []
 
+        # Datasets with a fixed split-index manifest (GSM/Spider) apply
+        # sample_offset by skipping entries in the index list itself (see
+        # _load_gsm_split_indices / _load_spider_split_indices). Datasets
+        # with no index manifest have no list to offset into, so the
+        # confirmation slice for non-indexed datasets is drawn by shifting
+        # the sample seed instead -- restored after this call so it never
+        # leaks into a later normal (offset=0) evaluation.
+        has_split_manifest = (
+            (self.dataset_name == "gsm_symbolic" and self.gsm_split_file is not None)
+            or (self.dataset_name == "spider" and self.spider_split_file is not None)
+        )
+        original_sample_seed = self.sample_seed
+        if self.sample_offset and not has_split_manifest:
+            self.sample_seed = (self.sample_seed or 0) + self.sample_offset
+
         try:
-            self._ensure_smiles_rdkit_available()
-            dataset = self._load_dataset_sample()
-            env = self._setup_environment(compiled_module_path)
+            try:
+                self._ensure_smiles_rdkit_available()
+                dataset = self._load_dataset_sample()
+                planned_num_examples = len(dataset)
+                target_min_accuracy = (
+                    early_stop_min_accuracy
+                    if early_stop_min_accuracy is not None
+                    else min_accuracy
+                )
+                # Cheap (registry lookup only, no engine load) -- safe to call in the
+                # main process regardless of which branch below actually runs eval.
+                logic = self._benchmark_logic()
 
-            logic = self._benchmark_logic()
-            run_crane_csd = logic.get_generation_runner()
+                get_synthesis_eval_pool = (
+                    _resolve_eval_pool_loader()
+                    if self.dataset_name in POOLABLE_DATASETS
+                    else None
+                )
 
-            _MAX_TIMEOUTS = 10  # pathological-strategy guard: stop after this many timed-out examples
-            n_timeouts = 0
-            num_correct = 0
-            all_examples_contain_delimiters = True
-            num_examples_syntax_pass = 0
-            num_accuracy_examples = 0
-            planned_num_examples = len(dataset)
-            target_min_accuracy = (
-                early_stop_min_accuracy
-                if early_stop_min_accuracy is not None
-                else min_accuracy
-            )
-            early_stop_enabled = (
-                target_min_accuracy is not None
-                or early_stop_min_syntax_rate is not None
-                or early_stop_runtime_failures is not None
-            )
+                if get_synthesis_eval_pool is not None:
+                    # Do NOT call self._setup_environment() here: it loads a vLLM engine
+                    # into the CALLING process. For the pooled path, each worker
+                    # subprocess calls its own _setup_environment (and thus loads its own
+                    # engine) once, on its own pinned GPU. Loading an engine here too
+                    # would waste GPU memory in the main process and can starve/crash a
+                    # worker pinned to the same GPU -- this was observed directly: the
+                    # first identity-test run had the main process eagerly load an
+                    # engine on GPU 0, leaving too little free memory for the pool's
+                    # worker (also assigned GPU 0), which then failed immediately.
+                    pool = get_synthesis_eval_pool(self)
+                    sample_outputs = pool.evaluate_examples(self, compiled_module_path, dataset)
+                    for evaluated_index, (example, sample) in enumerate(
+                        zip(dataset, sample_outputs)
+                    ):
+                        sample.update(
+                            EvaluationResult._sample_identity_metadata(example, evaluated_index)
+                        )
+                    sample_outputs, early_stop_reason = self._posthoc_early_stop(
+                        sample_outputs, early_stop_runtime_failures
+                    )
+                else:
+                    env = self._setup_environment(compiled_module_path)
+                    sample_outputs, early_stop_reason = self._evaluate_examples_sequential_with_early_stop(
+                        dataset,
+                        env,
+                        logic,
+                        target_min_accuracy,
+                        early_stop_min_syntax_rate,
+                        early_stop_runtime_failures,
+                        deadline,
+                    )
 
-            def _accuracy_upper_bound() -> float:
-                remaining = max(0, planned_num_examples - len(sample_outputs))
-                return logic.accuracy_upper_bound(
-                    num_correct,
-                    remaining,
-                    num_accuracy_examples,
+                return self._build_evaluation_result(
+                    sample_outputs,
+                    early_stop_reason,
                     planned_num_examples,
+                    target_min_accuracy,
+                    early_stop_min_syntax_rate,
+                    logic,
+                    start_time,
                 )
 
-            def build_result(early_stop_reason: Optional[str] = None) -> EvaluationResult:
-                total_time = time.time() - start_time
-                evaluated_count = len(sample_outputs)
-                max_sample_time = max(
-                    (float(sample.get("time_seconds", 0.0)) for sample in sample_outputs),
-                    default=0.0,
-                )
-                denominator_basis = choose_denominator_basis(
-                    early_stop_reason, planned_num_examples, evaluated_count
-                )
-                accuracy_denominator = logic.final_accuracy_denominator(
-                    denominator_basis,
-                    num_accuracy_examples,
-                )
-                accuracy_definition = logic.accuracy_definition()
-                invalid_excluded = logic.invalid_outputs_excluded(
-                    evaluated_count,
-                    num_accuracy_examples,
-                )
-                aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)
-                if early_stop_reason is not None:
-                    aux_metrics["early_stop"] = {
-                        "reason": early_stop_reason,
-                        "target_accuracy": target_min_accuracy,
-                        "target_syntax_rate": early_stop_min_syntax_rate,
-                        "max_possible_accuracy": _accuracy_upper_bound(),
-                        "evaluated_examples": evaluated_count,
-                        "total_examples": planned_num_examples,
-                        "remaining_examples": max(0, planned_num_examples - evaluated_count),
-                    }
-                task_guidance = sorted({
-                    sample.get("task_guidance")
-                    for sample in sample_outputs
-                    if sample.get("task_guidance")
-                })
-                # Benchmark-specific accuracy override. Only SMILES defines this hook,
-                # repurposing `accuracy` to the unique-valid RATE (CARS axis); for all
-                # other datasets getattr returns None and the default formula stands.
-                final_accuracy = num_correct / max(1, accuracy_denominator)
-                _override = getattr(logic, "override_accuracy", None)
-                if callable(_override):
-                    _ov = _override(aux_metrics, evaluated_count)
-                    if _ov is not None:
-                        final_accuracy = _ov
+            except Exception as e:
                 return EvaluationResult(
-                    success=True,
-                    accuracy=final_accuracy,
-                    contains_delimiters=all_examples_contain_delimiters,
-                    syntax_rate=num_examples_syntax_pass / max(1, choose_denominator_basis(
-                        early_stop_reason, planned_num_examples, evaluated_count
-                    )),
-                    num_examples=evaluated_count,
-                    num_correct=num_correct,
-                    accuracy_denominator=accuracy_denominator,
-                    accuracy_definition=accuracy_definition,
-                    invalid_outputs_excluded_from_accuracy=invalid_excluded,
-                    total_time_seconds=total_time,
-                    max_sample_time_seconds=max_sample_time,
-                    early_stopped=early_stop_reason is not None,
-                    early_stop_reason=early_stop_reason,
-                    planned_num_examples=planned_num_examples,
-                    error=early_stop_reason,
+                    success=False,
+                    accuracy=0.0,
+                    contains_delimiters=False,
+                    syntax_rate=0.0,
+                    num_examples=0,
+                    num_correct=0,
+                    total_time_seconds=time.time() - start_time,
+                    error=str(e),
                     sample_outputs=sample_outputs,
-                    task_guidance=task_guidance,
-                    aux_metrics=aux_metrics,
+                    task_guidance=sorted({
+                        sample.get("task_guidance")
+                        for sample in sample_outputs
+                        if sample.get("task_guidance")
+                    }),
                 )
-
-            def early_stop_reason_if_any() -> Optional[str]:
-                # Benchmark-specific "we have what we need" stop. Fires even when
-                # no threshold-based gates are configured — e.g. SMILES stops the
-                # moment 100 unique-valid molecules are collected (paper protocol).
-                collected_stop = getattr(logic, "should_stop_collected", None)
-                if callable(collected_stop) and sample_outputs:
-                    reason = collected_stop(sample_outputs)
-                    if reason:
-                        return reason
-
-                if not early_stop_enabled or not sample_outputs:
-                    return None
-
-                evaluated_count = len(sample_outputs)
-                remaining = planned_num_examples - evaluated_count
-                runtime_failures = sum(
-                    1 for sample in sample_outputs if sample.get("runtime_budget_exceeded")
-                )
-                if (
-                    early_stop_runtime_failures is not None
-                    and runtime_failures >= early_stop_runtime_failures
-                ):
-                    return (
-                        "threshold-impossible early stop: "
-                        f"{runtime_failures} example(s) exceeded the per-example runtime budget."
-                    )
-
-                # Threshold-impossible early stops removed 2026-06-02: they cut
-                # eval to ~9 examples once syntax-rate failures front-loaded,
-                # leaving the synthesis author with noisy small-N signal. The
-                # runtime-failures gate above is kept (signals real budget
-                # exhaustion, not unreachable targets).
-                return None
-
-            _smiles_suffix: dict[str, str] = {}
-            for i, example in enumerate(dataset):
-                print(f"  [EVAL] Processing example {i+1}/{len(dataset)}...", flush=True)
-                example_start = time.time()
-                if self.dataset_name == "smiles" and os.environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
-                    _apply_smiles_rolling_suffix(example, _smiles_suffix)
-                prompt = self._format_prompt(example)
-                expected = self._get_expected_answer(example)
-                benchmark_aux: Optional[dict[str, Any]] = None
-
-                try:
-                    print(f"  [EVAL]   Running CSD strategy (max_steps={self.max_steps})...", flush=True)
-                    dynamic_parser = logic.build_dynamic_parser(self, env, example)
-                    with _PerExampleTimer(self.max_seconds_per_example):
-                        output_text, token_count, gen_time, constrained_segments, helper_trace = run_crane_csd(
-                            env=env,
-                            prompt_text=prompt,
-                            max_steps=self.max_steps,
-                            step_token_budget=self.step_token_budget,
-                            grammar_file=self._get_grammar_file(),
-                            dynamic_parser=dynamic_parser,
-                        )
-                    example_time = time.time() - example_start
-                    print(f"  [EVAL]   Generated {token_count} tokens in {example_time:.2f}s", flush=True)
-
-                    from synthesis.evaluate.completion_text import completion_for_scoring
-
-                    completion = completion_for_scoring(prompt, output_text)
-                    scored_output = (
-                        self._truncate_gsm_output(completion)
-                        if self.dataset_name == "gsm_symbolic"
-                        else completion
-                    )
-
-                    # Scoring can spin too (e.g. a Lark Earley parse of a
-                    # degenerate span), not just generation — run it under the
-                    # same per-example timer so a wedged example times out and
-                    # is recorded as a failure instead of hanging the run
-                    # (2+ hour wedge observed 2026-06-10 on GSM-1.5B).
-                    with _PerExampleTimer(self.max_seconds_per_example):
-                        actual, answer_source, benchmark_aux = self._extract_actual_for_example(scored_output, example)
-                        is_correct = self._is_correct_for_example(
-                            actual,
-                            expected,
-                            example,
-                            benchmark_aux,
-                            scored_output,
-                        )
-
-                        visible_delimiters = self._contains_delimiters(scored_output)
-                        used_hidden_chunk = bool(constrained_segments) or any(
-                            event.get("helper") in EvaluationResult._CONSTRAINED_HELPERS
-                            for event in (helper_trace or [])
-                        )
-                        contains_delimiters = used_hidden_chunk if self._uses_hidden_chunks() else visible_delimiters
-                        all_examples_contain_delimiters = (
-                            all_examples_contain_delimiters and contains_delimiters
-                        )
-
-                        all_valid_syntax, segments = self._check_syntax_validity(scored_output, example=example)
-                        # Per-example syntax pass:
-                        # - GSM: visible <<...>> chunks must exist and parse.
-                        # - SMILES: the full output is the generated molecule string.
-                        # - Spider: chunks are internal/hidden; visible delimiter tokens are not
-                        #   part of the answer contract, so count parser-governed chunk usage.
-                        example_syntax_pass = self._example_syntax_pass(
-                            all_valid_syntax,
-                            segments,
-                            used_hidden_chunk,
-                            benchmark_aux,
-                        )
-                    if self.dataset_name == "smiles" and os.environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
-                        _update_smiles_rolling_suffix(
-                            example,
-                            _smiles_suffix,
-                            actual,
-                            bool(benchmark_aux and benchmark_aux.get("syntax_valid")),
-                        )
-                    accuracy_applicable = self._accuracy_applicable_for_example(benchmark_aux)
-                    if accuracy_applicable:
-                        num_accuracy_examples += 1
-                    if is_correct:
-                        num_correct += 1
-                    num_examples_syntax_pass += int(example_syntax_pass)
-                    example_syntax_rate = 1.0 if example_syntax_pass else 0.0
-                    if self._uses_hidden_chunks() and self.dataset_name == "smiles":
-                        visible_span_lengths = [len((benchmark_aux or {}).get("smiles", "").split())] if actual else []
-                        valid_visible_span_lengths = visible_span_lengths if example_syntax_pass else []
-                        num_valid_visible_spans = 1 if example_syntax_pass and actual else 0
-                        segments = [(actual or "", example_syntax_pass)] if actual else []
-                    else:
-                        visible_span_lengths = [
-                            len(segment.strip().split()) for segment, _ in segments
-                        ]
-                        valid_visible_span_lengths = [
-                            len(segment.strip().split())
-                            for segment, is_valid in segments
-                            if is_valid
-                        ]
-                        num_valid_visible_spans = sum(1 for _, is_valid in segments if is_valid)
-
-                    if hasattr(example, "conclusion"):
-                        q_full = example.premises + " | " + example.conclusion
-                    else:
-                        q_full = example.get("question", str(example.get("premises", "")))
-                    q_str = q_full[:200]
-                    sample = {
-                        "question": q_str,
-                        "question_full": q_full,
-                        "expected": expected,
-                        "actual": actual or completion[:100],
-                        "full_output": completion,
-                        "scored_output": scored_output,
-                        "answer_source": answer_source,
-                        "has_extracted_answer": actual is not None or answer_source == "text_fallback",
-                        "is_correct": is_correct,
-                        "accuracy_applicable": accuracy_applicable,
-                        "contains_delimiters": contains_delimiters,
-                        "visible_delimiters": visible_delimiters,
-                        "used_constrained_chunk": used_hidden_chunk,
-                        "uses_hidden_chunks": self._uses_hidden_chunks(),
-                        "is_syntax_valid": example_syntax_pass,
-                        "syntax_rate": example_syntax_rate,
-                        "num_visible_spans": len(segments),
-                        "num_valid_visible_spans": num_valid_visible_spans,
-                        "visible_span_token_lengths": visible_span_lengths,
-                        "valid_visible_span_token_lengths": valid_visible_span_lengths,
-                        "token_count": token_count,
-                        "hit_max_steps": token_count >= self.max_steps,
-                        "time_seconds": gen_time,
-                        "runtime_budget_exceeded": (
-                            self.max_seconds_per_example is not None
-                            and gen_time > self.max_seconds_per_example
-                        ),
-                        "helper_trace": helper_trace,
-                        "task_guidance": getattr(env.get("lm"), "task_guidance", None),
-                        "smiles_eval": benchmark_aux if self.dataset_name == "smiles" else None,
-                    }
-                    if self.dataset_name == "smiles":
-                        sample["smiles_eval"] = benchmark_aux
-                    sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
-                    early_reason = early_stop_reason_if_any()
-                    if early_reason:
-                        print(f"  [EVAL] Early stopping synthesis eval: {early_reason}", flush=True)
-                        return build_result(early_reason)
-
-                except Exception as e:
-                    if hasattr(example, "conclusion"):
-                        q_full = example.premises + " | " + example.conclusion
-                    else:
-                        q_full = example.get("question", str(example.get("premises", "")))
-                    q_str = q_full[:200]
-                    elapsed = time.time() - example_start
-                    timed_out = isinstance(e, PerExampleTimeout)
-                    if timed_out:
-                        n_timeouts += 1
-                        print(
-                            f"  [EVAL]   Timed out after {elapsed:.2f}s "
-                            f"({n_timeouts} of {_MAX_TIMEOUTS} timeout budget used)",
-                            flush=True,
-                        )
-                    sample = {
-                        "question": q_str,
-                        "question_full": q_full,
-                        "expected": expected,
-                        "actual": None,
-                        "full_output": "",
-                        "scored_output": "",
-                        "answer_source": "none",
-                        "has_extracted_answer": False,
-                        "is_correct": False,
-                        "accuracy_applicable": self._accuracy_applicable_for_example(None),
-                        "contains_delimiters": False,
-                        "visible_delimiters": False,
-                        "used_constrained_chunk": False,
-                        "uses_hidden_chunks": self._uses_hidden_chunks(),
-                        "is_syntax_valid": False,
-                        "syntax_rate": 0.0,
-                        "num_visible_spans": 0,
-                        "num_valid_visible_spans": 0,
-                        "visible_span_token_lengths": [],
-                        "valid_visible_span_token_lengths": [],
-                        "token_count": 0,
-                        "hit_max_steps": False,
-                        "time_seconds": elapsed,
-                        "runtime_budget_exceeded": timed_out or (
-                            self.max_seconds_per_example is not None
-                            and elapsed > self.max_seconds_per_example
-                        ),
-                        "error": str(e),
-                        "helper_trace": [],
-                        "task_guidance": getattr(env.get("lm"), "task_guidance", None),
-                    }
-                    sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
-                    all_examples_contain_delimiters = False
-                    # Check benchmark-specific / runtime-failure early stops first.
-                    early_reason = early_stop_reason_if_any()
-                    if early_reason:
-                        print(f"  [EVAL] Early stopping synthesis eval: {early_reason}", flush=True)
-                        return build_result(early_reason)
-                    # Pathological-strategy guard: stop after _MAX_TIMEOUTS timed-out
-                    # examples so a runaway strategy doesn't burn the GPU indefinitely.
-                    # Timed-out examples already count as failures in the scores above.
-                    if timed_out and n_timeouts >= _MAX_TIMEOUTS:
-                        reason = (
-                            f"eval stopped early after {n_timeouts} timed-out examples "
-                            f"(pathological-strategy guard); "
-                            f"N={len(sample_outputs)} of {planned_num_examples}"
-                        )
-                        print(f"  [EVAL] Early stopping eval: {reason}", flush=True)
-                        return build_result(reason)
-                    # Otherwise: timeout is scored as failure above; continue to next example.
-
-            return build_result()
-
-        except Exception as e:
-            return EvaluationResult(
-                success=False,
-                accuracy=0.0,
-                contains_delimiters=False,
-                syntax_rate=0.0,
-                num_examples=0,
-                num_correct=0,
-                total_time_seconds=time.time() - start_time,
-                error=str(e),
-                sample_outputs=sample_outputs,
-                task_guidance=sorted({
-                    sample.get("task_guidance")
-                    for sample in sample_outputs
-                    if sample.get("task_guidance")
-                }),
-            )
+        finally:
+            self.sample_seed = original_sample_seed

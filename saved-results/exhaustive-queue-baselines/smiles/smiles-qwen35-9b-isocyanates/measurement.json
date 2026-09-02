@@ -1,0 +1,12 @@
+{
+  "dataset": "smiles",
+  "eval_model": "Qwen/Qwen3.5-9B",
+  "split_name": "train",
+  "baseline_strategy": "cars",
+  "num_correct": 18,
+  "num_examples": 50,
+  "measured_at": "2026-07-19",
+  "measurement_command": "python rescore_smiles_unique_valid.py outputs/controlled_comparison/smiles_qwen35/9B/isocyanates isocyanates",
+  "raw_source_artifact": "/home/aadivyar/csd-generation/outputs/controlled_comparison/smiles_qwen35/9B/isocyanates/cars.json",
+  "raw_source_sha256": "dcb976c55b93aa2600cab7ccc6c0e58d7b249fe8294411e7bb21e995c80f64b0"
+}

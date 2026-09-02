@@ -1,10 +1,9 @@
 include "../library/VerifiedAgentSynthesis.dfy"
 
-// Faithful CRANE baseline: delegates to the verified library CraneGeneration
-// method (confidence-gated adaptive switching, substring-based << / >> span
-// detection via Contains). This is the canonical CRANE baseline defined in
-// CLAUDE.md, distinct from crane.dfy (which uses exact-equality `next == "<<"`
-// span entry that misses the leading-space token on small tokenizers).
+// Faithful CRANE baseline: IterGen-unit adaptive GSM (unconstrained until <<,
+// then forward(VARIABLE) / view / valid_vars membership / backward), matching
+// CRANE generate_gsm_symbolic_with_itergen. Distinct from crane.dfy (exact
+// token equality for << entry).
 module ReferenceCraneFaithfulCSD {
   import opened VerifiedDecoderAgent
 
@@ -40,7 +39,7 @@ module ReferenceCraneFaithfulCSD {
     ensures cost <= maxSteps
   {
     var helpers := new CSDHelpers();
-    generated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);
+    generated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, validTokenGroups, eosToken);
     insideConstrainedOut := false;
     currentConstrainedOut := [];
     cost := helpers.cost;

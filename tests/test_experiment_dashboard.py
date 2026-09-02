@@ -109,76 +109,15 @@ def test_process_title_exposes_matrix_ablation_metadata():
     assert dashboard.process_title(process) == "ablation A,B / gsm,spider / model=default / iter=40 / margin=0.03"
 
 
-def test_parse_etime_seconds_handles_mm_ss_hh_and_days():
-    dashboard = load_dashboard_module()
-
-    assert dashboard.parse_etime_seconds("54:49") == 54 * 60 + 49
-    assert dashboard.parse_etime_seconds("01:02:03") == 3600 + 2 * 60 + 3
-    assert dashboard.parse_etime_seconds("05-21:21:03") == 5 * 86400 + 21 * 3600 + 21 * 60 + 3
-    assert dashboard.parse_etime_seconds("  12:34  ") == 12 * 60 + 34
-
-
-def test_parse_process_table_reads_cross_platform_ps(monkeypatch):
-    dashboard = load_dashboard_module()
-
-    # macOS `ps -eo pid,ppid,etime,command` output: formatted ELAPSED, not integer seconds.
-    sample = (
-        "  PID  PPID     ELAPSED COMMAND\n"
-        " 2622     1       54:49 bash .context/run_cars_spider_bare_prompt_queue.sh\n"
-        " 2700  2622    01:02:03 python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy cars\n"
-    )
-    monkeypatch.setattr(dashboard, "run_command", lambda args: sample)
-
-    rows = dashboard.parse_process_table()
-
-    assert rows[0]["pid"] == "2622"
-    assert rows[0]["ppid"] == "1"
-    assert rows[0]["elapsed_seconds"] == 54 * 60 + 49
-    assert rows[0]["cmd"].startswith("bash .context/run_cars_spider")
-    assert rows[1]["elapsed_seconds"] == 3600 + 2 * 60 + 3
-
-
 def test_dashboard_html_uses_per_gpu_queue_and_failure_kind_coloring():
     dashboard = load_dashboard_module()
 
     assert "<section><h2>Queue</h2>" not in dashboard.HTML
     assert "Per-GPU Queue" in dashboard.HTML
-    assert "Research Collection State" in dashboard.HTML
-    assert "renderResearchTracker(data)" in dashboard.HTML
     assert "Runtime Alerts" in dashboard.HTML
     assert "renderRuntimeAlerts(data)" in dashboard.HTML
     assert "r.kind === 'failure' ? 'bad'" in dashboard.HTML
     assert "r.reported_at" in dashboard.HTML
-
-
-def test_research_tracker_status_loads_smiles_bare_output_note(tmp_path):
-    dashboard = load_dashboard_module()
-    dashboard.ROOT_DIR = tmp_path
-
-    status_path = tmp_path / "saved-results" / "research_tracker_status.json"
-    status_path.parent.mkdir(parents=True)
-    status_path.write_text(
-        json.dumps(
-            {
-                "updated_at": "2026-07-08T12:00:00Z",
-                "items": [
-                    {
-                        "title": "SMILES bare-output evaluator cleanup",
-                        "state": "queued",
-                        "dataset": "smiles",
-                        "summary": "Prompts now ask for bare SMILES, with CARS reruns queued.",
-                        "next": "Run .context/run_smiles_bare_prompt_queue.sh on focal when ready.",
-                    }
-                ],
-            }
-        )
-    )
-
-    tracker = dashboard.research_tracker_status()
-
-    assert tracker["updated_at"] == "2026-07-08T12:00:00Z"
-    assert tracker["items"][0]["dataset"] == "smiles"
-    assert "bare SMILES" in tracker["items"][0]["summary"]
 
 
 def test_runtime_alerts_extract_api_credit_and_traceback_failures():

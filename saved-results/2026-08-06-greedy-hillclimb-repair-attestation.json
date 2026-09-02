@@ -1,0 +1,22 @@
+{
+  "base_commit": "6766ebd397f4bcdbd4cc3332e1051a9efd6258a6",
+  "verifier_exit": 0,
+  "incident_fingerprint": "usage-limit-resume-2",
+  "verified_at": "2026-08-09T21:47:00Z",
+  "files": {
+    "scripts/runtime/build_full_baseline_cold_manifest.py": "53324b3f410f9ac3674da7f851f1ecd583e0b9def94694a91465ce548138d9c9",
+    "scripts/runtime/claude_recovery/launch_queue_cell.py": "f392525ee415ab6f92a5d2bad04dc20009075cbe862381331a0ab4c56ffd1e4c",
+    "scripts/runtime/run_cold_synthesis_queue.py": "56c61b6a5d904f5ea75a65ab74b13e27c9350330292df1b8aad57badd15dabe2",
+    "scripts/runtime/run_gsm_warm_extension.sh": "c6a257c8a75ac19eef7d35c73e4320ad9f35070ad225a558745ee376f8a01666",
+    "synthesis/evaluate/evaluator.py": "38f4a09f77201c35f7a57c116eb9b44745d05d5b10edefeedeb0edf6b58a61f1",
+    "synthesis/evaluate/feedback_loop.py": "48dc5e6cde23f477dc812408c21846eb7dfb3acd86f09d438927e741ce39a537",
+    "synthesis/run_synthesis.py": "f58465523043ade9f879bfef6efa51c8e8c381ce231c4a18fc4bdb7e9d3e3efb",
+    "scripts/runtime/campaign_health_babysitter.py": "f25401a85a68ea6b8201b604c9496d076207cbc5e89311e92b28142928ac45ef",
+    "scripts/runtime/overnight_corrected_queue_babysitter.py": "b6c26446309c23b5171f0428811cdeef6b1b12eff3ee126e18308505f1f0427d",
+    "scripts/runtime/recover_missing_csd_heldout.py": "50f217d72c696280ff0e82502e6ae0021f0cddfbad8a8ddb0dc358d1fa71bc1c"
+  },
+  "spider_bare_task_note": {
+    "change": "SPIDER_TASK drop <<>> to align with token-0 bare SQL eval",
+    "new_task": "Generate a single valid SQL query using only the provided schema context. Only output the SQL query."
+  }
+}

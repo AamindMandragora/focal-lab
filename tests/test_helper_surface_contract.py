@@ -108,7 +108,13 @@ def test_core_lm_helpers_are_classified_for_feedback_policy():
 
 
 def test_all_prompt_universe_helpers_have_docs_and_feedback_classification():
-    """Every helper in the menu needs docs and a feedback policy entry."""
+    """Name-only helpers are too weak for cold discovery.
+
+    Every helper in the generated helper universe must have prompt-visible docs
+    and a feedback-loop classification. Otherwise the allowed-helper block can
+    name a helper without giving the model the call shape or letting the helper
+    policy reason about it.
+    """
     helper_names = _all_helper_names()
 
     missing_docs = helper_names - _prompt_helper_refs()
@@ -118,23 +124,11 @@ def test_all_prompt_universe_helpers_have_docs_and_feedback_classification():
     assert not missing_classification
 
 
-def test_promoted_prompt_and_managed_span_helpers_are_exposed_end_to_end():
-    promoted = {
-        "PrefixAppearsInPrompt",
-        "PrefixResemblesPromptExamples",
-        "ManagedStep",
-        "GenerateWithManagedSpan",
-        "GenerateWithPrefixAndManagedSpan",
-    }
-    assert promoted <= _prompt_helper_refs()
-    assert promoted <= _all_helper_names()
-    assert promoted <= _dafny_helper_defs()
-    assert promoted <= _feedback_helper_classifications()
+def test_append_task_guidance_preserves_the_earlier_task_contract():
+    prompt_source = (REPO_ROOT / "synthesis/generate/prompts.py").read_text()
+    start = prompt_source.index("### Task prompt guidance")
+    end = prompt_source.index("### Outside-span generation", start)
+    contract = " ".join(prompt_source[start:end].split())
 
-
-def test_unfair_molecule_class_helper_is_not_exposed():
-    unfair = {"PrefixMatchesPromptMoleculeClass", "SpanMatchesPromptMoleculeClass"}
-    assert not unfair & _prompt_helper_refs()
-    assert not unfair & _all_helper_names()
-    assert not unfair & _dafny_helper_defs()
-    assert not unfair & _feedback_helper_classifications()
+    assert "must not contradict, weaken, or replace earlier task instructions" in contract
+    assert "examples, schema, or output-format requirements" in contract

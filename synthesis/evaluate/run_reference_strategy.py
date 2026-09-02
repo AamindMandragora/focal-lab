@@ -11,7 +11,6 @@ Available strategies:
   crane          Adaptive constrained-unconstrained switching (CRANE-style)
   itergen        Chunked constrained symbol generation (IterGen-style)
   cars           Adaptive group-boosted constrained steps (CARS-style)
-  rs             Memoryless full-attempt rejection sampling (RS-style)
 
 Usage:
   python -m synthesis.evaluate.run_reference_strategy \\
@@ -40,7 +39,6 @@ STRATEGY_DFY: dict[str, str] = {
     "crane_faithful": "crane_faithful.dfy",
     "itergen": "itergen.dfy",
     "cars": "cars.dfy",
-    "rs": "rejection_sampling.dfy",
 }
 
 REFERENCE_DIR = Path(__file__).resolve().parents[1] / "verify" / "reference"
@@ -66,7 +64,7 @@ def _rewrite_to_generated_csd(source_text: str) -> str:
 
 def _compile_reference(strategy: str, output_dir: Path) -> Path:
     """Compile a reference .dfy to Python under output_dir, return GeneratedCSD.py path."""
-    from synthesis.verify.compiler import DafnyCompiler
+    from synthesis.verify.tooling import build_default_compiler
 
     dfy_name = STRATEGY_DFY[strategy]
     source_path = REFERENCE_DIR / dfy_name
@@ -76,7 +74,7 @@ def _compile_reference(strategy: str, output_dir: Path) -> Path:
     source_text = source_path.read_text()
     source_text = _rewrite_to_generated_csd(source_text)
 
-    compiler = DafnyCompiler(output_dir=output_dir)
+    compiler = build_default_compiler(output_dir=output_dir)
     result = compiler.compile(source_text, output_name=f"ref_{strategy}")
     if not result.success:
         errors = "; ".join(e.message for e in result.errors[:5])
@@ -86,6 +84,13 @@ def _compile_reference(strategy: str, output_dir: Path) -> Path:
         raise RuntimeError(f"Compilation produced no main module for {dfy_name}")
 
     return result.main_module_path
+
+
+def _resolve_device(device: str, backend: str) -> str:
+    """Turn the "auto" default into a device the vLLM backend accepts."""
+    if device == "auto" and backend == "vllm":
+        return "cuda"
+    return device
 
 
 def _evaluate(
@@ -121,6 +126,33 @@ def _evaluate(
         result = evaluator.evaluate_sample(compiled_module, sample_size=sample_size)
     finally:
         evaluator.unload_runtime()
+
+    return _payload_from_result(result)
+
+
+def _payload_from_result(result: Any) -> dict[str, Any]:
+    """Turn an evaluation result into the payload written to --output-json.
+
+    Stops instead of reporting when the evaluation did not actually measure
+    anything. Both checks matter and they are not the same check: `success` is
+    False when the evaluator raised (a missing module, an ungradable row), and
+    `num_examples == 0` catches an evaluator that reported success while
+    running nothing, which is the shape Spider's fake 0% took.
+
+    Without this, a broken harness came out of here as `accuracy: 0.0` in a
+    saved results file and a printed "accuracy=0.000", with the underlying
+    error dropped on the floor -- indistinguishable from a model that answered
+    every question wrong. Same check as scripts/reevaluate_compiled_csd.py:94-97.
+    A genuine 0% over real examples is a measurement and still reports normally.
+    """
+    if not getattr(result, "success", False):
+        raise SystemExit(f"Evaluation failed: {getattr(result, 'error', None)}")
+    if not result.num_examples:
+        raise SystemExit(
+            "Evaluation failed: zero examples were evaluated, so the accuracy "
+            "below would not be a measurement. Underlying error: "
+            f"{getattr(result, 'error', None)}"
+        )
 
     answers: list[dict[str, Any]] = []
     for sample in result.sample_outputs or []:
@@ -209,7 +241,7 @@ def main() -> None:
         dataset=args.dataset,
         eval_model=args.eval_model,
         eval_backend=args.eval_backend,
-        device=args.device,
+        device=_resolve_device(args.device, args.eval_backend),
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,

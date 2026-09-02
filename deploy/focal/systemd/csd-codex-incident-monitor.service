@@ -1,0 +1,20 @@
+[Unit]
+Description=Dynamic CSD Claude catastrophic incident monitor
+After=network-online.target csd-cold-synthesis-queue.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/aadivyar/csd-generation
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/home/aadivyar/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/apps/conda/aadivyar/envs/csd/bin/python /home/aadivyar/csd-generation/scripts/runtime/incident_repair/monitor.py --repo /home/aadivyar/csd-generation --manifest /home/aadivyar/csd-generation/saved-results/2026-07-19-exhaustive-cold-queue-manifest.json --state-dir /home/aadivyar/csd-generation/.context/codex_incident_monitor_coldq_0719 --claude-executable /home/aadivyar/.local/bin/claude --claude-model claude-sonnet-4-6 --claude-config-dir /home/aadivyar/.claude-csd-synthesis --claude-expected-account aadivya@fermi.ai --python /apps/conda/aadivyar/envs/csd/bin/python --result-schema /home/aadivyar/csd-generation/scripts/runtime/incident_repair/result.schema.json --repair-attestation /home/aadivyar/csd-generation/.context/codex_incident_monitor_coldq_0719/approved-repair.json --extra-log-glob /home/aadivyar/csd-generation/outputs/generated/coldq_*/run.log --extra-log-glob /home/aadivyar/csd-generation/logs/coldq_controller.log --own-log /home/aadivyar/csd-generation/logs/paid_synth_codex_incident_monitor.log --recovery-service csd-cold-synthesis-queue.service --poll-seconds 30
+Restart=always
+RestartSec=60
+KillMode=control-group
+TimeoutStopSec=30
+StandardOutput=append:/home/aadivyar/csd-generation/logs/paid_synth_codex_incident_monitor.log
+StandardError=inherit
+
+[Install]
+WantedBy=default.target

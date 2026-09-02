@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-05T10:27:00Z",
+  "repair_commit": "e7688fd271f4fd3ba359a005e36e116d3d136a08",
+  "campaign_output_name": "exact-zero-repair-20260805-cache-v8",
+  "source_root": "outputs/baselines/exact-zero-repair-20260805-approved-v7",
+  "synthesis_block": ".context/exact-zero-repair-synthesis.blocked",
+  "source_count": 4,
+  "labels": [
+    {
+      "label": "spider-qwen35-2b-itergen",
+      "source_path": "outputs/baselines/exact-zero-repair-20260805-approved-v7/spider/qwen35-2b/itergen.json",
+      "source_sha256": "6c1aa6c1b9cdbed7ccf9089e454632aee33f0b48b1598ca3dd26fc40a8b22250",
+      "source_status": "quarantined_system_failure",
+      "reason": "Worker loaded IterGen before the empty-cache repair and discarded the complete prompt.",
+      "replacement_path": "outputs/baselines/exact-zero-repair-20260805-cache-v8/spider/qwen35-2b/itergen.json"
+    },
+    {
+      "label": "spider-qwen35-4b-itergen",
+      "source_path": "outputs/baselines/exact-zero-repair-20260805-approved-v7/spider/qwen35-4b/itergen.json",
+      "source_sha256": "03dc796a3792457760f22e96d29cbce94d5eb0b14629b06d9318f88c9e77ce1b",
+      "source_status": "quarantined_system_failure",
+      "reason": "Worker loaded IterGen before the empty-cache repair and discarded the complete prompt.",
+      "replacement_path": "outputs/baselines/exact-zero-repair-20260805-cache-v8/spider/qwen35-4b/itergen.json"
+    },
+    {
+      "label": "smiles-acrylates-qwen35-2b-itergen",
+      "source_path": "outputs/baselines/exact-zero-repair-20260805-approved-v7/smiles-acrylates/qwen35-2b/itergen.json",
+      "source_sha256": "88224dade3ee84355860a5593a658237b305ce5774fe23aa2fcb2eeb21c1b111",
+      "source_status": "quarantined_system_failure",
+      "reason": "Worker loaded IterGen before the empty-cache repair and discarded the complete prompt.",
+      "replacement_path": "outputs/baselines/exact-zero-repair-20260805-cache-v8/smiles-acrylates/qwen35-2b/itergen.json"
+    },
+    {
+      "label": "smiles-acrylates-qwen35-4b-itergen",
+      "source_path": "outputs/baselines/exact-zero-repair-20260805-approved-v7/smiles-acrylates/qwen35-4b/itergen.json",
+      "source_sha256": "80296942286a684614ad0a6851b65efe2bc17898f23673afb8dfd700e7096d0e",
+      "source_status": "quarantined_system_failure",
+      "reason": "Worker loaded IterGen before the empty-cache repair and discarded the complete prompt.",
+      "replacement_path": "outputs/baselines/exact-zero-repair-20260805-cache-v8/smiles-acrylates/qwen35-4b/itergen.json"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "ts": "2026-08-10T03:55:23Z",
+  "health_pid": 286736,
+  "controller_alive": true,
+  "controller_pid": 286747,
+  "missing_csd_babysitter_alive": true,
+  "missing_csd_babysitter_pid": 286744,
+  "pending_cells": [
+    "gsm-qwen25-1p5b",
+    "gsm-qwen25-7b",
+    "gsm-qwen35-2b",
+    "gsm-qwen35-4b",
+    "spider-qwen25-1p5b",
+    "spider-qwen25-7b",
+    "spider-qwen35-2b",
+    "spider-qwen35-4b"
+  ],
+  "pending_n": 8,
+  "missing_csd": [],
+  "synthesis": [
+    {
+      "pid": 286806,
+      "ppid": 286747,
+      "etime": "06:04:30",
+      "cmd": "/apps/conda/aadivyar/envs/csd/bin/python -m synthesis.run_synthesis --task Generate a single valid SQL query using only the provided schema context. Only output the SQL query. --da"
+    }
+  ],
+  "our_gpu1_compute": [],
+  "alerts": [],
+  "actions": []
+}

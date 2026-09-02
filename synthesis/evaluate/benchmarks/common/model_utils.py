@@ -31,6 +31,24 @@ import torch
 # OPT-IN diagnostic only; with the env var unset this block is a no-op and behaviour
 # (masks, scoring, decode) is byte-identical to before.
 _GROUNDING_LOG = logging.getLogger("csd.grounding")
+_SPIDER_CONTRACT_LOG = logging.getLogger("csd.spider_output_contract")
+
+
+def _coerce_token_id_set(value: Any) -> frozenset[int]:
+    if value is None:
+        return frozenset()
+    if isinstance(value, int):
+        return frozenset({int(value)})
+    return frozenset(int(item) for item in value)
+
+
+def _default_generation_stop_token_ids(tokenizer: Any) -> frozenset[int]:
+    configured = getattr(tokenizer, "generation_stop_token_ids", None)
+    if configured is None:
+        configured = getattr(tokenizer, "eos_token_id", None)
+    return _coerce_token_id_set(configured)
+
+
 if os.environ.get("CSD_GROUNDING_LOG"):
     _grounding_handler = logging.StreamHandler()
     _grounding_handler.setFormatter(logging.Formatter("%(message)s"))
@@ -163,92 +181,6 @@ def _first_ungrounded_token_idx(token_strs: list, support: set) -> tuple:
     # Offset past the end of every token (should not happen given the text was
     # built from these tokens) — clamp to the last token to keep idx in range.
     return (True, max(len(token_strs) - 1, 0))
-
-
-_PROMPT_MOLECULE_LABEL_RE = re.compile(r"^\s*Molecule:\s*(.*?)\s*$", re.IGNORECASE)
-
-
-def _normalize_prompt_visible_span(text: str) -> str:
-    """Normalize one prompt-visible candidate span for exact duplicate checks."""
-    text = (text or "").strip()
-    if not text:
-        return ""
-    text = re.sub(r"^\s*Molecule:\s*", "", text, flags=re.IGNORECASE).strip()
-    if text.startswith("<<") and text.endswith(">>"):
-        text = text[2:-2].strip()
-    text = text.strip("`'\"")
-    if not text or text.lower() == "molecule:":
-        return ""
-    if "\n" in text or re.search(r"\s", text):
-        return ""
-    return text
-
-
-def _prompt_visible_span_set(prompt_text: str) -> set[str]:
-    """Return exact candidate spans visible in ordinary or rolling prompts."""
-    spans: set[str] = set()
-    lines = (prompt_text or "").splitlines()
-    for index, line in enumerate(lines):
-        match = _PROMPT_MOLECULE_LABEL_RE.match(line)
-        if not match:
-            continue
-        inline = _normalize_prompt_visible_span(match.group(1))
-        if inline:
-            spans.add(inline)
-            continue
-        if index > 0:
-            previous = _normalize_prompt_visible_span(lines[index - 1])
-            if previous:
-                spans.add(previous)
-    return spans
-
-
-def _candidate_smiles(text: str) -> str:
-    """Extract a bare SMILES candidate without calling the scorer."""
-    candidate = (text or "").strip()
-    if not candidate:
-        return ""
-    candidate = re.sub(r"^\s*Molecule:\s*", "", candidate, flags=re.IGNORECASE).strip()
-    if candidate.startswith("<<") and candidate.endswith(">>"):
-        candidate = candidate[2:-2].strip()
-    candidate = candidate.strip("`'\"").strip()
-    parts = candidate.split()
-    return parts[0] if parts else ""
-
-
-def _morgan_fp(smiles: str):
-    """Return a generic RDKit Morgan fingerprint, or None."""
-    if not smiles:
-        return None
-    try:
-        from rdkit import Chem
-        from rdkit.Chem import AllChem
-    except Exception:
-        return None
-    molecule = Chem.MolFromSmiles(smiles)
-    if molecule is None:
-        return None
-    return AllChem.GetMorganFingerprintAsBitVect(molecule, 2, nBits=2048)
-
-
-def _smiles_resemblance(candidate_text: str, exemplars) -> tuple[str, float]:
-    """Max prompt-example Tanimoto similarity without scorer or gold access."""
-    candidate = _candidate_smiles(candidate_text)
-    if not candidate:
-        return "", 0.0
-    candidate_fp = _morgan_fp(candidate)
-    if candidate_fp is None:
-        return candidate, 0.0
-    try:
-        from rdkit import DataStructs
-    except Exception:
-        return candidate, 0.0
-    best = 0.0
-    for exemplar in exemplars:
-        exemplar_fp = _morgan_fp(exemplar)
-        if exemplar_fp is not None:
-            best = max(best, float(DataStructs.TanimotoSimilarity(candidate_fp, exemplar_fp)))
-    return candidate, best
 
 
 # Per-component timing. Keyed by a short label. Values are (total_seconds, call_count).
@@ -422,6 +354,8 @@ def _get_cached_vllm_engine(
     _configure_vllm_multiprocessing()
     from vllm import LLM
 
+    _patch_vllm_mpclient_shutdown_order()
+
     cache_key = (
         model_name,
         _get_visible_devices_key(),
@@ -561,12 +495,130 @@ def narrow_cuda_visible_devices_to_index(device_index: int) -> str:
     return chosen
 
 
+def _patch_vllm_mpclient_shutdown_order() -> None:
+    """Set engine_dead before engine_manager.shutdown in vLLM MPClient.shutdown.
+
+    Stock MPClient.shutdown stops the engine manager first, then calls resources()
+    which sets engine_dead. The monitor thread can observe the process exit in
+    between and log ERROR 'Engine core proc ... died unexpectedly'.
+    """
+    try:
+        from vllm.v1.engine.core_client import MPClient
+    except Exception:
+        return
+    current = getattr(MPClient, "shutdown", None)
+    if current is None or getattr(current, "_csd_engine_dead_patched", False):
+        return
+
+    def _shutdown(self, timeout=None):  # type: ignore[no-untyped-def]
+        resources = getattr(self, "resources", None)
+        if resources is not None and hasattr(resources, "engine_dead"):
+            try:
+                resources.engine_dead = True
+            except Exception:
+                pass
+        return current(self, timeout=timeout)
+
+    _shutdown._csd_engine_dead_patched = True  # type: ignore[attr-defined]
+    MPClient.shutdown = _shutdown  # type: ignore[method-assign]
+
+
+def _mark_vllm_engine_expected_shutdown(llm: Any) -> bool:
+    """Set MPClient.resources.engine_dead before EngineCore exits.
+
+    vLLM's monitor thread logs ERROR 'Engine core proc ... died unexpectedly'
+    if the process sentinel fires while engine_dead is still False. MPClient.shutdown
+    currently stops engine_manager before setting that flag, so mark it first.
+    Returns True if a resources.engine_dead flag was found and set.
+    """
+    marked = False
+    seen: set[int] = set()
+    stack: list[Any] = [llm]
+    while stack:
+        obj = stack.pop()
+        if obj is None:
+            continue
+        try:
+            obj_id = id(obj)
+        except Exception:
+            continue
+        if obj_id in seen:
+            continue
+        seen.add(obj_id)
+        resources = getattr(obj, "resources", None)
+        if resources is not None and hasattr(resources, "engine_dead"):
+            try:
+                resources.engine_dead = True
+                marked = True
+            except Exception:
+                pass
+        for attr_name in ("llm_engine", "engine_core", "client", "engine"):
+            try:
+                child = getattr(obj, attr_name, None)
+            except Exception:
+                child = None
+            if child is not None:
+                stack.append(child)
+    return marked
+
+
 def clear_vllm_engine_cache() -> None:
     """Release cached vLLM engines before switching back to a generator model."""
+    _patch_vllm_mpclient_shutdown_order()
     cached_engines = list(_VLLM_ENGINE_CACHE.values())
     _VLLM_ENGINE_CACHE.clear()
 
+    # #region agent log
+    def _agent_dbg(hypothesis_id: str, location: str, message: str, data: dict) -> None:
+        try:
+            import json as _agent_json
+            import time as _agent_time
+            from pathlib import Path as _agent_Path
+
+            payload = _agent_json.dumps(
+                {
+                    "sessionId": "fffd8e",
+                    "runId": "post-fix",
+                    "hypothesisId": hypothesis_id,
+                    "location": location,
+                    "message": message,
+                    "data": data,
+                    "timestamp": int(_agent_time.time() * 1000),
+                }
+            )
+            for _agent_path in (
+                "/Users/aadivyar/Documents/Research/dynamic csd gen clean/.cursor/debug-fffd8e.log",
+                "/home/aadivyar/csd-generation/logs/debug-fffd8e.log",
+                str(_agent_Path.cwd() / "logs" / "debug-fffd8e.log"),
+            ):
+                try:
+                    _p = _agent_Path(_agent_path)
+                    _p.parent.mkdir(parents=True, exist_ok=True)
+                    with open(_p, "a", encoding="utf-8") as _agent_f:
+                        _agent_f.write(payload + "\n")
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    _agent_dbg(
+        "A",
+        "model_utils.py:clear_vllm_engine_cache:entry",
+        "clear_vllm_engine_cache enter",
+        {"cached_engine_count": len(cached_engines)},
+    )
+    # #endregion
+
     for llm, _tokenizer in cached_engines:
+        marked = _mark_vllm_engine_expected_shutdown(llm)
+        # #region agent log
+        _agent_dbg(
+            "A",
+            "model_utils.py:clear_vllm_engine_cache:marked",
+            "marked engine_dead before shutdown",
+            {"marked": marked},
+        )
+        # #endregion
         for attr_name in ("shutdown", "close"):
             maybe_shutdown = getattr(llm, attr_name, None)
             if callable(maybe_shutdown):
@@ -577,6 +629,7 @@ def clear_vllm_engine_cache() -> None:
 
         engine = getattr(llm, "llm_engine", None)
         if engine is not None:
+            _mark_vllm_engine_expected_shutdown(engine)
             for attr_name in ("shutdown", "close"):
                 maybe_shutdown = getattr(engine, attr_name, None)
                 if callable(maybe_shutdown):
@@ -620,6 +673,15 @@ def clear_vllm_engine_cache() -> None:
                     child_pids.append(int(pid))
                 except ValueError:
                     continue
+
+        # #region agent log
+        _agent_dbg(
+            "E",
+            "model_utils.py:clear_vllm_engine_cache:sigterm",
+            "EngineCore children before SIGTERM",
+            {"child_pids": child_pids},
+        )
+        # #endregion
 
         for pid in child_pids:
             try:
@@ -697,21 +759,60 @@ class _TaskGuidanceState:
     def reset(self) -> None:
         self.accepted_guidance = None
 
-    def append(self, instruction_text: str, guidance: object) -> str:
-        if self.accepted_guidance is not None:
-            return instruction_text
-        text = self._coerce_guidance(guidance)
-        if not text:
-            return instruction_text
-        self.accepted_guidance = text
-        separator = "\n" if instruction_text.endswith("\n") else "\n\n"
-        return f"{instruction_text}{separator}{self.HEADER}\n{text}\n"
-
     def _coerce_guidance(self, guidance: object) -> str:
         text = str(guidance).strip()
         if not text:
             return ""
         return text[: self.MAX_GUIDANCE_CHARS]
+
+
+def _eos_is_legal(parser, prefix, has_other_valid_token: bool) -> bool:
+    """Decide whether END-OF-TURN may be selected right now.
+
+    Stopping is legal when the prefix is already a complete query, or when
+    there is genuinely nothing else the model could write (a dead end). If
+    the parser can't answer "is this prefix complete", fall back to the old
+    permissive behaviour (always allow) rather than guessing.
+    """
+    if not hasattr(parser, "IsCompletePrefix"):
+        return True
+    try:
+        is_complete = bool(parser.IsCompletePrefix(prefix))
+    except Exception:
+        return True
+    return is_complete or not has_other_valid_token
+
+
+class AnswerCompleteStop(Exception):
+    """Generation-complete signal, NOT a failure: the final answer span is
+    finished, so generation can stop early (CRANE-style answer stopping).
+    Raised by the per-step hooks when answer early-stop is enabled and caught
+    in run_crane_csd, which returns the output-so-far through the normal
+    scoring path. Must never reach the evaluator's per-example except-block
+    (that path scores the example as a total failure with empty output)."""
+
+
+def _answer_complete(text: str) -> bool:
+    """True when the output contains the FINISHED final answer: 'final answer'
+    (case-insensitive) followed by a complete <<...>> span whose closing '>>'
+    is followed by a non-continuation character. The lookahead matters:
+    strategies often close tiny spans mid-expression ("<<n1>> + <<mult>>"),
+    and stopping at the first '>>' would freeze a fragment as the last span
+    the grader extracts. Spans that closed BEFORE the phrase never count."""
+    idx = text.lower().rfind("final answer")
+    if idx == -1:
+        return False
+    tail = text[idx:]
+    open_pos = tail.find("<<")
+    if open_pos == -1:
+        return False
+    last_close = tail.rfind(">>")
+    if last_close < open_pos + 2:
+        return False
+    after = tail[last_close + 2:].lstrip(" \t")
+    if not after:
+        return False  # not decidable yet — wait for the next token
+    return after[0] not in "+-*/%(<"
 
 
 class _TensorizedLMBase:
@@ -722,6 +823,16 @@ class _TensorizedLMBase:
         self.tokenizer = tokenizer
         self._Tokens = tokens
         self._token_ids = tids
+        self._structured_prompt = None
+        self.model_name: str | None = None
+        self._generation_stop_token_ids = _default_generation_stop_token_ids(tokenizer)
+        self._generation_token_ids: list[int] = []
+        self._generation_transaction_checkpoints: dict[str, list[int]] = {}
+        self._generation_alignment_removed_token_ids: list[int] = []
+        self._active_generation_checkpoint_key: str | None = None
+        self._active_generation_checkpoint_prefix: str | None = None
+        self._active_generation_checkpoint_snapshot: list[int] | None = None
+        self._generation_transaction_rollback_restored = False
         self.instruction_text = ""
         self._task_guidance = _TaskGuidanceState()
         # Chat-template scaffolding so AppendTaskGuidance can inject the
@@ -746,7 +857,15 @@ class _TensorizedLMBase:
         self._generate_count = 0
         self._token_id_to_str: dict[int, str] = {}
         self._runtime_deadline: float | None = None
+        # CRANE-style answer early stop (flag-gated, default OFF): when
+        # enabled, per-step hooks raise AnswerCompleteStop once the output
+        # contains a finished final-answer span; the tokens generated so far
+        # are stashed here for run_crane_csd to return as the output.
+        self._answer_early_stop_enabled: bool = False
+        self._early_stop_tokens: list[str] | None = None
 
+        self._last_generation_evidence: dict[str, Any] | None = None
+        self._last_prompt_contract: dict[str, Any] | None = None
         # Prefix-cache short-circuit state.
         self._last_full_prompt: str | None = None
         self._logits_dirty: bool = False
@@ -792,6 +911,15 @@ class _TensorizedLMBase:
             token_str = self._to_str(tokens[i])
             self._token_str_to_indices.setdefault(token_str, []).append(i)
 
+        self._oracle_trie_root = _OracleTrieNode()
+        self._oracle_node = self._oracle_trie_root
+        self._oracle_depth = 0
+        self._oracle_context_ids: list[int] = []
+        self._oracle_recompute_needed = False
+        self._oracle_instruction_key: str | None = None
+        self._oracle_pending_reject_id: int | None = None
+        self._decode_trace_token_ids: set[int] = set()
+
     def _to_str(self, obj):
         if isinstance(obj, str):
             return obj
@@ -810,11 +938,60 @@ class _TensorizedLMBase:
         if self._runtime_deadline is not None and time.monotonic() >= self._runtime_deadline:
             raise TimeoutError("CSD example exceeded its runtime budget")
 
+    def SetAnswerEarlyStop(self, enabled: bool):
+        self._answer_early_stop_enabled = bool(enabled)
+        self._early_stop_tokens = None
+
+    def _check_answer_early_stop(self, input_prefix):
+        if not self._answer_early_stop_enabled:
+            return
+        tokens = [self._to_str(input_prefix[i]) for i in range(len(input_prefix))]
+        if _answer_complete("".join(tokens)):
+            self._early_stop_tokens = tokens
+            raise AnswerCompleteStop("final answer span complete — stopping generation")
+
     def _prefix_text(self, prefix) -> str:
         return "".join(self._to_str(prefix[i]) for i in range(len(prefix)))
 
+    def _full_input_ids(self, input_prefix) -> list[int]:
+        """Instruction ids + each emitted token's vocab id (IterGen-style).
+
+        Do not ``encode(instruction + "".join(prefix))``: that re-merges the
+        prompt tail with whitespace pieces (Spider ex0: trailing space + tabs
+        became one ``' \t\t'`` token and tab-trapped decode).
+        """
+        pieces = [self._to_str(input_prefix[i]) for i in range(len(input_prefix))]
+        # Prefer the exact vocab id we sampled when the piece is in our table.
+        ids = list(self.tokenizer.encode(self.instruction_text, add_special_tokens=False))
+        for piece in pieces:
+            indices = self._token_str_to_indices.get(piece) if hasattr(self, "_token_str_to_indices") else None
+            if indices:
+                ids.append(int(self._token_ids_tensor[indices[0]].item()))
+            else:
+                ids.extend(self.tokenizer.encode(piece, add_special_tokens=False))
+        return ids
+
     def ResetTaskGuidance(self):
+        """Clear accepted guidance and every per-example prompt/rebuild cache."""
         self._task_guidance.reset()
+        self._structured_prompt = None
+        self._chat_messages = None
+        self.model_name = None
+        self.instruction_text = ""
+        self._last_generation_evidence = None
+        self._generation_alignment_removed_token_ids = []
+        self._generation_token_ids = []
+        self._generation_transaction_checkpoints = {}
+        self._active_generation_checkpoint_key = None
+        self._active_generation_checkpoint_prefix = None
+        self._active_generation_checkpoint_snapshot = None
+        self._generation_transaction_rollback_restored = False
+        self._last_full_prompt = None
+        self._tried_token_penalties.clear()
+        self._penalty_instruction_key = None
+        self._grounding_cache_key = None
+        self._grounding_cache_val = set()
+        self._logits_dirty = True
 
     def _maybe_reset_penalties(self) -> None:
         """Drop the tried-token penalty map when the example (instruction_text)
@@ -823,6 +1000,153 @@ class _TensorizedLMBase:
         if self._penalty_instruction_key != it:
             self._tried_token_penalties.clear()
             self._penalty_instruction_key = it
+        self._maybe_reset_oracle_trie()
+
+    def _maybe_reset_oracle_trie(self) -> None:
+        it = self.instruction_text or ""
+        if self._oracle_instruction_key != it:
+            self.ResetOracleTrie()
+            self._oracle_instruction_key = it
+
+    def ResetOracleTrie(self) -> None:
+        self._oracle_trie_root = _OracleTrieNode()
+        self._oracle_node = self._oracle_trie_root
+        self._oracle_depth = 0
+        self._oracle_context_ids = []
+        self._oracle_recompute_needed = False
+        self._oracle_pending_reject_id = None
+
+    def _primary_vocab_id_for_token_str(self, token_str: str) -> int:
+        indices = self._token_str_to_indices.get(token_str) or []
+        if indices:
+            return int(self._token_ids_tensor[indices[0]].item())
+        return int(self.tokenizer.encode(token_str, add_special_tokens=False)[-1])
+
+    def _dafny_prefix_slice(self, prefix, end: int):
+        n = len(prefix)
+        if end <= 0:
+            return self._dafny.SeqWithoutIsStrInference([])
+        return self._dafny.SeqWithoutIsStrInference([prefix[i] for i in range(min(end, n))])
+
+    def _oracle_sync_prefix(self, parser, prefix):
+        node = self._oracle_trie_root
+        ids: list[int] = []
+        n = len(prefix)
+        for i in range(n):
+            tok = prefix[i]
+            tok_str = self._to_str(tok)
+            sub = self._dafny_prefix_slice(prefix, i + 1)
+            if not parser.IsValidPrefix(sub):
+                bad_id = self._primary_vocab_id_for_token_str(tok_str)
+                return node, ids, bad_id, False
+            tid = self._primary_vocab_id_for_token_str(tok_str)
+            if tid not in node.children:
+                node.children[tid] = _OracleTrieNode(parent=node)
+            node = node.children[tid]
+            ids.append(tid)
+        return node, ids, None, True
+
+    def _oracle_apply_grammar_mask_to_log_theta(self, log_theta, parser, prefix, eos_token):
+        full_mask = self._parser_full_mask(parser, prefix)
+        if full_mask.numel() < log_theta.shape[1]:
+            pad = torch.zeros(log_theta.shape[1] - full_mask.numel(), dtype=torch.bool, device=full_mask.device)
+            full_mask = torch.cat((full_mask, pad))
+        elif full_mask.numel() > log_theta.shape[1]:
+            full_mask = full_mask[: log_theta.shape[1]]
+        eos_indices = self._token_indices_for_token(eos_token)
+        if eos_indices:
+            for idx in eos_indices:
+                if 0 <= idx < full_mask.numel():
+                    full_mask[idx] = True
+        log_theta[0, ~full_mask.to(log_theta.device)] = float("-inf")
+
+    def _oracle_recompute_in_trie(self) -> None:
+        node = self._oracle_node
+        depth = self._oracle_depth
+        context = self._oracle_context_ids
+        while depth > 0:
+            new_log_theta = torch.log(torch.exp(node.raw_logprob[0] + node.log_theta[0]).sum())
+            depth -= 1
+            node = node.parent
+            node.log_theta[0, context[depth]] = new_log_theta
+        self._oracle_recompute_needed = False
+
+    def CarsAdvanceTrieAndAdjustScores(self, parser, prefix, constrainFirst) -> bool:
+        self._maybe_reset_oracle_trie()
+        if self._full_logits is None:
+            raise RuntimeError("Must call GenerateLogits before CarsAdvanceTrieAndAdjustScores")
+        node, ids, bad_id, ok = self._oracle_sync_prefix(parser, prefix)
+        self._oracle_node = node
+        self._oracle_depth = len(ids)
+        self._oracle_context_ids = ids
+        if not ok:
+            self._oracle_pending_reject_id = bad_id
+            return False
+        self._oracle_pending_reject_id = None
+        is_root = len(prefix) == 0
+        constrain_first = bool(constrainFirst)
+        if node.raw_logprob is None:
+            raw = torch.log_softmax(self._full_logits.detach().float(), dim=0).cpu()
+            node.raw_logprob = raw.unsqueeze(0)
+            node.log_theta = torch.zeros(1, raw.shape[0])
+            adjust_scores = is_root and constrain_first
+            eos = self.tokenizer.eos_token or "<|endoftext|>"
+            self._oracle_apply_grammar_mask_to_log_theta(node.log_theta, parser, prefix, eos)
+            self._oracle_recompute_needed = True
+        else:
+            adjust_scores = True
+        if adjust_scores:
+            delta = node.log_theta.to(self._full_logits.device, non_blocking=True)[0]
+            if delta.numel() < self._full_logits.numel():
+                pad = torch.zeros(self._full_logits.numel() - delta.numel(), device=self._full_logits.device, dtype=self._full_logits.dtype)
+                delta = torch.cat((delta, pad))
+            elif delta.numel() > self._full_logits.numel():
+                delta = delta[: self._full_logits.numel()]
+            self._full_logits = self._full_logits + delta
+            self._logits_tensor = self._full_logits[self._token_ids_tensor]
+            self.Logits.update_tensors(self._logits_tensor, self._full_logits)
+            self._logits_dirty = True
+        return True
+
+    def RejectLastInTrie(self) -> None:
+        reject_id = self._oracle_pending_reject_id
+        discard_recorded_token = False
+        # CARS generation_failed eliminates generated_tokens[-1] (the bad token).
+        # After CarsTrieStep samples an invalid next, pending is unset and
+        # context_ids still ends at the prior valid prefix — prefer the just-
+        # sampled unconstrained id so the trie matches CARS.
+        if reject_id is None:
+            reject_id = getattr(self, "_last_unconstrained_token_id", None)
+            discard_recorded_token = reject_id is not None
+            if discard_recorded_token:
+                self._last_unconstrained_token_id = None
+        if reject_id is None and self._oracle_context_ids:
+            reject_id = self._oracle_context_ids[-1]
+            discard_recorded_token = True
+        if reject_id is None:
+            return
+        if discard_recorded_token:
+            self._discard_last_generated_token_id(reject_id)
+        node = self._oracle_node
+        if node.log_theta is None:
+            width = node.raw_logprob.shape[1] if node.raw_logprob is not None else 1
+            node.log_theta = torch.zeros(1, width)
+        node.log_theta[0, reject_id] = float("-inf")
+        self._decode_trace_token_ids.add(int(reject_id))
+        self._oracle_recompute_in_trie()
+        self._oracle_pending_reject_id = None
+
+    def ApplyTraceRecurrence(self, factor) -> None:
+        factor_f = float(factor)
+        if factor_f >= 1.0 or not self._decode_trace_token_ids or self._full_logits is None:
+            return
+        log_factor = math.log(factor_f)
+        for tid in self._decode_trace_token_ids:
+            if 0 <= tid < self._full_logits.numel():
+                self._full_logits[tid] += log_factor
+        self._logits_tensor = self._full_logits[self._token_ids_tensor]
+        self.Logits.update_tensors(self._logits_tensor, self._full_logits)
+        self._logits_dirty = True
 
     def PenalizeTriedTokenAt(self, prefix, token):
         """Dafny extern: persistently down-weight `token` as a next-token at
@@ -836,6 +1160,7 @@ class _TensorizedLMBase:
         previously-tried next-token at a rolled-back trace position). Fair: uses
         only previously-tried tokens — no gold labels, no execution feedback.
         """
+        self._restore_generation_transaction()
         indices = self._token_indices_for_token(token)
         if not indices:
             # Token not in the constrained subset vocab — nothing to penalize.
@@ -855,94 +1180,176 @@ class _TensorizedLMBase:
         )
 
     def _apply_recurrence_penalty(self, full_prompt: str) -> None:
-        """Re-apply the persistent tried-token down-weight to the freshly
-        generated constrained-subset logits. No-op (and byte-identical) when no
-        token was ever penalized at this prefix."""
+        """Re-apply persistent tried-token down-weight at a fresh prefix."""
         factor = self._recurrence_penalty
         if factor >= 1.0:
             return
         bucket = self._tried_token_penalties.get(full_prompt)
         if not bucket:
             return
-        log_factor = math.log(factor)  # negative => reduces the log-prob
+        log_factor = math.log(factor)
         n = self._logits_tensor.numel()
         for idx, count in bucket.items():
             if 0 <= idx < n:
-                # Flat (IterGen-faithful): ln(factor) once per distinct token,
-                # regardless of retry count. Cumulative (default): ln(factor)*count.
                 weight = 1 if self._recurrence_flat else count
-                delta = log_factor * weight
-                self._logits_tensor[idx] += delta
-                if self._full_logits is not None:
-                    full_idx = int(self._token_ids_tensor[idx].item())
-                    if 0 <= full_idx < self._full_logits.numel():
-                        self._full_logits[full_idx] += delta
+                self._logits_tensor[idx] += log_factor * weight
 
     def set_chat_messages(self, chat_messages: list[dict]) -> None:
-        """Record the chat_messages used to build instruction_text.
+        """Register chat messages for safe last-user-turn guidance rebuilding."""
+        self._chat_messages = [dict(message) for message in chat_messages]
+        self._structured_prompt = None
 
-        Called by benchmark generation drivers right after they assemble the
-        chat-templated instruction_text. Enables AppendTaskGuidance to
-        re-template with the guidance injected into the user message rather
-        than appending it after the assistant generation marker.
-        """
-        self._chat_messages = [dict(m) for m in chat_messages]
+    def set_structured_prompt(self, prompt, *, model_name: str | None = None) -> None:
+        """Register immutable benchmark prompt parts for safe guidance rebuilding."""
+        self._structured_prompt = prompt
+        self.model_name = model_name or getattr(prompt, "model_name", None)
+        self._chat_messages = None
 
     def AppendTaskGuidance(self, guidance):
-        """Inject CSD-authored guidance into the eval prompt.
+        """Rebuild the active prompt with first-call guidance before decoding."""
+        from synthesis.evaluate.benchmarks.sql_spider.prompts import SpiderPromptRenderError
 
-        First non-empty call wins. The guidance is appended to the END of the
-        last user message and the chat template is re-applied — so the
-        guidance lands INSIDE the user turn (where the model reads it as
-        instructions before answering), not after `<|im_start|>assistant`
-        (where the model would read it as the start of its own output).
-
-        Falls back to the legacy "append-after-template" behavior only when
-        no chat_messages have been registered (older code paths that haven't
-        adopted set_chat_messages yet).
-        """
         if self._task_guidance.accepted_guidance is not None:
             return
         text = self._task_guidance._coerce_guidance(self._to_str(guidance))
         if not text:
             return
-        self._task_guidance.accepted_guidance = text
-
-        if self._chat_messages is not None:
-            messages = [dict(m) for m in self._chat_messages]
-            last_user_idx = None
-            for i in range(len(messages) - 1, -1, -1):
-                if messages[i].get("role") == "user":
-                    last_user_idx = i
-                    break
-            if last_user_idx is not None:
-                existing = messages[last_user_idx].get("content", "") or ""
-                messages[last_user_idx] = dict(messages[last_user_idx])
-                messages[last_user_idx]["content"] = (
-                    f"{existing}\n\n"
-                    f"{self._task_guidance.HEADER}\n{text}"
+        if self._structured_prompt is not None:
+            candidate = self._structured_prompt.with_guidance(text)
+            try:
+                render_with_contract = getattr(
+                    candidate, "render_for_model_with_contract", None
                 )
-                try:
+                if callable(render_with_contract):
+                    rendered, prompt_contract = render_with_contract(
+                        self.tokenizer,
+                        model_name=self.model_name,
+                    )
+                else:
+                    rendered = candidate.render_for_model(
+                        self.tokenizer,
+                        model_name=self.model_name,
+                    )
+                    prompt_contract = dict(self._last_prompt_contract or {})
+                    prompt_contract.setdefault("renderer", "structured")
+                    prompt_contract["render_succeeded"] = True
+                    prompt_contract["prompt_chars"] = len(rendered)
+            except SpiderPromptRenderError:
+                raise
+            except Exception as exc:
+                _GROUNDING_LOG.error(
+                    "[guidance] structured prompt rebuild failed type=%s",
+                    type(exc).__name__,
+                )
+                raise SpiderPromptRenderError(
+                    "Task guidance could not rebuild the registered structured prompt"
+                ) from exc
+            self._structured_prompt = candidate
+            self.instruction_text = rendered
+            self._last_prompt_contract = prompt_contract
+            self._task_guidance.accepted_guidance = text
+            _GROUNDING_LOG.info(
+                "[spider-prompt] guidance_rebuild mode=structured model_family=%s "
+                "guidance_chars=%d rendered_chars=%d",
+                self.model_name or "unknown",
+                len(text),
+                len(rendered),
+            )
+            return
+        if self._chat_messages is not None:
+            messages = [dict(message) for message in self._chat_messages]
+            last_user_idx = next(
+                (
+                    index
+                    for index in range(len(messages) - 1, -1, -1)
+                    if messages[index].get("role") == "user"
+                ),
+                None,
+            )
+            if last_user_idx is None:
+                _GROUNDING_LOG.error(
+                    "[guidance] registered chat prompt has no user message"
+                )
+                raise SpiderPromptRenderError(
+                    "Task guidance requires a user message in the registered chat prompt"
+                )
+            existing = messages[last_user_idx].get("content", "") or ""
+            messages[last_user_idx] = dict(messages[last_user_idx])
+            messages[last_user_idx]["content"] = (
+                f"{existing}\n\n{self._task_guidance.HEADER}\n{text}"
+            )
+            identity = (
+                self.model_name or ""
+            ).lower().replace("-", "_").replace(".", "_")
+            template_fallback = False
+            try:
+                if "qwen3_5" in identity or "qwen35" in identity:
+                    rendered = self.tokenizer.apply_chat_template(
+                        messages,
+                        tokenize=False,
+                        add_generation_prompt=True,
+                        enable_thinking=False,
+                    )
+                else:
                     try:
-                        self.instruction_text = self.tokenizer.apply_chat_template(
-                            messages, tokenize=False, add_generation_prompt=True, enable_thinking=False
+                        rendered = self.tokenizer.apply_chat_template(
+                            messages,
+                            tokenize=False,
+                            add_generation_prompt=True,
+                            enable_thinking=False,
                         )
                     except TypeError:
-                        self.instruction_text = self.tokenizer.apply_chat_template(
-                            messages, tokenize=False, add_generation_prompt=True
+                        template_fallback = True
+                        rendered = self.tokenizer.apply_chat_template(
+                            messages,
+                            tokenize=False,
+                            add_generation_prompt=True,
                         )
-                    return
-                except Exception:
-                    # If re-templating fails for any tokenizer-specific reason,
-                    # fall through to the legacy append path rather than break
-                    # eval entirely.
-                    pass
-
-        # Legacy fallback: append to the end of instruction_text.
-        separator = "\n" if self.instruction_text.endswith("\n") else "\n\n"
-        self.instruction_text = (
-            f"{self.instruction_text}{separator}"
-            f"{self._task_guidance.HEADER}\n{text}\n"
+            except SpiderPromptRenderError:
+                raise
+            except Exception as exc:
+                _GROUNDING_LOG.error(
+                    "[guidance] chat prompt rebuild failed type=%s",
+                    type(exc).__name__,
+                )
+                raise SpiderPromptRenderError(
+                    "Task guidance could not rebuild the registered chat prompt"
+                ) from exc
+            prompt_contract = dict(self._last_prompt_contract or {})
+            prompt_contract.update(
+                {
+                    "renderer": prompt_contract.get("renderer", "legacy"),
+                    "mode": "chat",
+                    "template_used": True,
+                    "raw_prompt": False,
+                    "chat_message_count": len(messages),
+                    "user_message_count": sum(
+                        1 for message in messages if message.get("role") == "user"
+                    ),
+                    "add_generation_prompt": True,
+                    "enable_thinking": None if template_fallback else False,
+                    "template_fallback": template_fallback,
+                    "render_succeeded": True,
+                    "prompt_chars": len(rendered),
+                }
+            )
+            self._chat_messages = messages
+            self.instruction_text = rendered
+            self._last_prompt_contract = prompt_contract
+            self._task_guidance.accepted_guidance = text
+            _GROUNDING_LOG.info(
+                "[spider-prompt] guidance_rebuild mode=chat model_family=%s "
+                "guidance_chars=%d rendered_chars=%d",
+                self.model_name or "unknown",
+                len(text),
+                len(rendered),
+            )
+            return
+        _GROUNDING_LOG.error(
+            "[guidance] no registered prompt state; refusing to apply task guidance"
+        )
+        raise SpiderPromptRenderError(
+            "Task guidance requires a registered structured or chat prompt"
         )
 
     @property
@@ -970,36 +1377,6 @@ class _TensorizedLMBase:
             (text or "")[:120], len(support), len(cands), bad[:8], grounded,
         )
         return grounded
-
-    def SpanAppearsInPrompt(self, text):
-        """Dafny extern: exact normalized prompt-visible duplicate check."""
-        if not isinstance(text, str):
-            text = self._to_str(text)
-        candidate = _normalize_prompt_visible_span(text)
-        if not candidate:
-            return False
-        visible = self._prompt_visible_span_set()
-        found = candidate in visible
-        _GROUNDING_LOG.info(
-            "[grounding] prompt-duplicate span=%r visible_n=%d found=%s",
-            candidate[:120], len(visible), found,
-        )
-        return found
-
-    def SpanResemblanceToPromptExamples(self, text):
-        """Dafny extern: prompt-example structural resemblance in [0, 1]."""
-        if not isinstance(text, str):
-            text = self._to_str(text)
-        exemplars = self._prompt_visible_span_set()
-        if not exemplars:
-            return self._dafny.BigRational(0.0)
-        candidate, score = _smiles_resemblance(text, exemplars)
-        if candidate:
-            _GROUNDING_LOG.info(
-                "[grounding] prompt-resemblance span=%r exemplars_n=%d score=%.3f",
-                candidate[:120], len(exemplars), score,
-            )
-        return self._dafny.BigRational(score)
 
     def FirstUngroundedIdentifierTokenIdx(self, unitTokens):
         """Dafny extern: index of the token holding the FIRST out-of-schema
@@ -1032,27 +1409,17 @@ class _TensorizedLMBase:
                 )
         return (found, idx)
 
-    def _prompt_visible_span_set(self) -> set[str]:
-        """Prompt-visible candidate spans, cached per instruction text."""
-        instruction = self.instruction_text or ""
-        if getattr(self, "_prompt_visible_span_cache_key", None) == instruction:
-            return self._prompt_visible_span_cache_val
-        spans = _prompt_visible_span_set(instruction)
-        self._prompt_visible_span_cache_key = instruction
-        self._prompt_visible_span_cache_val = spans
-        return spans
-
     def _grounding_support_set(self) -> set:
-        """Schema identifier support set for the CURRENT example, cached per
-        instruction_text so it is parsed once per example, not once per token."""
-        it = self.instruction_text or ""
-        if getattr(self, "_grounding_cache_key", None) == it:
+        """Return schema identifiers cached for the current instruction text."""
+        instruction = self.instruction_text or ""
+        if getattr(self, "_grounding_cache_key", None) == instruction:
             return self._grounding_cache_val
-        support = _parse_schema_support(it)
-        self._grounding_cache_key = it
+        support = _parse_schema_support(instruction)
+        self._grounding_cache_key = instruction
         self._grounding_cache_val = support
         _GROUNDING_LOG.info(
-            "[grounding] parsed %d support identifiers for current example", len(support)
+            "[grounding] parsed %d support identifiers for current example",
+            len(support),
         )
         return support
 
@@ -1065,7 +1432,9 @@ class _TensorizedLMBase:
         return cached
 
     def _dafny_prefix_from_token_strs(self, token_strs: list[str]):
-        return self._dafny.SeqWithoutIsStrInference([self._dafny.Seq(token) for token in token_strs])
+        return self._dafny.SeqWithoutIsStrInference(
+            [self._dafny.Seq(token) for token in token_strs]
+        )
 
     def _token_strs_from_text(self, text: str) -> list[str]:
         if not text:
@@ -1073,8 +1442,245 @@ class _TensorizedLMBase:
         token_ids = self.tokenizer.encode(text, add_special_tokens=False)
         return [self._token_str_from_id(token_id) for token_id in token_ids]
 
+    def _reset_generation_transactions(self) -> None:
+        """Clear per-example prefix checkpoints for sampled-ID provenance."""
+        self._generation_alignment_removed_token_ids = []
+        self._generation_transaction_checkpoints = {}
+        self._active_generation_checkpoint_key = None
+        self._active_generation_checkpoint_prefix = None
+        self._active_generation_checkpoint_snapshot = None
+        self._generation_transaction_rollback_restored = False
+
+    def _align_generation_history_to_prefix(self, input_prefix) -> None:
+        """Keep sampled-ID occurrences that still form the current CSD prefix."""
+        if getattr(self, "_structured_prompt", None) is None:
+            return
+        history = [
+            int(token_id) for token_id in getattr(self, "_generation_token_ids", [])
+        ]
+        stop_ids = self._generation_stop_ids()
+        content = list(history)
+        terminal: list[int] = []
+        while content and content[-1] in stop_ids:
+            terminal.insert(0, content.pop())
+        expected_pieces = [
+            self._to_str(input_prefix[index]) for index in range(len(input_prefix))
+        ]
+        expected_text = "".join(expected_pieces)
+        retained: list[int] = []
+        matched_indices: set[int] = set()
+        cursor = 0
+        for index, candidate in enumerate(content):
+            candidate_text = self._token_str_from_id(candidate)
+            if not candidate_text:
+                continue
+            match_at = expected_text.find(candidate_text, cursor)
+            if match_at == -1:
+                continue
+            retained.append(candidate)
+            matched_indices.add(index)
+            cursor = match_at + len(candidate_text)
+        removed_ids = [
+            token_id
+            for index, token_id in enumerate(content)
+            if index not in matched_indices
+        ]
+        if not removed_ids:
+            return
+        self._generation_token_ids = retained + terminal
+        self._generation_alignment_removed_token_ids.extend(removed_ids)
+        _SPIDER_CONTRACT_LOG.info(
+            "[spider-output-contract] prefix_alignment "
+            "prefix_tokens=%d before_ids=%d after_ids=%d removed_ids=%d",
+            len(expected_pieces),
+            len(history),
+            len(self._generation_token_ids),
+            len(removed_ids),
+        )
+
+    def _begin_generation_transaction(self, input_prefix) -> None:
+        """Checkpoint the current accepted IDs before generating at a prefix."""
+        if getattr(self, "_structured_prompt", None) is None:
+            return
+        self._align_generation_history_to_prefix(input_prefix)
+        checkpoints = getattr(self, "_generation_transaction_checkpoints", None)
+        if not isinstance(checkpoints, dict):
+            checkpoints = {}
+            self._generation_transaction_checkpoints = checkpoints
+        prefix_text = self._prefix_text(input_prefix)
+        key = f"{self.instruction_text}\x00{prefix_text}"
+        current = [int(token_id) for token_id in getattr(self, "_generation_token_ids", [])]
+        previous_prefix = getattr(self, "_active_generation_checkpoint_prefix", None)
+        previous_snapshot = checkpoints.get(key)
+        rollback_already_restored = bool(
+            getattr(self, "_generation_transaction_rollback_restored", False)
+        )
+        rollback_revisit = (
+            previous_snapshot is not None
+            and not rollback_already_restored
+            and previous_prefix is not None
+            and current != previous_snapshot
+            and (
+                prefix_text == previous_prefix
+                or (
+                    len(prefix_text) < len(previous_prefix)
+                    and previous_prefix.startswith(prefix_text)
+                )
+            )
+        )
+        checkpoints[key] = current
+        if rollback_revisit:
+            _SPIDER_CONTRACT_LOG.info(
+                "[spider-output-contract] transaction_checkpoint_replaced "
+                "prefix_chars=%d previous_ids=%d current_ids=%d",
+                len(prefix_text),
+                len(previous_snapshot),
+                len(current),
+            )
+        active_snapshot = current
+        self._active_generation_checkpoint_key = key
+        self._active_generation_checkpoint_prefix = prefix_text
+        self._active_generation_checkpoint_snapshot = active_snapshot
+        self._generation_transaction_rollback_restored = False
+
+    def _restore_generation_transaction(self) -> None:
+        """Restore the active pre-choice snapshot for a real rollback callback."""
+        if getattr(self, "_structured_prompt", None) is None:
+            return
+        key = getattr(self, "_active_generation_checkpoint_key", None)
+        checkpoints = getattr(self, "_generation_transaction_checkpoints", {})
+        snapshot = getattr(self, "_active_generation_checkpoint_snapshot", None)
+        if snapshot is None and key is not None:
+            snapshot = checkpoints.get(key)
+        if snapshot is None:
+            return
+        committed = [int(token_id) for token_id in snapshot]
+        current = [int(token_id) for token_id in getattr(self, "_generation_token_ids", [])]
+        self._generation_transaction_rollback_restored = True
+        if current == committed:
+            return
+        self._generation_token_ids = committed
+        _SPIDER_CONTRACT_LOG.info(
+            "[spider-output-contract] callback_rollback from_ids=%d to_ids=%d",
+            len(current),
+            len(committed),
+        )
+
+    def _record_generated_token_ids(self, token_ids) -> None:
+        if getattr(self, "_structured_prompt", None) is None:
+            return
+        if not hasattr(self, "_generation_token_ids"):
+            self._generation_token_ids = []
+        self._generation_token_ids.extend(int(token_id) for token_id in token_ids)
+
+    def _discard_last_generated_token_id(self, token_id: int) -> None:
+        """Undo one speculative token when CARS rejects or rolls it back."""
+        generated = getattr(self, "_generation_token_ids", None)
+        if not generated or int(generated[-1]) != int(token_id):
+            return
+        generated.pop()
+        _SPIDER_CONTRACT_LOG.info(
+            "[spider-output-contract] discarded_speculative_token committed_count=%d",
+            len(generated),
+        )
+
+    def _reconcile_generation_evidence(self, scored_output: str) -> bool:
+        """Validate the current committed history or fail closed."""
+        if getattr(self, "_structured_prompt", None) is None:
+            return True
+
+        expected = str(scored_output)
+        history = [int(token_id) for token_id in getattr(self, "_generation_token_ids", [])]
+        stop_ids = self._generation_stop_ids()
+
+        def _split_terminal(token_ids: list[int]) -> tuple[list[int], list[int]]:
+            content = list(token_ids)
+            terminal: list[int] = []
+            while content and content[-1] in stop_ids:
+                terminal.insert(0, content.pop())
+            return content, terminal
+
+        def _decode(token_ids: list[int]) -> str:
+            try:
+                return str(self.tokenizer.decode(token_ids, skip_special_tokens=False))
+            except TypeError:
+                return str(self.tokenizer.decode(token_ids))
+
+        content_history, terminal_ids = _split_terminal(history)
+        if _decode(content_history) != expected:
+            _SPIDER_CONTRACT_LOG.error(
+                "[spider-output-contract] evidence_reconcile_failed history_ids=%d "
+                "scored_chars=%d",
+                len(content_history),
+                len(expected),
+            )
+            return False
+
+        self._generation_token_ids = content_history + terminal_ids
+        _SPIDER_CONTRACT_LOG.info(
+            "[spider-output-contract] evidence_reconciled committed_ids=%d "
+            "removed_speculative_ids=%d terminal_ids=%d",
+            len(content_history),
+            0,
+            len(terminal_ids),
+        )
+        return True
+
+    def _generation_stop_ids(self) -> frozenset[int]:
+        return _coerce_token_id_set(
+            getattr(
+                self,
+                "_generation_stop_token_ids",
+                _default_generation_stop_token_ids(self.tokenizer),
+            )
+        )
+
+    def _prepare_generated_token_ids(self, token_ids) -> list[int]:
+        """Retain raw IDs for stopping while preserving exact boundary evidence."""
+        from synthesis.evaluate.benchmarks.sql_spider.output_contract import (
+            generation_token_evidence,
+        )
+
+        raw_ids = [int(token_id) for token_id in token_ids]
+        evidence = generation_token_evidence(
+            raw_ids,
+            self.tokenizer,
+            terminal_stop_token_ids=self._generation_stop_ids(),
+        )
+        self._last_generation_evidence = evidence
+        removed_count = len(evidence["removed_terminal_token_ids"])
+        return raw_ids[:-removed_count] if removed_count else raw_ids
+
+    def _finalize_generation_evidence(self) -> dict[str, Any] | None:
+        if getattr(self, "_structured_prompt", None) is None:
+            self._last_generation_evidence = None
+            return None
+        from synthesis.evaluate.benchmarks.sql_spider.output_contract import (
+            generation_token_evidence,
+        )
+
+        evidence = generation_token_evidence(
+            getattr(self, "_generation_token_ids", []),
+            self.tokenizer,
+            terminal_stop_token_ids=self._generation_stop_ids(),
+        )
+        self._last_generation_evidence = evidence
+        return evidence
+
     def _build_unconstrained_chunk_result(self, token_ids, open_span_token, eos_token, max_new_tokens: int):
+        from synthesis.evaluate.benchmarks.sql_spider.prompts import SpiderPromptParts
+
+        spider_contract_active = isinstance(
+            getattr(self, "_structured_prompt", None), SpiderPromptParts
+        )
+        token_ids = [int(token_id) for token_id in token_ids]
+        if not spider_contract_active:
+            # GSM, SMILES, and other legacy unconstrained surfaces must see the
+            # exact generated IDs, including EOS, so their stop flags stay intact.
+            self._last_generation_evidence = None
         if max_new_tokens <= 0:
+            if spider_contract_active:
+                self._finalize_generation_evidence()
             return self._dafny_prefix_from_token_strs([]), False, False, 0
 
         open_span_str = self._to_str(open_span_token)
@@ -1084,27 +1690,48 @@ class _TensorizedLMBase:
         steps_used = 0
         stopped_on_open = False
         stopped_on_eos = False
+        stop_ids = self._generation_stop_ids() if spider_contract_active else frozenset()
 
         for raw_token_id in token_ids:
             if steps_used >= max_new_tokens:
                 break
-            token_str = self._token_str_from_id(int(raw_token_id))
+            if spider_contract_active and raw_token_id in stop_ids:
+                # A declared generation stop is committed, then removed only
+                # from the final scored decode by generation_token_evidence.
+                self._record_generated_token_ids([raw_token_id])
+                stopped_on_eos = True
+                break
+
+            token_str = self._token_str_from_id(raw_token_id)
             steps_used += 1
-            if token_str == eos_str:
+            if not spider_contract_active and token_str == eos_str:
                 stopped_on_eos = True
                 break
 
             candidate_text = chunk_text + token_str
             open_idx = candidate_text.find(open_span_str)
             if open_idx != -1:
+                if spider_contract_active:
+                    self._record_generated_token_ids([raw_token_id])
                 prefix_text = candidate_text[:open_idx]
                 chunk_tokens = self._token_strs_from_text(prefix_text)
                 chunk_tokens.append(open_span_str)
                 stopped_on_open = True
                 break
 
+            if spider_contract_active:
+                self._record_generated_token_ids([raw_token_id])
             chunk_tokens.append(token_str)
             chunk_text = candidate_text
+
+        if spider_contract_active:
+            evidence = self._finalize_generation_evidence()
+            _SPIDER_CONTRACT_LOG.info(
+                "[spider-output-contract] token-boundary committed_ids=%d "
+                "removed_terminal_token_count=%d",
+                len(evidence["raw_token_ids"]) if evidence else 0,
+                len(evidence["removed_terminal_token_ids"]) if evidence else 0,
+            )
 
         return self._dafny_prefix_from_token_strs(chunk_tokens), stopped_on_open, stopped_on_eos, steps_used
 
@@ -1114,6 +1741,7 @@ class _TensorizedLMBase:
 
     def MaskToken(self, token):
         with _timed("MaskToken"):
+            self._restore_generation_transaction()
             # All-index: a runtime "token" is tokenizer.decode([id]), so two
             # vocab ids can decode to the SAME string. Masking only TokenToId's
             # first match leaves duplicate copies samplable, which defeats
@@ -1145,11 +1773,52 @@ class _TensorizedLMBase:
         if self._full_logits is None:
             raise RuntimeError("Must call GenerateLogits before sampling unconstrained tokens")
 
-        probs = torch.softmax(self._full_logits, dim=0)
+        # Default greedy (argmax) to match CRANE / IterGen do_sample=False.
+        # Multinomial(softmax) made unconstrained CoT diverge from frozen
+        # baselines at the first token (before any grammar mask applies).
+        temperature = float(os.environ.get("CSD_UNCONSTRAINED_TEMPERATURE", "0.0"))
+        if temperature <= 0.0:
+            # Exact logit ties (common in fp16): torch.argmax picks the lowest
+            # index. On GSM ex0 that picks token " <<" over " $\\" at equal
+            # 22.875 and opens constrained early. Prefer a tied token that does
+            # not contain the CRANE start marker "<<", else the highest tied id.
+            logits = self._full_logits
+            # IterGen opportunistic SoftConstrained: never accept EOS on the first
+            # unconstrained peek (HF stopping is separate; grammar mask fallback
+            # also clears EOS). Otherwise empty-prefix Spider picks <|im_end|>.
+            if os.environ.get("CSD_ITERGEN_OPPORTUNISTIC", "0") == "1":
+                logits = logits.clone()
+                eos_id = getattr(self.tokenizer, "eos_token_id", None)
+                if eos_id is not None and 0 <= int(eos_id) < logits.numel():
+                    logits[int(eos_id)] = -1e9
+                for tid in (151643, 151644, 151645, 151646):
+                    if tid < logits.numel():
+                        logits[tid] = -1e9
+            max_val = logits.max()
+            tied = (logits == max_val).nonzero(as_tuple=False).flatten()
+            if tied.numel() == 1:
+                return int(tied[0].item())
+            # H9: Only intervene when a CRANE start-marker token is among the ties;
+            # otherwise keep torch.argmax semantics (lowest tied id). Best parity
+            # so far: 1/5 substantial with 4/5 byte-identical (ex3 remaining).
+            pieces = {int(tid): self.tokenizer.decode([int(tid)]) for tid in tied.tolist()}
+            if not any("<<" in s for s in pieces.values()):
+                return int(tied.min().item())
+            best = None
+            for tid, piece in pieces.items():
+                if "<<" in piece:
+                    continue
+                if best is None or tid > best:
+                    best = tid
+            if best is not None:
+                return best
+            return int(tied.max().item())
+
+        probs = torch.softmax(self._full_logits / temperature, dim=0)
         if torch.isnan(probs).any() or torch.sum(probs).item() <= 0.0:
             return int(self._full_logits.argmax().item())
-        sampled_idx = int(torch.multinomial(probs, num_samples=1).item())
-        return sampled_idx
+        chosen = int(torch.multinomial(probs, num_samples=1).item())
+        return chosen
 
     def _finalize_from_logprob_dict(self, logprob_dict: dict[int, Any]) -> None:
         # vLLM returns next-token logprobs as a Python dict. We previously fetched
@@ -1193,6 +1862,10 @@ class _TensorizedLMBase:
     def ChooseNextToken(self):
         with _timed("ChooseNextToken"):
             best_idx = self._select_constrained_index()
+            if getattr(self, "_structured_prompt", None) is not None:
+                self._record_generated_token_ids(
+                    [int(self._token_ids_tensor[best_idx].item())]
+                )
             return self._Tokens[best_idx]
 
     def _select_constrained_index(self) -> int:
@@ -1218,6 +1891,62 @@ class _TensorizedLMBase:
             if self._full_logits is None:
                 raise RuntimeError("Must call GenerateLogits before ChooseNextTokenUnconstrained")
             sampled_idx = self._sample_full_token_id()
+            # Used by RejectLastInTrie when CARS aborts on an invalid sampled next
+            # (pending_reject_id is only set when CarsAdvanceTrie sync fails).
+            self._last_unconstrained_token_id = int(sampled_idx)
+            # #region agent log
+            try:
+                import json as _dbg_json, time as _dbg_time
+                from pathlib import Path as _DbgPath
+                _tok = self.tokenizer.decode([int(sampled_idx)])
+                _n = getattr(self, "_dbg_unconst_n", 0)
+                self._dbg_unconst_n = _n + 1
+                # Log first 8 unconstrained picks and every bang/id0 (cap 40).
+                _bang_n = getattr(self, "_dbg_bang_n", 0)
+                _is_bang = (int(sampled_idx) == 0) or (_tok.strip() == "!")
+                if _is_bang:
+                    self._dbg_bang_n = _bang_n + 1
+                if _n < 8 or (_is_bang and _bang_n < 40):
+                    _fl = self._full_logits
+                    _top = []
+                    if _fl is not None:
+                        import torch as _torch
+                        _v, _i = _torch.topk(_fl, k=min(5, int(_fl.numel())))
+                        for _vv, _ii in zip(_v.tolist(), _i.tolist()):
+                            _top.append({"id": int(_ii), "logit": float(_vv), "tok": self.tokenizer.decode([int(_ii)])})
+                    _payload = {
+                        "sessionId": "d0e277",
+                        "runId": "post-instrument",
+                        "hypothesisId": "P",
+                        "location": "model_utils.py:ChooseNextTokenUnconstrained",
+                        "message": "unconst_pick",
+                        "data": {
+                            "n": _n,
+                            "sampled_idx": int(sampled_idx),
+                            "tok": _tok,
+                            "is_bang_or_id0": _is_bang,
+                            "full_logits_finite": bool(_fl is not None and bool(_fl.isfinite().all().item())),
+                            "full_logits_max": float(_fl.max().item()) if _fl is not None else None,
+                            "full_logits_min": float(_fl.min().item()) if _fl is not None else None,
+                            "top5": _top,
+                        },
+                        "timestamp": int(_dbg_time.time() * 1000),
+                    }
+                    for _logp in (
+                        _DbgPath("/home/aadivyar/csd-generation/logs/debug-d0e277.log"),
+                        _DbgPath("/Users/aadivyar/Documents/Research/dynamic csd gen clean/.cursor/debug-d0e277.log"),
+                    ):
+                        try:
+                            _logp.parent.mkdir(parents=True, exist_ok=True)
+                            with _logp.open("a") as _lf:
+                                _lf.write(_dbg_json.dumps(_payload) + "\n")
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+            # #endregion
+            if getattr(self, "_structured_prompt", None) is not None:
+                self._record_generated_token_ids([sampled_idx])
             return self._dafny.Seq(self.tokenizer.decode([sampled_idx]))
 
     def _token_indices_for_token(self, token) -> list[int]:
@@ -1266,23 +1995,75 @@ class _TensorizedLMBase:
                 subset_mask = self._subset_mask_from_full_mask(full_mask)
 
             eos_indices = self._token_indices_for_token(eosToken)
-            if eos_indices:
-                subset_mask[eos_indices] = True
-                if full_mask is not None:
-                    eos_full_ids = self._token_ids_tensor[eos_indices].to(full_mask.device)
-                    full_mask[eos_full_ids] = True
+            _clear_eos = (
+                os.environ.get("CSD_ITERGEN_HARD_MASK", "0") == "1"
+                or os.environ.get("CSD_ITERGEN_OPPORTUNISTIC", "0") == "1"
+            )
+            if _clear_eos:
+                # IterGen: grammar DFA mask only. Even grammar_strict can mark
+                # <|im_end|> accepted; clear it so argmax continues (LIMIT…).
+                if eos_indices:
+                    subset_mask[eos_indices] = False
+                    if full_mask is not None:
+                        eos_full_ids = self._token_ids_tensor[eos_indices].to(full_mask.device)
+                        full_mask[eos_full_ids] = False
+            elif eos_indices:
+                # Outside IterGen, stopping is only allowed once the prefix is a
+                # complete query (or nothing else can follow). Marking end-of-turn
+                # legal unconditionally let the model stop mid-query and the
+                # fragment was then scored as its answer.
+                has_other_valid_token = bool(torch.sum(subset_mask).item() > 0)
+                if _eos_is_legal(parser, prefix, has_other_valid_token):
+                    subset_mask[eos_indices] = True
+                    if full_mask is not None:
+                        eos_full_ids = self._token_ids_tensor[eos_indices].to(full_mask.device)
+                        full_mask[eos_full_ids] = True
 
             if torch.sum(subset_mask).item() == 0:
+                # IterGen `_apply_mask`: if accept mask is empty, warn and mask
+                # nothing (do not raise). Do NOT force-EOS here — that stopped
+                # Spider ex3 at `-- 1` instead of continuing the zero run.
+                if (
+                    os.environ.get("CSD_ITERGEN_OPPORTUNISTIC", "0") == "1"
+                    or os.environ.get("CSD_ITERGEN_HARD_MASK", "0") == "1"
+                ):
+                    return
                 raise RuntimeError("MaskValidNextAndEos found no valid next tokens including EOS")
 
             self._logits_tensor.masked_fill_(~subset_mask, -1e9)
-            if self._full_logits is not None and full_mask is not None:
-                self._full_logits.masked_fill_(~full_mask, -1e9)
+            if self._full_logits is not None:
+                if full_mask is not None:
+                    self._full_logits.masked_fill_(~full_mask, -1e9)
+                else:
+                    # Parser mask was already vocab-aligned to the constrained
+                    # subset. SoftConstrained samples via ChooseNextTokenUnconstrained
+                    # on _full_logits — must project the subset mask onto full vocab
+                    # or EOS stays unmasked and wins after complete SQL.
+                    projected = torch.zeros(
+                        self._full_logits.numel(),
+                        dtype=torch.bool,
+                        device=self._full_logits.device,
+                    )
+                    ids = self._token_ids_tensor.to(self._full_logits.device)
+                    sm = subset_mask.to(self._full_logits.device)
+                    # Only mark true positions; leave rest False then fill.
+                    projected[ids[sm]] = True
+                    self._full_logits.masked_fill_(~projected, -1e9)
             self._logits_dirty = True
             self.Logits.update_tensors(self._logits_tensor, self._full_logits)
 
     def BoostValidNextAndEos(self, parser, prefix, amount, eosToken):
         with _timed("BoostValidNextAndEos"):
+            # IterGen opportunistic: unconstrained greedy first; mask only on SoftConstrained
+            # fallback when the pick is invalid. Do not alter logits here.
+            if os.environ.get("CSD_ITERGEN_OPPORTUNISTIC", "0") == "1":
+                return
+            # IterGen parity: hard-mask to grammar accept set and do NOT force-include
+            # eos (IterGen argmaxes DFA mask only; eos is HF stopping criteria).
+            if os.environ.get("CSD_ITERGEN_HARD_MASK", "0") == "1":
+                self.MaskValidNextAndEos(parser, prefix, eosToken)
+                # MaskValidNextAndEos honors CSD_ITERGEN_HARD_MASK to skip eos force.
+                return
             amount_f = float(amount)
             full_mask = self._parser_full_mask(parser, prefix)
             if full_mask.numel() == len(self._token_ids):
@@ -1294,10 +2075,12 @@ class _TensorizedLMBase:
 
             eos_indices = self._token_indices_for_token(eosToken)
             if eos_indices:
-                subset_mask[eos_indices] = True
-                if full_mask is not None:
-                    eos_full_ids = self._token_ids_tensor[eos_indices].to(full_mask.device)
-                    full_mask[eos_full_ids] = True
+                has_other_valid_token = bool(torch.sum(subset_mask).item() > 0)
+                if _eos_is_legal(parser, prefix, has_other_valid_token):
+                    subset_mask[eos_indices] = True
+                    if full_mask is not None:
+                        eos_full_ids = self._token_ids_tensor[eos_indices].to(full_mask.device)
+                        full_mask[eos_full_ids] = True
 
             self._logits_tensor[subset_mask] = torch.clamp(
                 self._logits_tensor[subset_mask] + amount_f, min=-1e9, max=1e9
@@ -1331,6 +2114,18 @@ class _TensorizedLMBase:
 
             self._logits_tensor.masked_fill_(~accept_mask.to(self._logits_tensor.device), -1e9)
             self._logits_dirty = True
+
+
+
+class _OracleTrieNode:
+    __slots__ = ("parent", "children", "raw_logprob", "log_theta")
+
+    def __init__(self, parent: "_OracleTrieNode | None" = None):
+        self.parent = parent
+        self.children: dict[int, _OracleTrieNode] = {}
+        self.raw_logprob: torch.Tensor | None = None
+        self.log_theta: torch.Tensor | None = None
+
 
 
 def _build_tokens_dafny(_dafny, tokenizer, token_ids):
@@ -1377,7 +2172,7 @@ def create_huggingface_lm(
         elif load_in_8bit:
             kwargs["load_in_8bit"] = True
         else:
-            kwargs["torch_dtype"] = torch.float16
+            kwargs["torch_dtype"] = {"bfloat16": torch.bfloat16, "bf16": torch.bfloat16, "float16": torch.float16, "fp16": torch.float16}.get(os.environ.get("CSD_HF_DTYPE", "float16").lower(), torch.float16)
 
         model = AutoModelForCausalLM.from_pretrained(**kwargs)
         input_device = get_model_input_device(model)
@@ -1390,7 +2185,7 @@ def create_huggingface_lm(
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             trust_remote_code=True,
-            torch_dtype=torch.float16,
+            torch_dtype={"bfloat16": torch.bfloat16, "bf16": torch.bfloat16, "float16": torch.float16, "fp16": torch.float16}.get(os.environ.get("CSD_HF_DTYPE", "float16").lower(), torch.float16),
         )
         model = model.to("mps")
         input_device = torch.device("mps")
@@ -1419,8 +2214,10 @@ def create_huggingface_lm(
 
         def GenerateLogits(self, input_prefix):
             self._check_runtime_deadline()
+            self._check_answer_early_stop(input_prefix)
             prefix_text = self._prefix_text(input_prefix)
             full_prompt = self.instruction_text + prefix_text
+            self._begin_generation_transaction(input_prefix)
 
             # Prefix-cache short-circuit
             if full_prompt == self._last_full_prompt and not self._logits_dirty:
@@ -1431,20 +2228,52 @@ def create_huggingface_lm(
             if self._generate_count % 10 == 0:
                 print(f"    [PROGRESS] GenerateLogits call #{self._generate_count}, prefix length: {len(input_prefix)}, cache_hits={self._cache_hits}")
 
-            inputs = self.tokenizer(
-                full_prompt,
-                return_tensors="pt",
-                add_special_tokens=False,
-            )
-            if inputs["input_ids"].shape[-1] > self._max_input_len:
-                inputs["input_ids"] = inputs["input_ids"][:, -self._max_input_len:]
-                if "attention_mask" in inputs:
-                    inputs["attention_mask"] = inputs["attention_mask"][:, -self._max_input_len:]
-            inputs = inputs.to(self._input_device)
+            # Append per-token vocab ids (not join-then-retokenize).
+            id_list = self._full_input_ids(input_prefix)
+            if len(id_list) > self._max_input_len:
+                id_list = id_list[-self._max_input_len :]
+            input_ids = torch.tensor([id_list], dtype=torch.long, device=self._input_device)
+            attn = torch.ones_like(input_ids)
+            inputs = {"input_ids": input_ids, "attention_mask": attn}
 
+            use_kv = os.environ.get("CSD_HF_KV_CACHE", "0") == "1"
             with torch.no_grad():
-                output = self.model(**inputs)
-                logits = output.logits[0, -1, :]
+                if use_kv:
+                    input_ids = inputs["input_ids"]
+                    past = getattr(self, "_past_key_values", None)
+                    prev_ids = getattr(self, "_session_input_ids", None)
+                    # Incremental only when new ids are a strict extension of the
+                    # previous session (CRANE/IterGen-style decode session).
+                    if (
+                        past is not None
+                        and prev_ids is not None
+                        and input_ids.shape[-1] > prev_ids.shape[-1]
+                        and torch.equal(input_ids[:, : prev_ids.shape[-1]], prev_ids)
+                    ):
+                        new_ids = input_ids[:, prev_ids.shape[-1] :]
+                        attn = torch.ones(
+                            (1, input_ids.shape[-1]),
+                            dtype=inputs.get("attention_mask", input_ids).dtype
+                            if "attention_mask" in inputs
+                            else torch.long,
+                            device=self._input_device,
+                        )
+                        output = self.model(
+                            input_ids=new_ids,
+                            attention_mask=attn,
+                            past_key_values=past,
+                            use_cache=True,
+                        )
+                    else:
+                        output = self.model(**inputs, use_cache=True)
+                    self._past_key_values = output.past_key_values
+                    self._session_input_ids = input_ids
+                    logits = output.logits[0, -1, :]
+                else:
+                    output = self.model(**inputs)
+                    logits = output.logits[0, -1, :]
+                    self._past_key_values = None
+                    self._session_input_ids = None
 
             self._finalize_full_logits(logits)
             self._apply_recurrence_penalty(full_prompt)
@@ -1453,23 +2282,21 @@ def create_huggingface_lm(
 
         def GenerateUnconstrainedChunk(self, input_prefix, maxNewTokens, openSpanToken, eosToken):
             self._check_runtime_deadline()
+            self._check_answer_early_stop(input_prefix)
             max_new_tokens = int(maxNewTokens)
             if max_new_tokens <= 0:
                 return self._build_unconstrained_chunk_result([], openSpanToken, eosToken, 0)
 
             prefix_text = self._prefix_text(input_prefix)
             full_prompt = self.instruction_text + prefix_text
-            inputs = self.tokenizer(
-                full_prompt,
-                return_tensors="pt",
-                add_special_tokens=False,
-            )
-            if inputs["input_ids"].shape[-1] > self._max_input_len:
-                inputs["input_ids"] = inputs["input_ids"][:, -self._max_input_len:]
-                if "attention_mask" in inputs:
-                    inputs["attention_mask"] = inputs["attention_mask"][:, -self._max_input_len:]
-            inputs = inputs.to(self._input_device)
-            prompt_len = inputs["input_ids"].shape[-1]
+            self._begin_generation_transaction(input_prefix)
+            id_list = self._full_input_ids(input_prefix)
+            if len(id_list) > self._max_input_len:
+                id_list = id_list[-self._max_input_len :]
+            input_ids = torch.tensor([id_list], dtype=torch.long, device=self._input_device)
+            attn = torch.ones_like(input_ids)
+            inputs = {"input_ids": input_ids, "attention_mask": attn}
+            prompt_len = input_ids.shape[-1]
 
             with torch.no_grad():
                 outputs = self.model.generate(
@@ -1534,10 +2361,12 @@ def create_vllm_lm(
 
         def GenerateLogits(self, input_prefix):
             self._check_runtime_deadline()
+            self._check_answer_early_stop(input_prefix)
             with _timed("GenerateLogits.total"):
                 with _timed("GenerateLogits.prefix_text"):
                     prefix_text = self._prefix_text(input_prefix)
                     full_prompt = self.instruction_text + prefix_text
+                    self._begin_generation_transaction(input_prefix)
 
                 # Prefix-cache short-circuit
                 if full_prompt == self._last_full_prompt and not self._logits_dirty:
@@ -1579,12 +2408,14 @@ def create_vllm_lm(
 
         def GenerateUnconstrainedChunk(self, input_prefix, maxNewTokens, openSpanToken, eosToken):
             self._check_runtime_deadline()
+            self._check_answer_early_stop(input_prefix)
             max_new_tokens = int(maxNewTokens)
             if max_new_tokens <= 0:
                 return self._build_unconstrained_chunk_result([], openSpanToken, eosToken, 0)
 
             prefix_text = self._prefix_text(input_prefix)
             full_prompt = self.instruction_text + prefix_text
+            self._begin_generation_transaction(input_prefix)
             sampling_params = SamplingParams(
                 max_tokens=max_new_tokens,
                 temperature=0.0,

@@ -1,0 +1,68 @@
+diff --git a/itergen/main.py b/itergen/main.py
+index 8ccca56..8a71700 100644
+--- a/itergen/main.py
++++ b/itergen/main.py
+@@ -172,1 +172,29 @@ class IterGen:
++    @staticmethod
++    def _apply_recurrence_penalty(
++        next_token_scores: torch.Tensor,
++        token_ids: list[int],
++        penalty: float,
++    ) -> torch.Tensor:
++        """Make every repeated token less likely without reversing negative logits."""
++        if penalty <= 0:
++            raise ValueError("recurrence_penalty must be greater than zero")
++        if penalty == 1.0 or len(token_ids) == 0:
++            return next_token_scores
++
++        repeated_scores = next_token_scores[0, token_ids]
++        if penalty < 1.0:
++            adjusted_scores = torch.where(
++                repeated_scores < 0,
++                repeated_scores / penalty,
++                repeated_scores * penalty,
++            )
++        else:
++            adjusted_scores = torch.where(
++                repeated_scores < 0,
++                repeated_scores * penalty,
++                repeated_scores / penalty,
++            )
++        next_token_scores[0, token_ids] = adjusted_scores
++        return next_token_scores
++
+     @torch.inference_mode()
+@@ -226,5 +254,6 @@ class IterGen:
+                 if len(old_following_tokens) > 0:
+-                    # Apply the recurrence penalty to tokens indexed at old_following_tokens
+-                    next_token_scores[0, old_following_tokens] *= self.recurrence_penalty
+-
++                    next_token_scores = self._apply_recurrence_penalty(
++                        next_token_scores, old_following_tokens, self.recurrence_penalty
++                    )
++
+             # Select the next token
+diff --git a/tests/test_recurrence_penalty.py b/tests/test_recurrence_penalty.py
+new file mode 100644
+index 0000000..607c640
+--- /dev/null
++++ b/tests/test_recurrence_penalty.py
+@@ -0,0 +1,18 @@
++import pytest
++import torch
++
++from itergen.main import IterGen
++
++
++def test_recurrence_penalty_lowers_positive_and_negative_repeated_token_logits():
++    scores = torch.tensor([[-2.0, 4.0, 1.5]])
++
++    adjusted = IterGen._apply_recurrence_penalty(
++        scores.clone(),
++        token_ids=[0, 1],
++        penalty=0.3,
++    )
++
++    assert adjusted[0, 0].item() == pytest.approx(-2.0 / 0.3)
++    assert adjusted[0, 1].item() == pytest.approx(4.0 * 0.3)
++    assert adjusted[0, 2].item() == pytest.approx(1.5)

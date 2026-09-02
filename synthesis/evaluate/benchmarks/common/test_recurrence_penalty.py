@@ -1,104 +1,103 @@
-import math
-import sys
-from unittest.mock import MagicMock
+"""Disposable per-change TDD test for Change 3 (persistent tried-token penalty).
+
+Verifies the mechanism directly on _TensorizedLMBase, no model/vLLM load:
+  T1  byte-identical no-op when nothing is penalized (the fairness guarantee)
+  T2  divergence: penalizing the argmax token makes the regen pick a different one
+  T3  RED reproduction: WITHOUT the persistent re-apply (the old one-shot mask that
+      GenerateLogits wipes), the regen reproduces the same token (the bug)
+  T4  cumulative penalty eventually demotes even a confident token within budget
+  T5  no cross-prefix contamination
+  T6  per-example reset (penalties never leak across instruction_text)
+"""
+import os, sys, math
+os.environ["CSD_RECURRENCE_PENALTY"] = "0.3"
+os.environ["CSD_CONSTRAINED_TEMPERATURE"] = "0.0"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import torch
+from types import SimpleNamespace
+import model_utils as M
 
 
-for _heavy in ("torch", "transformers", "vllm"):
-    if _heavy not in sys.modules:
-        try:
-            __import__(_heavy)
-        except Exception:
-            sys.modules[_heavy] = MagicMock()
-
-from synthesis.evaluate.benchmarks.common.model_utils import _TensorizedLMBase  # noqa: E402
-
-
-class _Scalar:
-    def __init__(self, value):
-        self.value = value
-
-    def item(self):
-        return self.value
-
-    def __add__(self, other):
-        return _Scalar(self.value + other)
-
-    def __radd__(self, other):
-        return _Scalar(other + self.value)
-
-
-class _Vector:
-    def __init__(self, values):
-        self.values = list(values)
-
-    def numel(self):
-        return len(self.values)
-
-    def __getitem__(self, index):
-        return _Scalar(self.values[index])
-
-    def __setitem__(self, index, value):
-        self.values[index] = value.value if isinstance(value, _Scalar) else value
-
-
-def _lm():
-    lm = object.__new__(_TensorizedLMBase)
-    lm.instruction_text = "EXAMPLE-1 "
-    lm._tried_token_penalties = {}
-    lm._penalty_instruction_key = None
-    lm._recurrence_penalty = 0.3
-    lm._recurrence_flat = False
-    lm._logits_dirty = False
-    lm._token_str_to_indices = {"A": [0], "B": [1], "C": [2]}
-    lm._token_ids_tensor = _Vector([2, 0, 1])
-    lm._logits_tensor = _Vector([-0.1, -0.5, -2.0])
-    lm._full_logits = _Vector([-0.5, -2.0, -0.1])
+def make_lm(instr="EXAMPLE-1 "):
+    lm = M._TensorizedLMBase(_dafny=None, tokenizer=None,
+                             tokens=["A", "B", "C"], tids=[0, 1, 2],
+                             logits_device="cpu")
+    lm.instruction_text = instr
     return lm
 
 
-def test_empty_penalty_map_is_a_noop():
-    lm = _lm()
-    before = list(lm._logits_tensor.values), list(lm._full_logits.values)
-    lm._apply_recurrence_penalty("EXAMPLE-1 x")
-    assert (lm._logits_tensor.values, lm._full_logits.values) == before
+def lp(a, b, c):
+    return {0: SimpleNamespace(logprob=a),
+            1: SimpleNamespace(logprob=b),
+            2: SimpleNamespace(logprob=c)}
 
 
-def test_penalty_changes_subset_and_matching_full_vocabulary_logit():
-    lm = _lm()
-    lm.PenalizeTriedTokenAt(["x"], "A")
-    lm._apply_recurrence_penalty("EXAMPLE-1 x")
-    delta = math.log(0.3)
-    assert lm._logits_tensor.values[0] == -0.1 + delta
-    assert lm._full_logits.values[2] == -0.1 + delta
+P = ["x"]
+P2 = ["y"]
+LN03 = math.log(0.3)
 
+# T1: byte-identical no-op
+lm = make_lm()
+lm._finalize_from_logprob_dict(lp(-0.1, -0.5, -2.0))
+before = lm._logits_tensor.clone()
+lm._apply_recurrence_penalty(lm.instruction_text + lm._prefix_text(P))  # empty map
+assert lm.ChooseNextToken() == "A"
+assert torch.allclose(lm._logits_tensor, before), "T1 not byte-identical"
+print("T1 PASS: empty-map no-op is byte-identical; argmax=A")
 
-def test_penalty_is_cumulative_by_default():
-    lm = _lm()
-    lm.PenalizeTriedTokenAt(["x"], "A")
-    lm.PenalizeTriedTokenAt(["x"], "A")
-    lm._apply_recurrence_penalty("EXAMPLE-1 x")
-    assert lm._logits_tensor.values[0] == -0.1 + 2 * math.log(0.3)
+# T2: divergence after penalizing the argmax
+lm = make_lm()
+key = lm.instruction_text + lm._prefix_text(P)
+lm._finalize_from_logprob_dict(lp(-0.1, -0.5, -2.0))
+assert lm.ChooseNextToken() == "A"
+lm.PenalizeTriedTokenAt(P, "A")
+lm._finalize_from_logprob_dict(lp(-0.1, -0.5, -2.0))   # regen = fresh logits
+lm._apply_recurrence_penalty(key)
+c = lm.ChooseNextToken()
+assert c == "B", f"T2 expected B got {c}"
+assert abs(lm._logits_tensor[0].item() - (-0.1 + LN03)) < 1e-4, "T2 wrong penalty amount"
+print(f"T2 PASS: diverged A->B; A logprob -0.100 -> {lm._logits_tensor[0].item():.3f}")
 
+# T3: RED reproduction (no persistent re-apply => same token)
+lm = make_lm()
+lm._finalize_from_logprob_dict(lp(-0.1, -0.5, -2.0))
+assert lm.ChooseNextToken() == "A"
+lm.PenalizeTriedTokenAt(P, "A")
+lm._finalize_from_logprob_dict(lp(-0.1, -0.5, -2.0))   # fresh logits = old MaskToken wiped
+# deliberately DO NOT call _apply_recurrence_penalty (simulates the wipe bug)
+c = lm.ChooseNextToken()
+assert c == "A", f"T3 expected A (bug) got {c}"
+print("T3 PASS: without persistent re-apply, regen reproduces A (the wipe bug)")
 
-def test_penalty_does_not_cross_prefixes():
-    lm = _lm()
-    lm.PenalizeTriedTokenAt(["x"], "A")
-    lm._apply_recurrence_penalty("EXAMPLE-1 y")
-    assert lm._logits_tensor.values == [-0.1, -0.5, -2.0]
+# T4: cumulative penalty eventually demotes a confident token
+lm = make_lm()
+key = lm.instruction_text + lm._prefix_text(P)
+def fin(): lm._finalize_from_logprob_dict(lp(0.0, -3.0, -9.0))
+fin(); assert lm.ChooseNextToken() == "A"
+seq = []
+for _ in range(3):
+    lm.PenalizeTriedTokenAt(P, "A"); fin(); lm._apply_recurrence_penalty(key)
+    seq.append((lm.ChooseNextToken(), round(lm._logits_tensor[0].item(), 3)))
+assert [s[0] for s in seq] == ["A", "A", "B"], f"T4 unexpected {seq}"
+print(f"T4 PASS: cumulative demote {seq} (A: 0 -> {seq[-1][1]} over 3 tries -> B)")
 
+# T5: no cross-prefix contamination
+lm = make_lm()
+keyP2 = lm.instruction_text + lm._prefix_text(P2)
+lm.PenalizeTriedTokenAt(P, "A")
+lm._finalize_from_logprob_dict(lp(-0.1, -0.5, -2.0))
+lm._apply_recurrence_penalty(keyP2)
+assert lm.ChooseNextToken() == "A", "T5 penalty leaked to other prefix"
+print("T5 PASS: penalty at P does not affect P2")
 
-def test_new_instruction_clears_previous_example_penalties():
-    lm = _lm()
-    lm.PenalizeTriedTokenAt(["x"], "A")
-    lm.instruction_text = "EXAMPLE-2 "
-    lm.PenalizeTriedTokenAt(["x"], "B")
-    assert list(lm._tried_token_penalties) == ["EXAMPLE-2 x"]
+# T6: per-example reset
+lm = make_lm("EXAMPLE-1 ")
+lm.PenalizeTriedTokenAt(P, "A")
+assert len(lm._tried_token_penalties) == 1
+lm.instruction_text = "EXAMPLE-2 "
+lm.PenalizeTriedTokenAt(P, "B")   # triggers reset of EXAMPLE-1 entries
+keys = list(lm._tried_token_penalties.keys())
+assert keys and all(k.startswith("EXAMPLE-2 ") for k in keys), f"T6 stale keys {keys}"
+print("T6 PASS: penalty map reset on instruction_text change")
 
-
-def test_flat_mode_applies_one_penalty_after_repeated_failures():
-    lm = _lm()
-    lm._recurrence_flat = True
-    lm.PenalizeTriedTokenAt(["x"], "A")
-    lm.PenalizeTriedTokenAt(["x"], "A")
-    lm._apply_recurrence_penalty("EXAMPLE-1 x")
-    assert lm._logits_tensor.values[0] == -0.1 + math.log(0.3)
+print("\nALL TESTS PASSED")
